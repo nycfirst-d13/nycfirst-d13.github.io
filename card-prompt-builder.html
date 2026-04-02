@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Makerspace Prompt Builder</title>
+<style>
+:root{
+  /* Background */
+  --bg-gradient-start: #cfe9ff;
+  --bg-gradient-end: #eaf6ff;
+
+  /* Text */
+  --text-primary: #1e2a38;
+  --text-muted: #4a6080;
+  --text-input-muted: #7096b8;
+  --text-placeholder: #93b3ca;
+
+  /* Primary action color */
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-text: #fff;
+
+  /* Light surfaces */
+  --surface-faint: #ebebeb;
+  --surface-light: #c2daf5;
+  --surface-hover: #9dc0ec;
+  --surface-selected: #9dc0ec;
+  --surface-has-value: #cde4f8;
+
+  /* Borders */
+  --border-faint: #c2daf5;
+  --border-light: #9dc0ec;
+  --border-medium: #6a9fd4;
+
+  /* Errors */
+  --error: #dc2626;
+  --error-light: #f87171;
+}
+
+body{
+  font-family:Arial,sans-serif;
+  margin:0;
+  background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+  color:var(--text-primary);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+
+.wrap{
+  width:100%;
+  max-width:1020px;
+  padding:24px;
+}
+
+.sky{
+  position:fixed;
+  inset:0;
+  overflow:hidden;
+  z-index:0;
+}
+.card{position: relative;z-index: 1;background:#f4f4f4;padding:24px;border-radius:18px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
+h2{margin:0 0 8px}
+.card-header{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+.card-header h2{margin:0}
+.card-logo{height:clamp(36px,6vw,90px);width:auto;display:block;flex-shrink:0}
+.helper{color:var(--text-muted);line-height:1.5;margin:0 0 18px}
+.builder{font-size:21px;line-height:2.2;background:var(--surface-faint);border:1px solid var(--border-faint);border-radius:16px;padding:18px}
+.token{display:inline-block;position:relative;margin:0 4px}
+.token+.punct{margin-left:-4px}
+.token-btn{border:none;background:var(--surface-light);color:var(--text-primary);border-radius:999px;padding:6px 12px;font-size:21px;font-weight:700;cursor:pointer}
+.token-btn:hover{background:var(--surface-hover)}
+.token-static .token-btn{cursor:default}
+.menu{display:none;position:absolute;top:110%;left:0;min-width:200px;max-width:320px;background:#e8e8e8;border:1px solid var(--border-light);border-radius:14px;padding:10px;box-shadow:0 10px 24px rgba(0,0,0,.08);z-index:20;max-height:260px;overflow:auto}
+.menu.open{display:block}
+.menu.above{top:auto;bottom:110%}
+.close-btn{position:sticky;top:0;border:none;background:var(--surface-light);color:var(--text-primary);border-radius:999px;padding:6px 10px;font-weight:700;cursor:pointer;font-size:13px}
+.close-btn:hover{background:var(--surface-hover)}
+.option-btn{display:block;width:100%;text-align:left;border:none;background:transparent;color:var(--text-primary);border-radius:999px;padding:6px 14px;font-size:15px;font-weight:700;cursor:pointer;margin:3px 0;transition:background .12s}
+.option-btn:hover{background:var(--surface-light)}
+.option-btn.selected{background:var(--surface-selected)}
+.write-own-wrap{display:flex;align-items:stretch;margin:3px 0;border-radius:999px;overflow:hidden;background:transparent;transition:background .12s}
+.write-own-wrap.has-value{background:var(--surface-has-value)}
+.write-own-wrap.selected{background:var(--surface-selected)}
+.write-own-input{flex:1;min-width:0;border:none;background:transparent;padding:6px 14px;font-size:15px;font-weight:500;font-style:italic;color:var(--text-input-muted);cursor:pointer;font-family:inherit;outline:none}
+.write-own-input::placeholder{color:var(--text-input-muted);font-style:italic}
+.write-own-wrap:not(.has-value) .write-own-input:focus{background:var(--surface-light);font-style:normal;font-weight:700;color:var(--text-primary);cursor:text}
+.write-own-wrap.has-value .write-own-input,.write-own-wrap.selected .write-own-input{font-style:normal;font-weight:700;color:var(--text-primary);cursor:text}
+.write-own-plus{display:none;align-items:center;border:none;background:transparent;color:var(--primary-hover);padding:0 12px 0 2px;font-size:18px;font-weight:900;cursor:pointer;flex-shrink:0;line-height:1;transition:color .12s,background .12s}
+.write-own-plus:hover{color:var(--primary-dark);background:rgba(0,0,0,.08)}
+.write-own-wrap.has-value .write-own-plus,.write-own-wrap.selected .write-own-plus{display:flex}
+.inline-input{border:none;border-bottom:2px solid var(--surface-light);background:transparent;padding:4px 0 4px 0;font-size:21px;font-weight:700;color:var(--text-primary);min-width:20px;width:180px;outline:none}
+.inline-small{border:none;border-bottom:2px solid var(--surface-light);background:transparent;padding:4px 0 4px 0;font-size:21px;font-weight:700;color:var(--text-primary);min-width:20px;width:190px;outline:none}
+.inline-sizer{position:absolute;visibility:hidden;white-space:pre;pointer-events:none;}
+.actions{margin-top:18px;display:flex;gap:12px;align-items:center}
+.actions-right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.copy-btn{border:none;background:var(--primary);color:var(--primary-text);border-radius:999px;padding:12px 18px;font-size:16px;font-weight:700;cursor:pointer}
+.copy-btn:hover{background:var(--primary-hover)}
+.icon-btn{border:none;background:var(--surface-light);color:var(--text-primary);border-radius:999px;width:36px;height:36px;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;transition:background .12s}
+.icon-btn:hover:not(:disabled){background:var(--surface-hover)}
+.icon-btn:disabled{opacity:0.35;cursor:default}
+.action-btn{border:none;background:var(--surface-light);color:var(--text-primary);border-radius:999px;padding:10px 16px;font-size:14px;font-weight:700;cursor:pointer;transition:background .12s}
+.action-btn:hover{background:var(--surface-hover)}
+.download-btn{border:none;background:var(--surface-light);color:var(--text-primary);border-radius:999px;padding:12px 18px;font-size:16px;font-weight:700;cursor:pointer}
+.download-btn:hover{background:var(--surface-selected)}
+/* Step cards */
+.stage-card{display:none}
+.step-heading{display:flex;align-items:center;gap:14px;margin:0 0 8px}
+.step-circle{display:flex;align-items:center;justify-content:center;width:52px;height:52px;min-width:52px;border-radius:50%;background:var(--primary);color:#fff;font-size:28px;font-weight:900;line-height:1}
+.step-heading h2{margin:0}
+kbd{background:var(--surface-light);border:1px solid var(--border-medium);border-radius:6px;padding:2px 8px;font-size:14px;font-family:Arial,sans-serif;font-weight:700;color:var(--text-primary);transition:background .2s,border-color .2s}
+kbd.key-pressed{background:var(--border-medium);border-color:var(--primary)}
+.step-instruction{font-size:16px;line-height:1.7;color:var(--text-muted);margin:0 0 14px}
+.prompt-textarea{width:100%;box-sizing:border-box;border:2px solid var(--border-medium);border-radius:14px;padding:16px;font-size:17px;line-height:1.7;font-family:Arial,sans-serif;color:var(--text-primary);background:var(--surface-faint);resize:none;outline:none;caret-color:#aaa;overflow:hidden;display:block}
+.prompt-textarea:focus{border-color:var(--primary)}
+.practice-textarea{width:100%;box-sizing:border-box;border:2px dashed var(--border-medium);border-radius:14px;padding:16px;font-size:17px;line-height:1.7;font-family:Arial,sans-serif;color:var(--text-primary);background:#ebebeb;resize:none;outline:none;min-height:110px;display:block}
+.practice-textarea::placeholder{color:var(--text-placeholder)}
+.practice-textarea:focus{border-color:var(--primary);border-style:solid}
+.card-actions{margin-top:20px;display:flex;gap:12px;align-items:center}
+.copy-status{display:grid}
+.copy-status>span{grid-area:1/1}
+.copy-check{font-size:15px;font-weight:700;color:#16a34a;opacity:0;transition:opacity .3s}
+.copy-error{font-size:15px;font-weight:700;color:var(--error);opacity:0;transition:opacity .3s}
+.back-btn{border:none;background:var(--surface-light);color:var(--text-primary);border-radius:999px;padding:12px 18px;font-size:16px;font-weight:700;cursor:pointer}
+.back-btn:hover{background:var(--surface-selected)}
+.next-btn{border:none;background:var(--primary);color:var(--primary-text);border-radius:999px;padding:12px 18px;font-size:16px;font-weight:700;cursor:pointer}
+.next-btn:hover{background:var(--primary-hover)}
+.inline-missing{border-bottom-color:var(--error-light) !important;animation:shake .35s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.validation-msg{display:none;font-size:14px;font-weight:600;color:var(--error)}
+@media (max-width:700px){.builder{font-size:18px}.token-btn,.inline-input,.inline-small{font-size:18px}}
+</style>
+</head>
+<body>
+  <div class="sky">
+  <div id="sky-canvas"></div>
+
+</div>
+
+<div class="wrap">
+  <div class="card" id="builderCard">
+    <div class="card-header">
+      <svg class="card-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" aria-hidden="true">
+        <defs><style>.st0{fill:#231f20}.st1{fill:#0066b3}.st2{fill:#ed1c24}.st3{fill:#fff}.st4{fill:#949393}</style></defs>
+        <g><path class="st4" d="M215.5,205.3c4,0,8,.4,11.7,1.1l8.9-9.3c-6.2-2.2-13.2-3.4-20.6-3.4-12.6,0-24,3.5-32.4,9.2l7.8,7.4c7.2-3.1,15.6-5,24.7-5"/><path class="st3" d="M215.5,193.7c7.4,0,14.4,1.2,20.6,3.4l9.7-10.1c-9-3.6-19.3-5.6-30.3-5.6-16.3,0-31.2,4.5-42.6,11.9l10.2,9.6c8.5-5.7,19.9-9.2,32.4-9.2"/><path class="st4" d="M169,233.2c.8-3.3,2.3-6.5,4.4-9.4l-3.9-3.9c-.8,2.4-1.2,5-1.2,7.6s.3,3.9.7,5.8"/><path class="st4" d="M140.2,255l-1.6,8.5,16.3-7c-1-2.2-1.2-5-1.8-7.3l-12.8,5.8Z"/><polygon class="st4" points="128.7 162.7 105.1 291.8 116.3 292.7 139.6 161.7 128.7 162.7"/><path class="st2" d="M208,237v-10.4l-17.1-16.2-7.8-7.4-10.2-9.6-33.4-31.6-23.4,131,49.4-21.7c-4.9-4.3-8.4-9-11-14.4l-16.1,6.9,1.6-8.4,10.4-54.3.9-4.6,8.6,8.7,11.1,11.2,4.8,4.8,19.6,16.8-19,8.7c4.9,4.9,10.8,9.3,18.6,11.7l23.7-10.6-10.8-10.4Z"/><path class="st4" d="M262,233.2c.5-1.9.7-3.8.7-5.8,0-5.8-2.1-11.3-5.8-16.1l-5.6,5.8c5.4,4.5,9.2,10,10.7,16.1"/><path class="st4" d="M272.6,288.5l-13.3-12.8c-2.1,1.5-4.4,2.8-6.8,4l20.1,19.3,62-64.6v-10.5c0,0-62,64.5-62,64.5Z"/><path class="st4" d="M227.4,245.1l-11-10.5-8.4-8v10.5s11.8,11.3,11.8,11.3l11.3,10.8c2.9-.7,5.6-1.6,8.2-2.7l-11.9-11.4Z"/><polygon class="st4" points="270.5 186.6 261.7 195.8 251.9 206 245.3 212.9 232.7 226 238 231.1 251.4 217.1 257 211.3 267.2 200.6 270.5 197.2 304.6 229.9 309.9 224.4 270.5 186.6"/><path class="st3" d="M267.2,200.6l-10.3,10.7c3.7,4.8,5.8,10.3,5.8,16.1s-.3,3.9-.7,5.8c-1.2,4.9-3.9,9.5-7.7,13.4-3.9,4-9.1,7.4-15,9.9-2.6,1.1-5.3,2-8.2,2.7-4.9,1.2-10.1,1.9-15.6,1.9s-13.1-1-18.9-2.8c-7.9-2.5-14.6-6.4-19.6-11.3-1.8-1.8-3.4-3.7-4.6-5.8-1.6-2.5-2.8-5.2-3.4-8-.5-1.9-.7-3.8-.7-5.8s.4-5.1,1.2-7.6l-11.8-11.9c-4.3,6.4-6.7,13.6-6.7,21.2s.2,3.9.5,5.8c.8,4.6,2.4,9,4.8,13.1,1.2,2.1,2.6,4.1,4.2,6,4.1,5,9.5,9.4,15.8,13,10.9,6.2,24.5,9.9,39.3,9.9s20.1-1.8,28.8-5c2.6-1,5.2-2.1,7.6-3.3,5.6-2.8,10.5-6.3,14.7-10.2,6.9-6.6,11.6-14.6,13-23.4.3-1.9.5-3.8.5-5.8,0-10.7-4.8-20.6-12.8-28.6"/><path class="st1" d="M227.3,245.2l11.8,11.4c6-2.5,11.1-5.8,15.1-9.9l-16.2-15.6-5.3-5.1,12.5-13,6.6-6.9,9.7-10.2,8.8-9.2,39.3,37.7-5.3,5.5-32.2,33.5c-3.4,4.6-7.8,8.8-13,12.3l13.2,12.8,62-64.6-64.6-62-24.2,25.2-9.7,10.1-8.9,9.3-19.2,20,19.3,18.6Z"/><path class="st4" d="M172.7,241.5s.3.5.3.6c.9,1.5,2.2,2.9,3.5,4.3l19.3-8.9-44.4-41.3-1.2,6.4,34.8,34.5-12.4,4.6Z"/><path class="st4" d="M280.1,229.2c0,2-.2,3.9-.5,5.8-1.4,8.7-6.1,16.8-13,23.4-4.1,4-9.1,7.4-14.7,10.2-2.4,1.2-4.9,2.3-7.6,3.3-8.7,3.2-18.4,5-28.8,5-14.8,0-28.4-3.7-39.3-9.9-6.3-3.6-11.6-8-15.8-13-1.6-1.9-3-3.9-4.2-6-2.4-4.1-4.1-8.5-4.8-13.1-.3-1.9-.5-3.8-.5-5.8s0-1.2,0-1.8c0,0,0,0,0-.1-.3,1.9,0,11.6,0,13.5,0,3.1.4,6.2,1.2,9.1.6,2.3,1.4,4.5,2.4,6.7,2.6,5.5,6.5,10.5,11.4,14.8,11.8,10.4,29.6,17.1,49.5,17.1s26.6-3.2,37.1-8.7c2.4-1.2,4.7-2.6,6.8-4,5.2-3.6,9.6-7.7,13-12.4,4.9-6.7,7.7-14.4,7.7-22.6s.1-9.9,0-13.2c0-.4,0,1,0,1.6"/></g>
+        <g><polygon class="st0" points="363.3 197.9 424.1 197.9 418.4 221.4 389.3 221.4 386.4 233.7 416.8 233.7 411.5 255.4 381.5 255.4 374.3 286.2 342.9 286.2 363.3 197.9"/><polygon class="st0" points="432.4 197.9 463.8 197.9 443.4 286.2 411.9 286.2 432.4 197.9"/><path class="st0" d="M472,198.5l2-.3c10.1-1.2,22.6-2,29.5-2,11.5,0,20.5,1.3,27.2,4.1,8.6,3.6,13.8,11.4,13.8,20.8s-2.7,15.7-7.9,21.7c-4.5,5.2-8.5,7.7-16.9,10.2l-2,.7c.9.7,1.2.9,1.6,1.3,2.4,2.8,9.8,17.1,16,31.2h-34.6c-4.5-12.6-5.8-15.9-11.7-30.2l-6.9,30.2h-30.5l20.3-87.7ZM495.2,240c10.1,0,17.1-6,17.1-14.4s-3.3-6.7-9.8-6.7-2.9.1-4.9.5l-4.8,20.4c1,.1,1.2.3,2.3.3"/><polygon class="st0" points="619.2 197.9 695.4 197.9 690.1 223.5 667.5 223.5 652.5 286.2 621.1 286.2 636.1 223.5 611.5 223.5 619.2 197.9"/><path class="st0" d="M667.2,270.4c4.2,0,7.7,3.4,7.7,7.6s-3.4,7.7-7.7,7.7-7.6-3.3-7.6-7.7,3.4-7.6,7.6-7.6M667.2,284.8c3.7,0,6.7-3,6.7-6.7s-3-6.7-6.7-6.7-6.7,3-6.7,6.7,3,6.7,6.7,6.7M664.2,274.1c.4,0,.4,0,1.2-.1.8,0,1.1,0,1.4,0,2.5,0,3.8,1,3.8,2.8s-.5,1.8-1.5,2.2h-.1c0,0,.1.1.1.2.3.2,1.2,1.6,1.9,2.8h-2.9c-.6-1.1-.8-1.4-1.5-2.6v2.6h-2.5v-7.8ZM667,277.8c.7,0,1.1-.3,1.1-.9s-.4-.9-1-.9-.2,0-.3,0v1.8c.1,0,.2,0,.3,0"/><path class="st0" d="M538.5,283.9c8.8,2.6,18.5,4.1,27.5,4.1s21.6-2.8,29.7-8.6c8.9-6.4,14.7-16.1,14.7-25s-2.6-11.4-7.2-15.2c-3.6-2.9-7.3-5.2-15-8.7l-6.2-2.9c-2-1.1-3-2.1-3-3.3,0-3.2,4-5.6,9.5-5.6s9,1.2,18.3,4.2l6.4-23.9c-7-1.9-13.8-2.8-20.6-2.8-25.6,0-45.4,14-45.4,32.1s6.3,16.3,22.2,23.7c7.5,3.4,8.8,4.4,8.8,6.7,0,3.6-3.9,5.8-10.2,5.8s-12.8-1.7-22.6-5.3h0s-6.9,24.6-6.9,24.6Z"/></g>
+        <g><path class="st0" d="M446.9,101.8h26.9c-6.3,29.7-12.7,59.3-19,89h-25.1c-9.4-15.8-18.6-31.8-27.4-48.1-3.4,16.1-6.8,32.1-10.3,48.1h-27c6.3-29.7,12.7-59.3,19-89h25.9c9.5,16.1,18.7,32.4,27.3,49,2.6-16.5,5.9-32.7,9.6-49Z"/><path class="st0" d="M636.8,104.4c-4,8.3-7.9,16.6-11.9,24.9-1.5-.4-2.9-.7-4.2-1-2.6-.5-5.2-1.1-7.8-1.5-4.2-.7-8.2,0-12.1,1.4-7.2,2.8-12.5,7.7-15.2,15.1-1.4,3.7-1.7,7.6-.8,11.5,1.1,4.9,4.1,8.1,8.7,9.9,3.7,1.5,7.5,1.7,11.4,1.4,4.6-.4,9.1-1.5,13.5-3.1.2,0,.5-.2.7-.2,0,0,.2,0,.5,0-1.8,8.7-3.6,17.3-5.4,25.9-.3.1-.6.2-.9.3-6.8,2.1-13.8,3.5-21,3.6-6.3.1-12.5-.5-18.3-2.8-10.9-4.2-17.5-12.1-19.9-23.5-.9-4.5-1-9.1-.7-13.7.9-12.3,5.7-22.9,13.9-32,5.5-6.1,11.7-11.1,19.1-14.7,5.4-2.6,11.1-4.3,17-5.2,5.3-.8,10.7-.8,16-.4,5.8.5,11.4,1.8,16.8,3.8.2,0,.3.2.6.3Z"/><path class="st0" d="M511.3,190.8h-30.5c.3-.5.6-.9.8-1.2,5.5-7.9,11.1-15.7,16.6-23.5.5-.7.6-1.4.3-2.2-6.8-20.3-13.6-40.6-20.3-60.8-.1-.4-.2-.7-.3-1.2h30.2c4,12.1,7.5,24.4,10.7,36.8,7.8-12.6,16-24.8,24.6-36.8h29c-.4.5-.6.9-.9,1.3-13.2,18.8-26.3,37.6-39.6,56.3-6.3,8.9-12.1,18.1-18,27.3-.9,1.3-1.7,2.7-2.6,4.1Z"/></g>
+      </svg>
+      <h2>STEM Center Card Prompt Builder</h2>
+    </div>
+    <p class="helper">Build one strong sentence for the AI in Adobe Express to generate an image of your character. Click the purple words to choose options. </p>
+
+    <div class="builder" id="builder">
+      <span>Create a colorful full-body action portrait of </span>
+      <input id="age" class="inline-input" value="a 5th grade student" aria-label="age or grade">
+      <span> in a makerspace, </span>
+
+      <span class="token" data-group="action">
+        <button type="button" class="token-btn">building a robot</button>
+        <div class="menu"><div class="options"></div></div>
+      </span><span class="punct">. The student has </span>
+
+      <span class="token" data-group="skin">
+        <button type="button" class="token-btn">brown skin</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span><span class="punct">, </span>
+
+      <span class="token" data-group="eyes">
+        <button type="button" class="token-btn">brown eyes</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span><span class="punct">, and </span>
+
+      <span class="token" data-group="hairColor">
+        <button type="button" class="token-btn">black</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span>
+      <input id="hairStyle" class="inline-small" placeholder="describe hair here" aria-label="describe hair here"><span>.</span>
+
+      <span> </span>
+
+      <span class="token" data-group="pronouns">
+        <button type="button" class="token-btn">They are</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span>
+
+      <span> wearing a </span>
+
+      <span class="token" data-group="shirtColor">
+        <button type="button" class="token-btn">blue</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span>
+
+      <span> </span>
+      <input id="shirtStyle" class="inline-small" placeholder="describe shirt here" aria-label="describe shirt here">
+      <span> and </span>
+
+      <span class="token" data-group="pantColor">
+        <button type="button" class="token-btn">blue</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span>
+
+      <span> </span>
+      <input id="pantStyle" class="inline-small" placeholder="describe pants here" aria-label="describe pants here"><span>, and </span>
+
+      <span class="token" data-group="details">
+        <button type="button" class="token-btn">glasses and a charm necklace</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span><span class="punct">. Some adjectives to describe </span>
+      <span id="pronounObjectText">them</span>
+      <span> are </span>
+
+      <input id="adjectives" class="inline-input" value="nerdy and confident" aria-label="adjectives"><span>. Art style: </span>
+
+      <span class="token" data-group="artStyle">
+        <button type="button" class="token-btn">bold friendly cartoon</button>
+        <div class="menu">  <div class="options"></div></div>
+      </span><span class="punct">.</span>
+    </div>
+
+    <div class="actions">
+      <!-- <button class="copy-btn" type="button" onclick="copyPrompt()">Copy Prompt</button> -->
+      <button class="copy-btn" type="button" onclick="showPromptCard()">Done</button>
+      <span class="validation-msg" id="validationMsg"></span>
+      <div class="actions-right">
+        <button class="icon-btn" id="undoBtn" type="button" onclick="doUndo()" title="Undo" disabled>↩</button>
+        <button class="icon-btn" id="redoBtn" type="button" onclick="doRedo()" title="Redo" disabled>↪</button>
+        <button class="action-btn" type="button" onclick="doReset()">Reset All</button>
+        <!-- shuffle button currently hidden feature (useful for dev but not student user) -->
+        <!-- <button class="action-btn" type="button" onclick="doShuffle()">⇄ Shuffle</button> -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 1: Highlight & Copy -->
+  <div class="card stage-card" id="step1Card">
+    <div class="step-heading"><div class="step-circle">1</div><h2>Highlight &amp; Copy</h2></div>
+    <p class="step-instruction">Click inside the box below, then <strong>highlight all the text</strong></br>Click and drag across it, or press command <span class="kbd-combo"><kbd>⌘</kbd> + <kbd>A</kbd></span> to select all at once.</br>Once it's highlighted, press command <span class="kbd-combo"><kbd>⌘</kbd> + <kbd>C</kbd></span> to copy.</p>
+    <textarea class="prompt-textarea" id="promptTextarea" spellcheck="false"></textarea>
+    <div class="card-actions">
+      <button class="back-btn" type="button" onclick="switchCard('step1Card','builderCard',300)">← Back</button>
+      <button class="next-btn" type="button" onclick="switchCard('step1Card','step2Card',300)">Next →</button>
+      <span class="copy-status">
+        <span class="copy-check" id="copyCheck">✓ Copied!</span>
+        <span class="copy-error" id="copyError">Nothing copied. Select the text first, then copy.</span>
+        <span class="copy-error" id="copyPartial">Make sure to copy all of the text!</span>
+        <span class="copy-error" id="copyNotFocused">Select the text first, then copy.</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Step 2: Paste & Edit -->
+  <div class="card stage-card" id="step2Card">
+    <div class="step-heading"><div class="step-circle">2</div><h2>Paste &amp; Edit</h2></div>
+    <p class="step-instruction">Click in the box below.</br>Press command <span class="kbd-combo"><kbd>⌘</kbd> + <kbd>V</kbd></span> to paste your prompt.</br><em>You can also edit the text here before using it. Just remember to copy your final text again!</em></p>
+    <textarea class="practice-textarea" id="practiceTextarea" placeholder="Paste your prompt here…"></textarea>
+    <div class="card-actions">
+      <button class="back-btn" type="button" onclick="switchCard('step2Card','step1Card',300)">← Back</button>
+      <span class="copy-status">
+        <span class="copy-check" id="copyCheck2">✓ Copied!</span>
+        <span class="copy-error" id="copyError2">Nothing copied. Select the text first, then copy.</span>
+        <span class="copy-error" id="copyPartial2">Make sure to copy all of the text!</span>
+        <span class="copy-error" id="copyNotFocused2">Select the text first, then copy.</span>
+      </span>
+    </div>
+  </div>
+</div>
+
+<script id="options-data" type="application/json">
+{
+  "action": [
+    "building a robot",
+    "coding a game",
+    "testing a circuit",
+    "analyzing a blueprint",
+    "performing a chemistry experiment",
+    "watching a 3D printer",
+    "flying a paper airplane",
+    "building with tools"
+  ],
+  "project": [
+    "putting pieces together",
+    "carefully testing their project",
+    "presenting scientific charts",
+    "painting on a canvas"
+  ],
+  "skin": [
+    "light",
+    "fair",
+    "peachy",
+    "golden",
+    "tan",
+    "olive",
+    "brown",
+    "deep brown",
+    "rich dark",
+    "freckled"
+  ],
+  "eyes": [
+    "brown",
+    "dark brown",
+    "green",
+    "blue",
+    "hazel",
+    "gray"
+  ],
+  "hairColor": [
+    "black",
+    "brown",
+    "blonde",
+    "red",
+    "pink",
+    "blue",
+    "purple"
+  ],
+  "pronouns": [
+    {"value":"they","label":"They are"},
+    {"value":"she","label":"She is"},
+    {"value":"he","label":"He is"},
+    {"value":"student","label":"The student is"}
+  ],
+  "shirtColor": [
+    "black",
+    "blue",
+    "red",
+    "green",
+    "purple",
+    "pink",
+    "white"
+  ],
+  "pantColor": [
+    "black",
+    "blue",
+    "green",
+    "gray",
+    "white",
+    "brown",
+    "purple"
+  ],
+  "tools": [
+    "tools",
+    "robot parts",
+    "a drone controller",
+    "maker tools",
+    "paintbrushes",
+    "a laptop",
+    "project materials",
+    "circuit pieces"
+  ],
+  "details": [
+    "glasses",
+    "headphones",
+    "a necklace",
+    "bracelets",
+    "earrings",
+    "a hat",
+    "a scarf",
+    "a headscarf",
+    "a hearing aid",
+    "a fidget spinner"
+  ],
+  "artStyle": [
+    "bold friendly cartoon",
+    "cute cartoon with bold lines",
+    "comic book",
+    "anime",
+    "storybook illustration",
+    "video game pixel art",
+    "Saturday morning cartoon"
+  ]
+}
+</script>
+
+<script>
+const OPTIONS = JSON.parse(document.getElementById('options-data').textContent);
+
+// Auto-resize inline text inputs to fit their content
+const _sizer = document.createElement('span');
+_sizer.className = 'inline-sizer';
+document.body.appendChild(_sizer);
+
+function resizeInput(input){
+  const cs = window.getComputedStyle(input);
+  _sizer.style.fontSize   = cs.fontSize;
+  _sizer.style.fontFamily = cs.fontFamily;
+  _sizer.style.fontWeight = cs.fontWeight;
+  _sizer.style.letterSpacing = cs.letterSpacing;
+  _sizer.style.padding = '0';
+  const text = input.value || input.placeholder || '';
+  _sizer.textContent = text;
+  const textW = _sizer.offsetWidth;
+  const padH = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+  const minW = 20;
+  const total = Math.max(minW, textW + padH + 2);
+  input.style.width = (cs.boxSizing === 'border-box' ? total : total - padH) + 'px';
+}
+
+function initInlineInputs(){
+  document.querySelectorAll('.inline-input, .inline-small').forEach(input=>{
+    resizeInput(input);
+    input.addEventListener('focus', ()=>{ input._undoPushed=false; input._undoSnap=captureSnapshot(); });
+    input.addEventListener('input', ()=>{
+      if(!input._undoPushed){ undoStack.push(input._undoSnap); redoStack.length=0; input._undoPushed=true; updateUndoRedoButtons(); }
+      resizeInput(input);
+      if(input.value.trim()) input.classList.remove('inline-missing');
+      saveState();
+    });
+  });
+}
+
+// color chips + details support multi-select
+const MULTI_SELECT = ['action', 'details', 'hairColor', 'shirtColor', 'pantColor', 'eyes', 'skin'];
+const selections = {};
+const customValues = {};   // { group: { '__custom_0__': 'text', ... } }
+const customIdCounter = {}; // { group: number }
+
+const CACHE_KEY = 'stemCardState';
+let currentCard = 'builderCard';
+
+// ── Undo / Redo ──────────────────────────────────────────────────────────────
+const undoStack = [];
+const redoStack = [];
+
+function captureSnapshot(){
+  return {
+    selections:     JSON.parse(JSON.stringify(selections)),
+    customValues:   JSON.parse(JSON.stringify(customValues)),
+    customIdCounter:JSON.parse(JSON.stringify(customIdCounter)),
+    inputs:{
+      age:        (document.getElementById('age')       ||{}).value||'',
+      hairStyle:  (document.getElementById('hairStyle') ||{}).value||'',
+      shirtStyle: (document.getElementById('shirtStyle')||{}).value||'',
+      pantStyle:  (document.getElementById('pantStyle') ||{}).value||'',
+      adjectives: (document.getElementById('adjectives')||{}).value||'',
+    }
+  };
+}
+
+function updateUndoRedoButtons(){
+  const u = document.getElementById('undoBtn');
+  const r = document.getElementById('redoBtn');
+  if(u) u.disabled = undoStack.length === 0;
+  if(r) r.disabled = redoStack.length === 0;
+}
+
+function pushUndo(snap){
+  undoStack.push(snap !== undefined ? snap : captureSnapshot());
+  redoStack.length = 0;
+  updateUndoRedoButtons();
+}
+
+function applySnapshot(snap){
+  Object.keys(selections).forEach(k=>delete selections[k]);
+  Object.keys(customValues).forEach(k=>delete customValues[k]);
+  Object.keys(customIdCounter).forEach(k=>delete customIdCounter[k]);
+  Object.assign(selections,     JSON.parse(JSON.stringify(snap.selections)));
+  Object.assign(customValues,   JSON.parse(JSON.stringify(snap.customValues)));
+  Object.assign(customIdCounter,JSON.parse(JSON.stringify(snap.customIdCounter)));
+  populateOptions();
+  Object.keys(selections).forEach(group=>{
+    refreshOptionButtons(group);
+    updateButton(group);
+  });
+  refreshPronounButtons();
+  ['age','hairStyle','shirtStyle','pantStyle','adjectives'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.value = snap.inputs[id]||''; resizeInput(el); }
+  });
+  saveState();
+}
+
+function doUndo(){
+  if(!undoStack.length) return;
+  redoStack.push(captureSnapshot());
+  applySnapshot(undoStack.pop());
+  updateUndoRedoButtons();
+}
+
+function doRedo(){
+  if(!redoStack.length) return;
+  undoStack.push(captureSnapshot());
+  applySnapshot(redoStack.pop());
+  updateUndoRedoButtons();
+}
+
+// ── Reset ────────────────────────────────────────────────────────────────────
+function doReset(){
+  pushUndo(captureSnapshot());
+  Object.keys(selections).forEach(k=>delete selections[k]);
+  Object.keys(customValues).forEach(k=>delete customValues[k]);
+  Object.keys(customIdCounter).forEach(k=>delete customIdCounter[k]);
+  Object.entries(DEFAULTS).forEach(([group,val])=>{
+    selections[group] = Array.isArray(val) ? val.slice() : val;
+  });
+  populateOptions();
+  Object.keys(selections).forEach(group=>{
+    refreshOptionButtons(group);
+    updateButton(group);
+  });
+  refreshPronounButtons();
+  const defaultInputs = {age:'a 5th grade student',hairStyle:'',shirtStyle:'',pantStyle:'',adjectives:'nerdy and confident'};
+  ['age','hairStyle','shirtStyle','pantStyle','adjectives'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.value = defaultInputs[id]; resizeInput(el); }
+  });
+  try{ localStorage.removeItem(CACHE_KEY); }catch(e){}
+  updateUndoRedoButtons();
+}
+
+// ── Shuffle ──────────────────────────────────────────────────────────────────
+const SHUFFLE_INPUTS = {
+  age:        ['a 3rd grade student','a 4th grade student','a 5th grade student','a 6th grade student','a 7th grade student','a middle school student','a high school student'],
+  hairStyle:  ['curly hair','straight hair','wavy hair','braided hair','short hair','afro','a ponytail','cornrows','locs','pigtails'],
+  shirtStyle: ['t-shirt','hoodie','button-up shirt','polo shirt','long-sleeve shirt','graphic tee','sweater'],
+  pantStyle:  ['jeans','sweatpants','shorts','khaki pants','leggings','cargo pants'],
+  adjectives: ['nerdy and confident','focused and curious','creative and excited','determined and happy','thoughtful and engaged','energetic and friendly','bold and imaginative']
+};
+
+function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+
+function doShuffle(){
+  pushUndo(captureSnapshot());
+  Object.keys(OPTIONS).forEach(group=>{
+    const pool = OPTIONS[group].map(item=>typeof item==='string'?item:item.value);
+    if(customValues[group]){
+      Object.entries(customValues[group]).forEach(([id,val])=>{
+        if(val && val.trim()) pool.push(id);
+      });
+    }
+    if(!pool.length) return;
+    if(isMulti(group)){
+      const count = Math.floor(Math.random()*3)+1;
+      const shuffled = pool.slice().sort(()=>Math.random()-.5);
+      selections[group] = shuffled.slice(0, Math.min(count, shuffled.length));
+    } else {
+      selections[group] = pickRandom(pool);
+    }
+  });
+  Object.keys(OPTIONS).forEach(group=>{
+    refreshOptionButtons(group);
+    updateButton(group);
+  });
+  refreshPronounButtons();
+  ['age','hairStyle','shirtStyle','pantStyle','adjectives'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.value = pickRandom(SHUFFLE_INPUTS[id]); resizeInput(el); }
+  });
+  saveState();
+  updateUndoRedoButtons();
+}
+
+function saveState(){
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      selections,
+      customValues,
+      customIdCounter,
+      currentCard,
+      inputs: {
+        age:        (document.getElementById('age')       ||{}).value||'',
+        hairStyle:  (document.getElementById('hairStyle') ||{}).value||'',
+        shirtStyle: (document.getElementById('shirtStyle')||{}).value||'',
+        pantStyle:  (document.getElementById('pantStyle') ||{}).value||'',
+        adjectives: (document.getElementById('adjectives')||{}).value||'',
+      }
+    }));
+  } catch(e){}
+}
+
+function loadState(){
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)); } catch(e){ return null; }
+}
+
+function isCustomId(id){ return typeof id==='string' && id.startsWith('__custom_'); }
+function nextCustomId(group){
+  if(!customIdCounter[group]) customIdCounter[group]=0;
+  return `__custom_${customIdCounter[group]++}__`;
+}
+
+const DEFAULTS = {
+  pronouns: 'they',
+  action: ['building a robot'],
+  project: 'putting pieces together',
+  skin: ['brown'],
+  eyes: ['brown'],
+  hairColor: ['black'],
+  shirtColor: ['blue'],
+  pantColor: ['blue'],
+  tools: 'tools',
+  details: ['glasses', 'a charm necklace'],
+  artStyle: 'anime'
+};
+
+function isMulti(group){ return MULTI_SELECT.includes(group); }
+
+function getSelection(group){
+  const val = selections[group];
+  if(isMulti(group)){
+    if(val === undefined) return [];
+    if(Array.isArray(val)) return val;
+    return val ? [val] : []; // migrate old single-string saved state
+  }
+  return val !== undefined ? val : null;
+}
+
+function setSelection(group, value){
+  pushUndo(captureSnapshot());
+  if(isMulti(group)){
+    let arr = getSelection(group).slice();
+    const idx = arr.indexOf(value);
+    if(idx >= 0){ arr.splice(idx, 1); } else { arr.push(value); }
+    selections[group] = arr;
+  } else {
+    selections[group] = value;
+  }
+  saveState();
+}
+
+function isSelected(group, value){
+  if(isMulti(group)){ return getSelection(group).includes(value); }
+  return getSelection(group) === value;
+}
+
+function closeAllMenus(except=null){
+  document.querySelectorAll('.menu').forEach(menu=>{
+    if(menu!==except) menu.classList.remove('open');
+  });
+}
+
+function joinList(items){
+  if(items.length===0) return '';
+  if(items.length===1) return items[0];
+  if(items.length===2) return items[0] + ' and ' + items[1];
+  return items.slice(0,-1).join(', ') + ', and ' + items[items.length-1];
+}
+
+function getPronounForms(){
+  const choice = getSelection('pronouns') || 'they';
+  const map = {
+    they:{be:'They are', object:'them'},
+    she:{be:'She is', object:'her'},
+    he:{be:'He is', object:'him'},
+    student:{be:'The student is', object:'the student'}
+  };
+  return map[choice] || map.they;
+}
+
+function getLabel(group){
+  const sel = getSelection(group);
+  const defaults = {
+    action:'building a robot',
+    project:'putting pieces together',
+    skin:'brown skin',
+    eyes:'brown eyes',
+    hairColor:'black',
+    shirtColor:'blue',
+    pantColor:'blue',
+    tools:'tools and robot parts',
+    details:'glasses and a charm necklace',
+    artStyle:'bold friendly cartoon'
+  };
+  if(group==='pronouns') return getPronounForms().be;
+  if(group==='pronounObject') return getPronounForms().object;
+  if(isMulti(group)){
+    const arr = Array.isArray(sel) ? sel : (sel ? [sel] : []);
+    const resolved = arr.map(v => isCustomId(v) ? ((customValues[group]||{})[v]||'') : v).filter(Boolean);
+    if(!resolved.length) return defaults[group];
+    const joined = joinList(resolved);
+    if(group==='skin') return joined + ' skin';
+    if(group==='eyes') return joined + ' eyes';
+    return joined;
+  }
+  if(isCustomId(sel)){
+    const txt = ((customValues[group]||{})[sel])||'';
+    if(!txt) return defaults[group]||'';
+    if(group==='skin') return txt+' skin';
+    if(group==='eyes') return txt+' eyes';
+    return txt;
+  }
+  if(!sel) return defaults[group] || '';
+  if(group==='skin') return sel + ' skin';
+  if(group==='eyes') return sel + ' eyes';
+  return sel;
+}
+
+function updateButton(group){
+  const btn = document.querySelector(`.token[data-group="${group}"] .token-btn`);
+  if(btn) btn.textContent = getLabel(group);
+}
+
+function refreshPronounButtons(){
+  updateButton('pronouns');
+  const objSpan = document.getElementById('pronounObjectText');
+  if(objSpan) objSpan.textContent = getPronounForms().object;
+}
+
+function refreshOptionButtons(group){
+  const token = document.querySelector(`.token[data-group="${group}"]`);
+  if(!token) return;
+  token.querySelectorAll('.option-btn').forEach(btn=>{
+    btn.classList.toggle('selected', isSelected(group, btn.dataset.value));
+  });
+  token.querySelectorAll('.write-own-wrap').forEach(wrap=>{
+    const id = wrap.dataset.customId;
+    wrap.classList.toggle('selected', isSelected(group, id));
+  });
+}
+
+function makeWriteOwnEntry(group, id){
+  const wrap = document.createElement('div');
+  wrap.className = 'write-own-wrap';
+  wrap.dataset.customId = id;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'write-own-input';
+  input.placeholder = 'Write your own…';
+
+  const plus = document.createElement('button');
+  plus.type = 'button';
+  plus.className = 'write-own-plus';
+  plus.textContent = '+';
+
+  wrap.appendChild(input);
+  wrap.appendChild(plus);
+
+  input.addEventListener('click', e=>e.stopPropagation());
+  input.addEventListener('focus', ()=>{ input._undoPushed=false; input._undoSnap=captureSnapshot(); });
+
+  input.addEventListener('input', ()=>{
+    if(!input._undoPushed){ undoStack.push(input._undoSnap); redoStack.length=0; input._undoPushed=true; updateUndoRedoButtons(); }
+    const val = input.value.trim();
+    customValues[group][id] = val;
+    wrap.classList.toggle('has-value', !!val);
+    if(val){
+      if(isMulti(group)){
+        let arr = getSelection(group).slice();
+        if(!arr.includes(id)) arr.push(id);
+        selections[group] = arr;
+      } else {
+        selections[group] = id;
+      }
+    } else {
+      if(isMulti(group)){
+        let arr = getSelection(group).slice();
+        const idx = arr.indexOf(id);
+        if(idx>=0) arr.splice(idx,1);
+        selections[group] = arr;
+      } else {
+        if(selections[group]===id) delete selections[group];
+      }
+    }
+    refreshOptionButtons(group);
+    updateButton(group);
+    refreshPronounButtons();
+    saveState();
+  });
+
+  input.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.stopPropagation(); if(!isMulti(group)) closeAllMenus(); }
+  });
+
+  plus.addEventListener('click', e=>{
+    e.stopPropagation();
+    const newId = nextCustomId(group);
+    customValues[group][newId] = '';
+    const newEntry = makeWriteOwnEntry(group, newId);
+    wrap.after(newEntry);
+    newEntry.querySelector('.write-own-input').focus();
+  });
+
+  return wrap;
+}
+
+function populateOptions(){
+  Object.entries(OPTIONS).forEach(([group, values])=>{
+    const token = document.querySelector(`.token[data-group="${group}"]`);
+    if(!token) return;
+    const container = token.querySelector('.options');
+    if(!container) return;
+    container.innerHTML = '';
+
+    values.forEach(item=>{
+      const value = typeof item === 'string' ? item : item.value;
+      const labelText = typeof item === 'string' ? item : item.label;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'option-btn';
+      btn.dataset.value = value;
+      btn.textContent = labelText;
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        setSelection(group, value);
+        refreshOptionButtons(group);
+        updateButton(group);
+        refreshPronounButtons();
+        // single-select closes on pick; multi-select (details) stays open
+        if(!isMulti(group)){
+          closeAllMenus();
+        }
+      });
+      container.appendChild(btn);
+    });
+
+    // "Write your own" — skip pronouns (conjugation is too complex)
+    if(group !== 'pronouns'){
+      if(!customValues[group]) customValues[group] = {};
+      // Restore any saved custom entries
+      Object.entries(customValues[group]).forEach(([id, val])=>{
+        const wrap = makeWriteOwnEntry(group, id);
+        if(val){
+          wrap.querySelector('.write-own-input').value = val;
+          wrap.classList.add('has-value');
+        }
+        container.appendChild(wrap);
+      });
+      // Blank entry for new input
+      container.appendChild(makeWriteOwnEntry(group, nextCustomId(group)));
+    }
+  });
+}
+
+function wireMenus(){
+  document.querySelectorAll('.token').forEach(token=>{
+    const btn = token.querySelector('.token-btn');
+    const menu = token.querySelector('.menu');
+    const closeBtn = token.querySelector('.close-btn');
+
+    if(btn && menu){
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const willOpen = !menu.classList.contains('open');
+        closeAllMenus(willOpen ? menu : null);
+        menu.classList.toggle('open', willOpen);
+        menu.classList.toggle('above', willOpen && window.innerHeight < 900);
+      });
+    }
+
+    if(menu){
+      menu.addEventListener('click', (e)=>{ e.stopPropagation(); });
+    }
+
+    if(closeBtn){
+      closeBtn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        menu.classList.remove('open');
+      });
+    }
+  });
+}
+
+document.addEventListener('click', ()=>closeAllMenus());
+
+// Load saved state before populating menus so custom entries are rebuilt
+const _saved = loadState();
+if(_saved){
+  if(_saved.customValues)    Object.assign(customValues, _saved.customValues);
+  if(_saved.customIdCounter) Object.assign(customIdCounter, _saved.customIdCounter);
+}
+
+populateOptions();
+wireMenus();
+
+// Apply defaults, then overlay with saved selections
+Object.entries(DEFAULTS).forEach(([group, val])=>{
+  selections[group] = Array.isArray(val) ? val.slice() : val;
+});
+if(_saved && _saved.selections) Object.assign(selections, _saved.selections);
+Object.keys(selections).forEach(group=>{
+  refreshOptionButtons(group);
+  updateButton(group);
+});
+refreshPronounButtons();
+initInlineInputs();
+document.getElementById('promptTextarea').addEventListener('input', function(){ autoResize(this); });
+document.getElementById('promptTextarea').addEventListener('copy', function(){
+  const selected = this.value.substring(this.selectionStart, this.selectionEnd);
+  const allCopied = selected === this.value;
+  const noneCopied = selected.length === 0;
+  document.getElementById('copyCheck').style.opacity      = allCopied  ? '1' : '0';
+  document.getElementById('copyError').style.opacity      = noneCopied ? '1' : '0';
+  document.getElementById('copyPartial').style.opacity    = (!allCopied && !noneCopied) ? '1' : '0';
+  document.getElementById('copyNotFocused').style.opacity = '0';
+});
+document.getElementById('promptTextarea').addEventListener('focus', function(){
+  document.getElementById('copyNotFocused').style.opacity = '0';
+});
+document.getElementById('practiceTextarea').addEventListener('copy', function(){
+  const selected = this.value.substring(this.selectionStart, this.selectionEnd);
+  const allCopied = selected === this.value;
+  const noneCopied = selected.length === 0;
+  document.getElementById('copyCheck2').style.opacity      = allCopied  ? '1' : '0';
+  document.getElementById('copyError2').style.opacity      = noneCopied ? '1' : '0';
+  document.getElementById('copyPartial2').style.opacity    = (!allCopied && !noneCopied) ? '1' : '0';
+  document.getElementById('copyNotFocused2').style.opacity = '0';
+});
+document.getElementById('practiceTextarea').addEventListener('focus', function(){
+  document.getElementById('copyNotFocused2').style.opacity = '0';
+});
+document.addEventListener('keydown', function(e){
+  if(!(e.metaKey || e.ctrlKey) || e.key !== 'c') return;
+  const active = document.activeElement;
+  if(getComputedStyle(document.getElementById('step1Card')).display !== 'none'){
+    if(active !== document.getElementById('promptTextarea')){
+      document.getElementById('copyNotFocused').style.opacity = '1';
+    }
+  } else if(getComputedStyle(document.getElementById('step2Card')).display !== 'none'){
+    if(active !== document.getElementById('practiceTextarea')){
+      document.getElementById('copyNotFocused2').style.opacity = '1';
+    }
+  }
+});
+
+// Restore saved text input values
+if(_saved && _saved.inputs){
+  ['age','hairStyle','shirtStyle','pantStyle','adjectives'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && _saved.inputs[id]) { el.value = _saved.inputs[id]; resizeInput(el); }
+  });
+}
+
+// Restore saved step
+if(_saved && _saved.currentCard && _saved.currentCard !== 'builderCard'){
+  const stepCard = document.getElementById(_saved.currentCard);
+  if(stepCard){
+    document.getElementById('builderCard').style.display = 'none';
+    currentCard = _saved.currentCard;
+    if(_saved.currentCard === 'step1Card'){
+      const ta = document.getElementById('promptTextarea');
+      ta.value = buildPrompt();
+      requestAnimationFrame(()=>{ autoResize(ta); });
+    }
+    stepCard.style.display = 'block';
+  }
+}
+
+function textInputValue(id, fallback=''){
+  const el = document.getElementById(id);
+  if(!el) return fallback;
+  return el.value.trim() || fallback;
+}
+
+function buildPrompt(){
+  const age        = textInputValue('age', 'a 5th grade student');
+  const action     = getLabel('action');
+  const project    = getLabel('project');
+  const skin       = getLabel('skin');
+  const eyes       = getLabel('eyes');
+  const hairColor  = getLabel('hairColor');
+  const hairStyle  = textInputValue('hairStyle', 'hair');
+  const pronounBe  = getLabel('pronouns');
+  const shirtColor = getLabel('shirtColor');
+  const shirtStyle = textInputValue('shirtStyle', 'hoodie');
+  const pantColor  = getLabel('pantColor');
+  const pantStyle  = textInputValue('pantStyle', 'jeans');
+  const details    = getLabel('details');
+  const pronounObj = getLabel('pronounObject');
+  const adjectives = textInputValue('adjectives', 'nerdy and confident');
+  const artStyle   = getLabel('artStyle');
+
+  return `Create a colorful full-body action portrait of ${age} in a makerspace, ${action}. The student has ${skin}, ${eyes}, and ${hairColor} ${hairStyle}. ${pronounBe} wearing a ${shirtColor} ${shirtStyle} and ${pantColor} ${pantStyle}, and ${details}. Some adjectives to describe ${pronounObj} are ${adjectives}. Art style: ${artStyle}.`;
+}
+
+function autoResize(el){
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+// Card switcher — fadeInMs controls how long the incoming card fades in
+function switchCard(fromId, toId, fadeInMs){
+  const from = document.getElementById(fromId);
+  const to   = document.getElementById(toId);
+
+  // Fade out current card
+  from.style.transition = 'opacity 0.25s';
+  from.style.opacity = '0';
+
+  setTimeout(()=>{
+    from.style.display = 'none';
+    from.style.opacity = '';
+    from.style.transition = '';
+    currentCard = toId;
+    saveState();
+
+    // Populate/clear content now that card is about to be display:block
+    if(toId === 'step1Card'){
+      const ta = document.getElementById('promptTextarea');
+      ta.value = buildPrompt();
+      document.getElementById('copyCheck').style.opacity   = '0';
+      document.getElementById('copyError').style.opacity   = '0';
+      document.getElementById('copyPartial').style.opacity = '0';
+    }
+    if(toId === 'step2Card'){
+      document.getElementById('practiceTextarea').value = '';
+      document.getElementById('copyCheck2').style.opacity   = '0';
+      document.getElementById('copyError2').style.opacity   = '0';
+      document.getElementById('copyPartial2').style.opacity = '0';
+    }
+
+    to.style.opacity = '0';
+    to.style.display = 'block';
+
+    // autoResize after display:block so scrollHeight is accurate
+    if(toId === 'step1Card'){
+      autoResize(document.getElementById('promptTextarea'));
+    }
+
+    // Double rAF ensures display:block is painted before transition starts
+    requestAnimationFrame(()=>{
+      requestAnimationFrame(()=>{
+        to.style.transition = `opacity ${fadeInMs}ms ease-in`;
+        to.style.opacity = '1';
+        setTimeout(()=>{ to.style.transition = ''; }, fadeInMs);
+
+        // Focus the right textarea after card is visible
+        const focusId = toId === 'step1Card' ? 'promptTextarea'
+                      : toId === 'step2Card' ? 'practiceTextarea'
+                      : null;
+        if(focusId){
+          setTimeout(()=>{
+            const el = document.getElementById(focusId);
+            el.focus();
+            el.setSelectionRange(0,0);
+          }, 80);
+        }
+      });
+    });
+  }, 250);
+}
+
+function animateKbdCombos(){
+  document.querySelectorAll('.kbd-combo').forEach(combo=>{
+    const keys = combo.querySelectorAll('kbd');
+    const cmdKey = keys[0];
+    const letterKey = keys[1];
+    const run = ()=>{
+      cmdKey.classList.add('key-pressed');
+      setTimeout(()=>{ letterKey.classList.add('key-pressed'); }, 400);
+      setTimeout(()=>{ letterKey.classList.remove('key-pressed'); }, 700);
+      setTimeout(()=>{ cmdKey.classList.remove('key-pressed'); }, 1000);
+    };
+    run();
+    setInterval(run, 4000);
+  });
+}
+animateKbdCombos();
+
+function showPromptCard(){
+  const required = [
+    { id: 'age',        label: 'student description' },
+    { id: 'hairStyle',  label: 'hair description' },
+    { id: 'shirtStyle', label: 'shirt description' },
+    { id: 'pantStyle',  label: 'pants description' },
+  ];
+
+  // Clear previous error state, re-trigger shake animation if still empty
+  required.forEach(f => {
+    const el = document.getElementById(f.id);
+    el.classList.remove('inline-missing');
+    void el.offsetWidth; // force reflow so animation re-fires
+  });
+
+  const missing = required.filter(f => !document.getElementById(f.id).value.trim());
+
+  if(missing.length > 0){
+    missing.forEach(f => document.getElementById(f.id).classList.add('inline-missing'));
+    const msg = document.getElementById('validationMsg');
+    const labels = missing.map(f => f.label);
+    msg.textContent = `Please fill in the ${labels.join(', ')} before moving on.`;
+    msg.style.display = 'inline';
+    document.getElementById(missing[0].id).focus();
+    return;
+  }
+
+  document.getElementById('validationMsg').style.display = 'none';
+  switchCard('builderCard', 'step1Card', 300);
+}
+
+</script>
+</body>
+</html>
