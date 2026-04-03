@@ -68,7 +68,7 @@
       <input id="pantStyle" class="inline-small" placeholder="describe pants here" aria-label="describe pants here" spellcheck="true"><span>, and </span>
 
       <span class="token" data-group="details">
-        <button type="button" class="token-btn">glasses and a charm necklace</button>
+        <button type="button" class="token-btn">glasses</button>
         <div class="menu">  <div class="options"></div></div>
       </span><span class="punct">. Some adjectives to describe </span>
       <span id="pronounObjectText">them</span>
@@ -466,7 +466,7 @@ const DEFAULTS = {
   shirtColor: ['blue'],
   pantColor: ['blue'],
   tools: 'tools',
-  details: ['glasses', 'a charm necklace'],
+  details: ['glasses'],
   artStyle: 'cartoon'
 };
 
@@ -535,7 +535,7 @@ function getLabel(group){
     shirtColor:'blue',
     pantColor:'blue',
     tools:'tools and robot parts',
-    details:'glasses and a charm necklace',
+    details:'glasses',
     artStyle:'cartoon'
   };
   if(group==='pronouns') return getPronounForms().be;
