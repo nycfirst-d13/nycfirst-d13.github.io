@@ -62,7 +62,7 @@ h2 {
    ============================================================ */
 .wrap {
   width: 100%;
-  padding: 24px;
+  padding: 0px;
 }
 
 #index-page .wrap {
@@ -77,10 +77,10 @@ h2 {
    Card
    ============================================================ */
 .card {
-  background: #f4f4f4;
+  /* removed background color for now for quick solve of inner div in back card display */
+  /* background: #f4f4f4; */
   padding: 24px;
   border-radius: 18px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.06);
 }
 
 #builder-page .card {
@@ -117,6 +117,195 @@ h2 {
   flex-shrink: 0;
 }
 
+.card-logos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.card-logos img {
+  height: clamp(36px, 6vw, 90px);
+  width: auto;
+  display: block;
+}
+
+/* ============================================================
+   Card flip animation
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0ede8;
+    }
+
+    /* Scene holds both cards, provides shared perspective */
+    .scene {
+      position: relative;
+      width: 720px;
+      height: 600px;
+      perspective: 1200px;
+      perspective-origin: 50% 45%;
+    }
+
+    /* ─── Shared card base ─── */
+    .card-front,
+    .card-back {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      border-radius: 28px;
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════
+       FRONT — portrait, starts flat
+    ══════════════════════════════ */
+    .card-front {
+      width: 390px;
+      height: 620px;
+      transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+      animation: frontOut 0.55s cubic-bezier(0.4, 0, 1, 1) 1.2s forwards;
+      background: #141428;
+      display: flex;
+      flex-direction: column;
+      box-shadow:
+        0 4px 10px  rgba(0,0,0,0.14),
+        0 20px 50px rgba(0,0,0,0.18);
+    }
+
+    @keyframes frontOut {
+      0% {
+        transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+        box-shadow: 0 4px 10px rgba(0,0,0,.14), 0 20px 50px rgba(0,0,0,.18);
+      }
+      /* peak of the arc — card tilts back and rolls slightly as it spins */
+      55% {
+        transform: translate(-50%, -50%) rotateX(-22deg) rotateY(70deg) rotateZ(6deg);
+        box-shadow: 0 40px 80px rgba(0,0,0,.28), 0 80px 120px rgba(0,0,0,.14);
+      }
+      100% {
+        transform: translate(-50%, -50%) rotateX(0deg) rotateY(90deg) rotateZ(0deg);
+        box-shadow: 0 0 0 rgba(0,0,0,0);
+      }
+    }
+
+    /* — photo area — */
+    .photo-area {
+      flex: 0 0 58%;
+      background: linear-gradient(160deg, #c1121f 0%, #780000 100%);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* curved bottom edge so it blends into the card body */
+    .photo-area::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 48px;
+      background: #141428;
+      border-radius: 60% 60% 0 0 / 100% 100% 0 0;
+    }
+
+    .avatar {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.25);
+      border: 5px solid rgba(255,255,255,0.18);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .avatar svg { width: 126px; height: 126px; }
+
+    /* — text info — */
+    .card-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 30px 30px;
+      gap: 8px;
+      text-align: center;
+    }
+
+    .c-name  { font-size: 26px; font-weight: 700; color: #fff; letter-spacing: -.3px; }
+    .c-role  { font-size: 13px; font-weight: 600; color: #c1121f; letter-spacing: 2px; text-transform: uppercase; }
+    .c-div   { width: 54px; height: 1px; background: #2a2a4a; margin: 9px auto; }
+    .c-id    { font-size: 12px; color: #44446a; letter-spacing: 2.5px; font-family: 'Courier New', monospace; }
+
+    /* ══════════════════════════════
+       BACK — landscape, starts edge-on
+    ══════════════════════════════ */
+    .card-back {
+      width: 620px;
+      height: 390px;
+      transform: translate(-50%, -50%) rotateX(0deg) rotateY(90deg) rotateZ(0deg);
+      animation: backIn 0.55s cubic-bezier(0, 0, 0.3, 1) 1.75s forwards;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow:
+        0 4px 10px  rgba(0,0,0,0.14),
+        0 20px 50px rgba(0,0,0,0.18);
+    }
+
+    @keyframes backIn {
+      0% {
+        transform: translate(-50%, -50%) rotateX(0deg) rotateY(90deg) rotateZ(0deg);
+        box-shadow: 0 0 0 rgba(0,0,0,0);
+      }
+      /* matching biaxial arc — card tilts back and rolls as it opens toward viewer */
+      45% {
+        transform: translate(-50%, -50%) rotateX(-22deg) rotateY(20deg) rotateZ(-6deg);
+        box-shadow: 0 40px 80px rgba(0,0,0,.28), 0 80px 120px rgba(0,0,0,.14);
+      }
+      100% {
+        transform: translate(-50%, -50%) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+        box-shadow: 0 4px 10px rgba(0,0,0,.14), 0 20px 50px rgba(0,0,0,.18);
+      }
+    }
+
+    /* — welcome textbox — */
+    .welcome-box {
+      border: 2px solid #e4e4ec;
+      border-radius: 20px;
+      padding: 33px 84px;
+      background: #fafafa;
+      opacity: 0;
+      animation: boxAppear 0.35s ease 2.4s forwards;
+    }
+
+    .welcome-text {
+      font-size: 78px;
+      font-weight: 800;
+      letter-spacing: -3.5px;
+      background: linear-gradient(120deg, #c1121f 0%, #f4a261 55%, #e9c46a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      display: block;
+      line-height: 1;
+    }
+
+    @keyframes boxAppear {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+
 /* ============================================================
    Helper text
    ============================================================ */
@@ -150,16 +339,6 @@ h2 {
 .link-list a:hover {
   color: var(--primary-hover);
   text-decoration: underline;
-}
-
-/* ============================================================
-   Sky background (card-prompt-builder.html)
-   ============================================================ */
-.sky {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  z-index: 0;
 }
 
 /* ============================================================
