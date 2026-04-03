@@ -1,3 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+
+
 /* ============================================================
    Variables
    ============================================================ */
@@ -39,7 +42,11 @@
    Base
    ============================================================ */
 body {
-  font-family: Arial, sans-serif;
+  /* font-family: Arial, sans-serif; */
+  font-family: "Inter", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+
   margin: 0;
   background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
   color: var(--text-primary);
@@ -140,7 +147,7 @@ h2 {
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #f0ede8;
+      /* background: #f0ede8; */
     }
 
     /* Scene holds both cards, provides shared perspective */
@@ -630,7 +637,7 @@ h2 {
   color: var(--text-primary);
   border-radius: 999px;
   padding: 10px 16px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   transition: background .12s;
@@ -692,10 +699,10 @@ kbd {
   background: var(--surface-light);
   border: 1px solid var(--border-medium);
   border-radius: 6px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   font-size: 14px;
-  font-family: Arial, sans-serif;
-  font-weight: 700;
+  font-family: Inter, sans-serif;
+  font-weight: 500;
   color: var(--text-primary);
   transition: background .2s, border-color .2s;
 }
@@ -720,7 +727,7 @@ kbd.key-pressed {
   padding: 16px;
   font-size: 17px;
   line-height: 1.7;
-  font-family: Arial, sans-serif;
+  /* font-family: Arial, sans-serif; */
   color: var(--text-primary);
   background: var(--surface-faint);
   resize: none;
@@ -742,7 +749,7 @@ kbd.key-pressed {
   padding: 16px;
   font-size: 17px;
   line-height: 1.7;
-  font-family: Arial, sans-serif;
+  /* font-family: Arial, sans-serif; */
   color: var(--text-primary);
   background: #ebebeb;
   resize: none;
@@ -833,10 +840,78 @@ kbd.key-pressed {
 }
 
 .validation-msg {
-  display: none;
   font-size: 14px;
   font-weight: 600;
   color: var(--error);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.validation-msg.visible {
+  opacity: 1;
+}
+
+/* ============================================================
+   Reset confirmation inline
+   ============================================================ */
+#resetAllBtn {
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 150px;
+  transition: opacity 0.12s ease, max-width 0.18s ease, padding-left 0.18s ease, padding-right 0.18s ease;
+}
+
+#resetAllBtn.hiding {
+  opacity: 0;
+  max-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.reset-confirm {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  overflow: hidden;
+  max-width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease 0.1s, max-width 0.18s ease;
+}
+
+.reset-confirm.showing {
+  max-width: 220px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s;
+}
+
+.modal-btn-yes {
+  background: #ed1c24;
+  color: #fff;
+}
+
+.modal-btn-yes:hover {
+  background: #c8151c;
+}
+
+.modal-btn-no {
+  background: var(--surface-light);
+  color: var(--text-primary);
+}
+
+.modal-btn-no:hover {
+  background: var(--surface-hover);
 }
 
 @media (max-width: 700px) {

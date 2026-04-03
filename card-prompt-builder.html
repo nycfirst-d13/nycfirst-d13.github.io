@@ -11,13 +11,13 @@
   <div class="card" id="builderCard">
     <div class="card-header">
       <img class="card-logo" src="logo.svg" alt="NYC FIRST D13 STEM Center logo" aria-hidden="true">
-      <h2>STEM Center Card Prompt Builder</h2>
+      <h2>STEM Card</br>Prompt Builder</h2>
     </div>
-    <p class="helper">Build one strong sentence for the AI in Adobe Express to generate an image of your character. Fill in the blank and click the blue words to choose options. </p>
+    <p class="helper">Build a strong prompt for the AI that you can use to generate an image in your character.</br>Fill in the blank and click the blue words to choose options. Read it all through and then click 'Done'.</p>
 
     <div class="builder" id="builder">
       <span>Create a colorful full-body action portrait of </span>
-      <input id="age" class="inline-input" value="a 5th grade student" aria-label="age or grade">
+      <input id="age" class="inline-input" placeholder="a 5th grade student" aria-label="age or grade" spellcheck="true">
       <span> in a makerspace, </span>
 
       <span class="token" data-group="action">
@@ -39,7 +39,7 @@
         <button type="button" class="token-btn">black</button>
         <div class="menu">  <div class="options"></div></div>
       </span>
-      <input id="hairStyle" class="inline-small" placeholder="describe hair here" aria-label="describe hair here"><span>.</span>
+      <input id="hairStyle" class="inline-small" placeholder="describe hair here" aria-label="describe hair here" spellcheck="true"><span>.</span>
 
       <span> </span>
 
@@ -56,7 +56,7 @@
       </span>
 
       <span> </span>
-      <input id="shirtStyle" class="inline-small" placeholder="describe shirt here" aria-label="describe shirt here">
+      <input id="shirtStyle" class="inline-small" placeholder="describe shirt here" aria-label="describe shirt here" spellcheck="true">
       <span> and </span>
 
       <span class="token" data-group="pantColor">
@@ -65,7 +65,7 @@
       </span>
 
       <span> </span>
-      <input id="pantStyle" class="inline-small" placeholder="describe pants here" aria-label="describe pants here"><span>, and </span>
+      <input id="pantStyle" class="inline-small" placeholder="describe pants here" aria-label="describe pants here" spellcheck="true"><span>, and </span>
 
       <span class="token" data-group="details">
         <button type="button" class="token-btn">glasses and a charm necklace</button>
@@ -74,37 +74,42 @@
       <span id="pronounObjectText">them</span>
       <span> are </span>
 
-      <input id="adjectives" class="inline-input" value="nerdy and confident" aria-label="adjectives"><span>. Art style: </span>
+      <input id="adjectives" class="inline-input" value="nerdy and confident" aria-label="adjectives" spellcheck="true"><span>. Art style: </span>
 
       <span class="token" data-group="artStyle">
-        <button type="button" class="token-btn">bold friendly cartoon</button>
+        <button type="button" class="token-btn">cartoon</button>
         <div class="menu">  <div class="options"></div></div>
       </span><span class="punct">.</span>
     </div>
 
     <div class="actions">
       <!-- <button class="copy-btn" type="button" onclick="copyPrompt()">Copy Prompt</button> -->
-      <button class="back-btn" type="button" onclick="window.location.href='index.html'">← Home</button>
+      <button class="back-btn" type="button" onclick="window.location.href='index.html'">Menu</button>
       <button class="copy-btn" type="button" onclick="showPromptCard()">Done</button>
       <span class="validation-msg" id="validationMsg"></span>
       <div class="actions-right">
         <button class="icon-btn" id="undoBtn" type="button" onclick="doUndo()" title="Undo" disabled>↩</button>
         <button class="icon-btn" id="redoBtn" type="button" onclick="doRedo()" title="Redo" disabled>↪</button>
-        <button class="action-btn" type="button" onclick="doReset()">Reset All</button>
+        <button class="action-btn" id="resetAllBtn" type="button" onclick="openResetDialog()">Reset All</button>
+        <div class="reset-confirm" id="resetDialog">
+          <button class="modal-btn modal-btn-yes" type="button" onclick="confirmReset()">Reset</button>
+          <button class="modal-btn modal-btn-no" type="button" onclick="closeResetDialog()">Cancel</button>
+        </div>
         <!-- shuffle button currently hidden feature (useful for dev but not student user) -->
         <!-- <button class="action-btn" type="button" onclick="doShuffle()">⇄ Shuffle</button> -->
       </div>
     </div>
   </div>
 
-  <!-- Step 1: Highlight & Copy -->
+  <!-- Step 2: Highlight & Copy --> 
+   <!-- Called Step 1 in div id for transitions - needs to be fixed for good syntax -->
   <div class="card stage-card" id="step1Card">
-    <div class="step-heading"><div class="step-circle">1</div><h2>Highlight &amp; Copy</h2></div>
+    <div class="step-heading"><div class="step-circle">2</div><h2>Highlight &amp; Copy</h2></div>
     <p class="step-instruction">Click inside the box below, then <strong>highlight all the text</strong></br>Click and drag across it, or press command <span class="kbd-combo"><kbd>⌘</kbd> + <kbd>A</kbd></span> to select all at once.</br>Once it's highlighted, press command <span class="kbd-combo"><kbd>⌘</kbd> + <kbd>C</kbd></span> to copy.</p>
     <textarea class="prompt-textarea" id="promptTextarea" spellcheck="false"></textarea>
     <div class="card-actions">
-      <button class="back-btn" type="button" onclick="switchCard('step1Card','builderCard',300)">← Back</button>
-      <button class="next-btn" type="button" onclick="switchCard('step1Card','step2Card',300)">Next →</button>
+      <button class="back-btn" type="button" onclick="switchCard('step1Card','builderCard',300)">Back</button>
+      <button class="next-btn" type="button" onclick="switchCard('step1Card','step2Card',300)">Next</button>
       <span class="copy-status">
         <span class="copy-check" id="copyCheck">✓ Copied!</span>
         <span class="copy-error" id="copyError">Nothing copied. Select the text first, then copy.</span>
@@ -115,12 +120,13 @@
   </div>
 
   <!-- Step 2: Paste & Edit -->
+   <!-- Called Step 2 in div id for transitions - needs to be fixed for good syntax -->
   <div class="card stage-card" id="step2Card">
-    <div class="step-heading"><div class="step-circle">2</div><h2>Paste &amp; Edit</h2></div>
-    <p class="step-instruction">Click in the box below.</br>Press command <span class="kbd-combo"><kbd>⌘</kbd> + <kbd>V</kbd></span> to paste your prompt.</br><em>You can also edit the text here before using it. Just remember to copy your final text again!</em></p>
+    <div class="step-heading"><div class="step-circle">3</div><h2>Paste &amp; Edit</h2></div>
+    <p class="step-instruction">Click in the box below.</br>Press command <span class="kbd-combo"><kbd>⌘</kbd> + <kbd>V</kbd></span> to practice pasting your prompt.</br>You can also edit the text here before using it. <em>Just remember to copy your final text again!</em></p>
     <textarea class="practice-textarea" id="practiceTextarea" placeholder="Paste your prompt here…"></textarea>
     <div class="card-actions">
-      <button class="back-btn" type="button" onclick="switchCard('step2Card','step1Card',300)">← Back</button>
+      <button class="back-btn" type="button" onclick="switchCard('step2Card','step1Card',300)">Back</button>
       <span class="copy-status">
         <span class="copy-check" id="copyCheck2">✓ Copied!</span>
         <span class="copy-error" id="copyError2">Nothing copied. Select the text first, then copy.</span>
@@ -130,6 +136,7 @@
     </div>
   </div>
 </div>
+
 
 <script id="options-data" type="application/json">
 {
@@ -225,13 +232,12 @@
     "a fidget spinner"
   ],
   "artStyle": [
-    "bold friendly cartoon",
-    "cute cartoon with bold lines",
+    "cartoon",
     "comic book",
     "anime",
     "storybook illustration",
     "video game pixel art",
-    "Saturday morning cartoon"
+    "painted portrait"
   ]
 }
 </script>
@@ -348,6 +354,26 @@ function doRedo(){
   updateUndoRedoButtons();
 }
 
+// ── Reset dialog ─────────────────────────────────────────────────────────────
+function openResetDialog(){
+  document.getElementById('resetAllBtn').classList.add('hiding');
+  document.getElementById('resetDialog').classList.add('showing');
+  setTimeout(()=> document.addEventListener('click', onClickOutsideReset, true), 0);
+}
+function closeResetDialog(){
+  document.getElementById('resetAllBtn').classList.remove('hiding');
+  document.getElementById('resetDialog').classList.remove('showing');
+  document.removeEventListener('click', onClickOutsideReset, true);
+}
+function onClickOutsideReset(e){
+  const confirmBtns = document.getElementById('resetDialog');
+  if(!confirmBtns.contains(e.target)) closeResetDialog();
+}
+function confirmReset(){
+  closeResetDialog();
+  doReset();
+}
+
 // ── Reset ────────────────────────────────────────────────────────────────────
 function doReset(){
   pushUndo(captureSnapshot());
@@ -363,7 +389,7 @@ function doReset(){
     updateButton(group);
   });
   refreshPronounButtons();
-  const defaultInputs = {age:'a 5th grade student',hairStyle:'',shirtStyle:'',pantStyle:'',adjectives:'nerdy and confident'};
+  const defaultInputs = {age:'',hairStyle:'',shirtStyle:'',pantStyle:'',adjectives:'nerdy and confident'};
   ['age','hairStyle','shirtStyle','pantStyle','adjectives'].forEach(id=>{
     const el = document.getElementById(id);
     if(el){ el.value = defaultInputs[id]; resizeInput(el); }
@@ -373,14 +399,6 @@ function doReset(){
 }
 
 // ── Shuffle ──────────────────────────────────────────────────────────────────
-const SHUFFLE_INPUTS = {
-  age:        ['a 3rd grade student','a 4th grade student','a 5th grade student','a 6th grade student','a 7th grade student','a middle school student','a high school student'],
-  hairStyle:  ['curly hair','straight hair','wavy hair','braided hair','short hair','afro','a ponytail','cornrows','locs','pigtails'],
-  shirtStyle: ['t-shirt','hoodie','button-up shirt','polo shirt','long-sleeve shirt','graphic tee','sweater'],
-  pantStyle:  ['jeans','sweatpants','shorts','khaki pants','leggings','cargo pants'],
-  adjectives: ['nerdy and confident','focused and curious','creative and excited','determined and happy','thoughtful and engaged','energetic and friendly','bold and imaginative']
-};
-
 function pickRandom(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
 
 function doShuffle(){
@@ -406,10 +424,6 @@ function doShuffle(){
     updateButton(group);
   });
   refreshPronounButtons();
-  ['age','hairStyle','shirtStyle','pantStyle','adjectives'].forEach(id=>{
-    const el = document.getElementById(id);
-    if(el){ el.value = pickRandom(SHUFFLE_INPUTS[id]); resizeInput(el); }
-  });
   saveState();
   updateUndoRedoButtons();
 }
@@ -453,7 +467,7 @@ const DEFAULTS = {
   pantColor: ['blue'],
   tools: 'tools',
   details: ['glasses', 'a charm necklace'],
-  artStyle: 'anime'
+  artStyle: 'cartoon'
 };
 
 function isMulti(group){ return MULTI_SELECT.includes(group); }
@@ -522,7 +536,7 @@ function getLabel(group){
     pantColor:'blue',
     tools:'tools and robot parts',
     details:'glasses and a charm necklace',
-    artStyle:'bold friendly cartoon'
+    artStyle:'cartoon'
   };
   if(group==='pronouns') return getPronounForms().be;
   if(group==='pronounObject') return getPronounForms().object;
@@ -580,6 +594,7 @@ function makeWriteOwnEntry(group, id){
   input.type = 'text';
   input.className = 'write-own-input';
   input.placeholder = 'Write your own…';
+  input.spellcheck = true;
 
   const plus = document.createElement('button');
   plus.type = 'button';
@@ -931,13 +946,13 @@ function showPromptCard(){
     missing.forEach(f => document.getElementById(f.id).classList.add('inline-missing'));
     const msg = document.getElementById('validationMsg');
     const labels = missing.map(f => f.label);
-    msg.textContent = `Please fill in the ${labels.join(', ')} before moving on.`;
-    msg.style.display = 'inline';
+    msg.textContent = `Oops! Fill in the blanks.`;
+    msg.classList.add('visible');
     document.getElementById(missing[0].id).focus();
     return;
   }
 
-  document.getElementById('validationMsg').style.display = 'none';
+  document.getElementById('validationMsg').classList.remove('visible');
   switchCard('builderCard', 'step1Card', 300);
 }
 
