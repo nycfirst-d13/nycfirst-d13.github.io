@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hello Waves</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #F7F9FC;
+      --surface: #FFFFFF;
+      --border: #E4EAF2;
+      --blue: #3B82F6;
+      --blue-light: #EFF6FF;
+      --blue-mid: #DBEAFE;
+      --text: #1A202C;
+      --muted: #64748B;
+      --link: #2563EB;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 16px rgba(59,130,246,0.10), 0 1px 4px rgba(0,0,0,0.05);
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'Work Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 64px;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      background: var(--surface);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header-text {
+      padding-bottom: 36px;
+    }
+
+    h1 {
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: var(--text);
+    }
+
+    .subtitle {
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .header-images {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      padding-bottom: 0;
+      flex-shrink: 0;
+    }
+
+    .header-images img {
+      display: block;
+      object-fit: contain;
+    }
+
+    /* animated wave strip at bottom of header */
+    .wave-strip {
+      display: block;
+      width: 100%;
+      height: 48px;
+      margin-top: 0;
+      overflow: hidden;
+    }
+
+    @keyframes wave-scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    .wave-group {
+      animation: wave-scroll 6s linear infinite;
+      transform-box: fill-box;
+    }
+
+    /* ── MAIN GRID ───────────────────────────────────────── */
+    main {
+      max-width: 960px;
+      margin: 40px auto 0;
+      padding: 0 24px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 780px) {
+      .header-inner { padding: 32px 24px 0; }
+      main { padding: 0 24px; margin-top: 28px; }
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      h1 { font-size: 30px; }
+    }
+
+    @media (max-width: 480px) {
+      .grid { grid-template-columns: 1fr; }
+      .header-images { display: none; }
+    }
+
+    /* ── CARD ────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px 22px 20px;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      opacity: 0;
+      transform: translateY(12px);
+      animation: fadeUp 0.4s ease forwards;
+      aspect-ratio: 290.83 / 237.1;
+    }
+
+    .card-microbit {
+      background: none;
+      border: none;
+      box-shadow: none;
+      padding: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-microbit:hover {
+      box-shadow: none;
+      border-color: yellow;
+      border-size: 1px;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.05s; }
+    .card:nth-child(2) { animation-delay: 0.10s; }
+    .card:nth-child(3) { animation-delay: 0.15s; }
+    .card:nth-child(4) { animation-delay: 0.20s; }
+    .card:nth-child(5) { animation-delay: 0.25s; }
+    .card:nth-child(6) { animation-delay: 0.30s; }
+    .card:nth-child(7) { animation-delay: 0.35s; }
+    .card:nth-child(8) { animation-delay: 0.40s; }
+    .card:nth-child(9) { animation-delay: 0.45s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--blue-mid);
+    }
+
+    .card-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--blue-light);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-bottom: 2px;
+    }
+
+    .card-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: var(--blue);
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .card-title a {
+      color: var(--link);
+      text-decoration: none;
+    }
+
+    .card-title a:hover {
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>Hello Waves</h1>
+      <p class="subtitle">Try out these waves activities</p>
+    </div>
+    <div class="header-images">
+      <img src="images/image2.png" width="93" height="93" alt="Waves illustration">
+      <img src="images/image1.png" width="90" height="90" alt="Waves illustration">
+    </div>
+  </div>
+
+  <!-- animated sine wave -->
+  <svg class="wave-strip" viewBox="0 0 960 48" preserveAspectRatio="none" overflow="hidden" xmlns="http://www.w3.org/2000/svg">
+    <g class="wave-group">
+      <path d="M0 24 C80 8,160 40,240 24 S400 8,480 24 S640 40,720 24 S880 8,960 24 S1040 40,1120 24 S1280 8,1440 24 S1600 40,1680 24 S1840 8,1920 24 V48 H0 Z" fill="#F7F9FC"/>
+      <path d="M0 30 C80 14,160 46,240 30 S400 14,480 30 S640 46,720 30 S880 14,960 30 S1040 46,1120 30 S1280 14,1440 30 S1600 46,1680 30 S1840 14,1920 30" fill="none" stroke="#BFDBFE" stroke-width="1.5"/>
+    </g>
+  </svg>
+</header>
+
+<main>
+  <div class="grid">
+
+    <div class="card card-microbit">
+      <iframe style="position:absolute;top:-92px;left:0;width:100%;height:calc(100% + 92px);border:0;" src="https://makecode.microbit.org/---run?id=S66507-97065-08936-72675"></iframe>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M2 12 C5 6, 9 18, 12 12 S17 6, 22 12"/></svg>
+      </div>
+      <div class="card-title"><a href="https://theyardgames.org/game/waves/iframe.html" target="_blank" rel="noopener">Waves Game</a></div>
+      <div class="card-desc">Can you vibe with waves?</div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12 C5 6, 9 18, 12 12 S17 6, 22 12"/></svg>
+      </div>
+      <div class="card-title"><a href="https://phet.colorado.edu/sims/html/wave-on-a-string/latest/wave-on-a-string_all.html" target="_blank" rel="noopener">Waves Physics Simulator</a></div>
+      <div class="card-desc">Experiment with a physical wave to understand its properties.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M2 18 L6 6 L10 14 L14 4 L18 12 L22 6"/></svg>
+      </div>
+      <div class="card-title"><a href="https://musiclab.chromeexperiments.com/Oscillators/" target="_blank" rel="noopener">Waves Shape Oscillators</a></div>
+      <div class="card-desc">Different shaped waves have different sound qualities. Try each of them out with the arrow!</div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M2 12 C5 4, 9 20, 12 12 S17 4, 22 12"/><path d="M5 8 L5 16" stroke-width="1"/></svg>
+      </div>
+      <div class="card-title"><a href="https://musiclab.chromeexperiments.com/Spectrogram/" target="_blank" rel="noopener">Sonic Spectrogram</a></div>
+      <div class="card-desc">See the <em>spectrum</em> of sound as a rainbow! Use this tool to visualize the frequencies of sound.</div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><path d="M9 18 V6 M12 15 V9 M15 18 V6 M6 15 V9 M18 15 V9"/></svg>
+      </div>
+      <div class="card-title"><a href="https://musiclab.chromeexperiments.com/Sound-Waves/" target="_blank" rel="noopener">Music in the Air</a></div>
+      <div class="card-desc">Sound travels as waves of air pressure. See how different notes on a piano change the frequency?</div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3 C8 7, 8 17, 12 21"/><path d="M12 3 C16 7, 16 17, 12 21"/></svg>
+      </div>
+      <div class="card-title"><a href="https://listeningtowaves.com/sound-exploration" target="_blank" rel="noopener">Sound Tools</a></div>
+      <div class="card-desc">Explore these different sound tools to better understand waves. If needed, activate the microphone by clicking 'allow.'</div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12 C7 6, 11 18, 15 12 S20 8, 21 10"/></svg>
+      </div>
+      <div class="card-title"><a href="https://dood.al/oscilloscope/" target="_blank" rel="noopener">Virtual Oscilloscope</a></div>
+      <div class="card-desc">Turn sound into cool patterns of energy!</div>
+    </div>
+
+    <div class="card">
+      <div class="card-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+      </div>
+      <div class="card-title"><a href="https://pettaboy.github.io/cymaticssimulator_chladni" target="_blank" rel="noopener">Cymatics</a></div>
+      <div class="card-desc">Use this tool to explore how waves can make interesting patterns on a physical surface.</div>
+    </div>
+
+  </div>
+</main>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); mcps=d.get\\('mcpServers',{}\\); [print\\(k,':',v.get\\('url',''\\) or v.get\\('command',''\\)\\) for k,v in mcps.items\\(\\)]\")",
+      "Bash(python3 -m json.tool)",
+      "mcp__taste__get_taste_profile",
+      "Bash(open *)",
+      "Skill(update-config)"
+    ]
+  }
+}
