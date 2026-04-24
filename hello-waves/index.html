@@ -501,7 +501,19 @@
     const canvas = document.getElementById('wave-canvas');
     const ctx = canvas.getContext('2d');
     let phase = 0;
+    let slowPhase = 0;
     let dpr = 1;
+    let pressed = false;
+    let currentPeriodFraction = 0.5; // fraction of viewport width per wave cycle
+
+    canvas.style.cursor = 'pointer';
+
+    function setPressed(val) { pressed = val; }
+    canvas.addEventListener('mousedown', () => setPressed(true));
+    canvas.addEventListener('mouseup',   () => setPressed(false));
+    canvas.addEventListener('mouseleave',() => setPressed(false));
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); setPressed(true); },  { passive: false });
+    canvas.addEventListener('touchend',   () => setPressed(false));
 
     function resize() {
       dpr = window.devicePixelRatio || 1;
@@ -512,12 +524,17 @@
     function draw() {
       const w = canvas.offsetWidth;
       const h = 48;
+
+      // lerp period fraction toward target (0.5 = normal, 0.15 = high freq)
+      const targetFraction = pressed ? 0.15 : 0.5;
+      currentPeriodFraction += (targetFraction - currentPeriodFraction) * 0.06;
+
+      const period = w * currentPeriodFraction;
+      const amp = 16 * Math.tanh(10 * Math.sin(slowPhase));
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       ctx.scale(dpr, dpr);
-
-      const period = w * 0.5;
-      const amp = 16;
 
       // filled shape below wave
       ctx.beginPath();
@@ -543,6 +560,7 @@
 
       ctx.restore();
       phase -= 0.02;
+      slowPhase += 0.004;
       requestAnimationFrame(draw);
     }
 
