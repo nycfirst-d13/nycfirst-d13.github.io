@@ -5,7 +5,8 @@
       "Bash(python3 -m json.tool)",
       "mcp__taste__get_taste_profile",
       "Bash(open *)",
-      "Skill(update-config)"
+      "Skill(update-config)",
+      "WebFetch(domain:theyardgames.org)"
     ]
   }
 }

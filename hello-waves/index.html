@@ -245,9 +245,9 @@
       opacity: 1;
     }
     
-  /* attemping to force micro:bit iframe footer from not appearing but i dont think it works */
+  /* Avi: attemping to force micro:bit iframe footer from not appearing but i dont think it works */
     footer{
-      position: unset;
+      z-index: !important -1;
     }
 
     /* ── MODAL ───────────────────────────────────────────── */
@@ -322,7 +322,7 @@
   <div class="header-inner">
     <div class="header-text">
       <h1>Hello Waves</h1>
-      <p class="subtitle">Try out these waves activities</p>
+      <p class="subtitle">Try out these activities!</br>Hover over them to see and preview and click to go to their page.</p>
     </div>
     <div class="header-images">
       <img src="images/image2.png" width="93" height="93" alt="Waves illustration">
@@ -368,7 +368,7 @@
         <svg viewBox="0 0 24 24"><path d="M2 12 C5 6, 9 18, 12 12 S17 6, 22 12"/></svg>
       </div>
       <div class="card-title">Waves Game</div>
-      <div class="card-desc">Can you vibe with waves?</div>
+      <div class="card-desc">Can you vibe with waves? Play this fun puzzle game to see if you understand the properties of waves.</div>
       <div class="card-hover-preview" style="position:absolute;inset:0;border-radius:var(--radius);overflow:hidden;pointer-events:none;">
         <img src="images/waves-game-screenshot.png" alt="Waves Game preview" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">
       </div>
@@ -379,7 +379,7 @@
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12 C5 6, 9 18, 12 12 S17 6, 22 12"/></svg>
       </div>
       <div class="card-title">Waves Physics Simulator</div>
-      <div class="card-desc">Experiment with a physical wave to understand its properties.</div>
+      <div class="card-desc">Experiment with a physical wave to understand its properties PLay around with the settings and see what changes take effect.</div>
       <div class="card-hover-preview" style="position:absolute;inset:0;border-radius:var(--radius);overflow:hidden;pointer-events:none;">
         <img src="images/physics-simulator-screenshot.png" alt="Waves Physics Simulator preview" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">
       </div>
@@ -434,7 +434,7 @@
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 12 C7 6, 11 18, 15 12 S20 8, 21 10"/></svg>
       </div>
       <div class="card-title">Virtual Oscilloscope</div>
-      <div class="card-desc">Turn sound into cool patterns of energy!</div>
+      <div class="card-desc">An <em>oscilloscope</em> is a tool engineers use to see the form a wave signal takes. Try out this virtual one on the computer and turn sound into cool patterns of energy!</div>
       <div class="card-hover-preview" style="position:absolute;inset:0;border-radius:var(--radius);overflow:hidden;pointer-events:none;">
         <img src="images/oscilloscope%20screenshot.png" alt="Virtual Oscilloscope preview" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;">
       </div>
