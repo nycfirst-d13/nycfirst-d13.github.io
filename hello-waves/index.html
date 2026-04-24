@@ -90,17 +90,6 @@
       width: 100%;
       height: 48px;
       margin-top: 0;
-      overflow: hidden;
-    }
-
-    @keyframes wave-scroll {
-      from { transform: translateX(0); }
-      to { transform: translateX(-50%); }
-    }
-
-    .wave-group {
-      animation: wave-scroll 6s linear infinite;
-      transform-box: fill-box;
     }
 
     /* ── MAIN GRID ───────────────────────────────────────── */
@@ -331,12 +320,7 @@
   </div>
 
   <!-- animated sine wave -->
-  <svg class="wave-strip" viewBox="0 0 960 48" preserveAspectRatio="none" overflow="hidden" xmlns="http://www.w3.org/2000/svg">
-    <g class="wave-group">
-      <path d="M0 24 C80 8,160 40,240 24 S400 8,480 24 S640 40,720 24 S880 8,960 24 S1040 40,1120 24 S1280 8,1440 24 S1600 40,1680 24 S1840 8,1920 24 V48 H0 Z" fill="#F7F9FC"/>
-      <path d="M0 30 C80 14,160 46,240 30 S400 14,480 30 S640 46,720 30 S880 14,960 30 S1040 46,1120 30 S1280 14,1440 30 S1600 46,1680 30 S1840 14,1920 30" fill="none" stroke="#BFDBFE" stroke-width="1.5"/>
-    </g>
-  </svg>
+  <canvas class="wave-strip" id="wave-canvas"></canvas>
 </header>
 
 <main>
@@ -511,6 +495,61 @@
       closeMicrobitEditorModal(e, true);
     }
   });
+
+  // wave canvas animation
+  (function() {
+    const canvas = document.getElementById('wave-canvas');
+    const ctx = canvas.getContext('2d');
+    let phase = 0;
+    let dpr = 1;
+
+    function resize() {
+      dpr = window.devicePixelRatio || 1;
+      canvas.width = canvas.offsetWidth * dpr;
+      canvas.height = 48 * dpr;
+    }
+
+    function draw() {
+      const w = canvas.offsetWidth;
+      const h = 48;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.scale(dpr, dpr);
+
+      const period = w * 0.5;
+      const amp = 16;
+
+      // filled shape below wave
+      ctx.beginPath();
+      for (let x = 0; x <= w; x++) {
+        const y = 24 + amp * Math.sin((x / period) * Math.PI * 2 + phase);
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.lineTo(w, h);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fillStyle = '#F7F9FC';
+      ctx.fill();
+
+      // stroke wave line
+      ctx.beginPath();
+      for (let x = 0; x <= w; x++) {
+        const y = 30 + amp * Math.sin((x / period) * Math.PI * 2 + phase);
+        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#BFDBFE';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      ctx.restore();
+      phase -= 0.02;
+      requestAnimationFrame(draw);
+    }
+
+    resize();
+    window.addEventListener('resize', resize);
+    draw();
+  })();
 </script>
 
 </body>
