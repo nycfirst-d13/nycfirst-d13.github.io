@@ -236,7 +236,7 @@
     
   /* Avi: attemping to force micro:bit iframe footer from not appearing but i dont think it works */
     footer{
-      z-index: !important -1;
+      z-index: -1 !important ;
     }
 
     /* ── MODAL ───────────────────────────────────────────── */
@@ -477,7 +477,8 @@
 
   function openMicrobitEditorModal(e) {
     e.preventDefault();
-    document.getElementById('microbit-editor-iframe').src = 'https://makecode.microbit.org/#pub:S29427-99540-12500-76658';
+    // radio chat microbit code link goes here
+    document.getElementById('microbit-editor-iframe').src = 'https://makecode.microbit.org/#pub:S15128-52280-24653-97815';
     document.getElementById('microbit-editor-modal').classList.add('open');
     document.body.style.overflow = 'hidden';
   }
