@@ -313,9 +313,9 @@
   </div>
   <div class="actions">
     <button class="btn btn-outline" onclick="generateGrid()">New Board</button>
-    <!-- Avi - hid these features to alleviate potential confusion on how to download class set for print ready -->
-    <!-- <button class="btn btn-red" onclick="downloadImage()">Download JPEG</button> -->
-    <!-- <button class="btn btn-blue" id="zipBtn" onclick="downloadZip()">Download 30 as ZIP</button> -->
+    <!-- Avi: removing these from redunancy - potential confusion for user to quickly download class set of 30 -->
+    <!-- <button class="btn btn-red" onclick="downloadImage()">Download JPEG</button>
+    <button class="btn btn-blue" id="zipBtn" onclick="downloadZip()">Download 30 as ZIP</button> -->
     <button class="btn btn-black" id="pdfBtn" onclick="downloadPDF()">Download 30 as PDF</button>
   </div>
 </header>
@@ -481,7 +481,7 @@ async function downloadPDF() {
   const overlayTitle = document.getElementById("overlayTitle");
 
   btn.disabled = true;
-  zipBtn.disabled = true;
+  if (zipBtn) zipBtn.disabled = true;
   overlayTitle.textContent = "Building PDF";
   progressBar.style.width = "0%";
   progressLabel.textContent = "0 / 30";
@@ -588,7 +588,7 @@ async function downloadPDF() {
 
   overlay.classList.remove("active");
   btn.disabled = false;
-  zipBtn.disabled = false;
+  if (zipBtn) zipBtn.disabled = false;
   generateGrid();
 }
 
