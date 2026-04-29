@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bird Bingo — NYC FIRST</title>
+<link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #C1272D;
+    --blue: #1B75BC;
+    --black: #231F20;
+    --white: #FFFFFF;
+    --off-white: #F4F4F4;
+    --border: #DEDEDE;
+    --text-muted: #666;
+  }
+
+  body {
+    font-family: 'Work Sans', sans-serif;
+    background: var(--off-white);
+    color: var(--black);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--white);
+    border-bottom: 3px solid var(--blue);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+  }
+
+  header img.logo {
+    height: 56px;
+    width: auto;
+  }
+
+  .header-divider {
+    width: 2px;
+    height: 40px;
+    background: var(--border);
+  }
+
+  .header-text h1 {
+    font-size: 1.5rem;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    color: var(--black);
+    line-height: 1;
+  }
+
+  .header-text p {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 3px;
+  }
+
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1rem 3rem;
+    gap: 1.75rem;
+  }
+
+#captureArea {
+  display: inline-block;
+  background: #ffffff;
+}
+
+#bingoHeader {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid black;
+  border-bottom: none;
+  box-sizing: border-box;
+}
+
+#bingoLogo {
+  height: 40px;
+  width: auto;
+}
+
+#bingoTitle {
+  font-size: 22px;
+  font-weight: bold;
+  font-family: sans-serif;
+}
+
+  .board-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding: 0 2px;
+  }
+
+  .board-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+  }
+
+  .board-accent {
+    display: flex;
+    gap: 5px;
+  }
+
+  .board-accent span {
+    display: block;
+    width: 10px;
+    height: 10px;
+  }
+
+  .board-accent span:nth-child(1) { background: var(--red); }
+  .board-accent span:nth-child(2) { background: var(--black); }
+  .board-accent span:nth-child(3) { background: var(--blue); }
+
+  #grid {
+    display: grid;
+    grid-template-columns: repeat(3, 180px);
+    grid-template-rows: repeat(3, 180px);
+    gap: 2px;
+    background: var(--black);
+    border: 2px solid var(--black);
+  }
+
+  .cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: var(--off-white);
+  }
+
+  .cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.25s ease;
+  }
+
+  .cell:hover img { transform: scale(1.06); }
+
+  .actions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: right;
+    margin-left: auto;
+  }
+
+  .btn {
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.7rem 1.4rem;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-radius: 0;
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--black);
+    border-color: var(--black);
+  }
+  .btn-outline:hover {
+    background: var(--black);
+    color: var(--white);
+  }
+
+  .btn-red {
+    background: var(--red);
+    color: var(--white);
+    border-color: var(--red);
+  }
+  .btn-red:hover { background: #a01e23; border-color: #a01e23; }
+
+  .btn-blue {
+    background: var(--blue);
+    color: var(--white);
+    border-color: var(--blue);
+  }
+  .btn-blue:hover { background: #155f9a; border-color: #155f9a; }
+
+  .btn-black {
+    background: var(--black);
+    color: var(--white);
+    border-color: var(--black);
+  }
+  .btn-black:hover { background: #000000; border-color: #000000; }
+
+  .btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  #overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(35, 31, 32, 0.88);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+  }
+  #overlay.active { display: flex; }
+
+  .overlay-card {
+    background: var(--white);
+    padding: 2.5rem 2.5rem 2rem;
+    width: 90%;
+    max-width: 340px;
+    border-top: 5px solid var(--red);
+  }
+
+  .overlay-card h2 {
+    font-size: 1.1rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--black);
+    margin-bottom: 0.25rem;
+  }
+
+  .overlay-card p {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .progress-track {
+    background: var(--off-white);
+    border: 1px solid var(--border);
+    height: 8px;
+    margin-bottom: 0.6rem;
+  }
+
+  .progress-bar {
+    height: 100%;
+    background: var(--red);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+
+  .progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .progress-count {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .progress-pct {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--black);
+  }
+
+  footer {
+    background: var(--black);
+    color: rgba(255,255,255,0.4);
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="NYCFIRST_square_RGB.png" alt="NYC FIRST Logo">
+  <div class="header-divider"></div>
+  <div class="header-text">
+    <h1>Bird Bingo</h1>
+    <p>Bingo Card Generator</p>
+  </div>
+  <div class="actions">
+    <button class="btn btn-outline" onclick="generateGrid()">New Board</button>
+    <button class="btn btn-red" onclick="downloadImage()">Download JPEG</button>
+    <button class="btn btn-blue" id="zipBtn" onclick="downloadZip()">Download 30 as ZIP</button>
+    <button class="btn btn-black" id="pdfBtn" onclick="downloadPDF()">Download 30 as PDF</button>
+  </div>
+</header>
+
+<main>
+<div id="captureArea">
+  <div id="bingoHeader">
+    <img src="logo.svg" alt="Logo" id="bingoLogo">
+    <span id="bingoTitle">Bird Bingo</span>
+  </div>
+  <div id="grid"></div>
+</div>
+</main>
+
+<div id="overlay">
+  <div class="overlay-card">
+    <h2 id="overlayTitle">Generating Boards</h2>
+    <p id="overlayMsg">Preparing bingo sheets...</p>
+    <div class="progress-track">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-row">
+      <span class="progress-count" id="progressLabel">0 / 30</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+  </div>
+</div>
+
+<footer>NYC FIRST &mdash; Bird Bingo &mdash; All rights reserved</footer>
+
+<script>
+const birds = [
+  "images/bluejay.jpg",
+  "images/cardinal.jpg",
+  "images/chickadee.jpg",
+  "images/duck.jpg",
+  "images/eagle.jpg",
+  "images/falcon.jpg",
+  "images/flamingo.jpg",
+  "images/goose.jpg",
+  "images/grackle.jpg",
+  "images/hummingbird.jpg",
+  "images/kingfisher.jpg",
+  "images/ostrich.jpg",
+  "images/owl.jpg",
+  "images/peacock.jpg",
+  "images/pelican.jpg",
+  "images/penguin.jpg",
+  "images/robin.jpg",
+  "images/woodpecker.jpg"
+];
+
+function getRandomBirds() {
+  return [...birds].sort(() => 0.5 - Math.random()).slice(0, 9);
+}
+
+function generateGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  getRandomBirds().forEach(src => {
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    const img = document.createElement("img");
+    img.src = src;
+    cell.appendChild(img);
+    grid.appendChild(cell);
+  });
+}
+
+function waitForImages() {
+  const imgs = document.querySelectorAll("#grid img");
+  return Promise.all([...imgs].map(img =>
+    img.complete ? Promise.resolve() : new Promise(r => { img.onload = r; img.onerror = r; })
+  ));
+}
+
+function captureGrid() {
+  return waitForImages().then(() =>
+    html2canvas(document.getElementById("captureArea"), {
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      scale: 2,
+      logging: false
+    })
+  ).then(canvas => canvas.toDataURL("image/jpeg", 0.92).split(",")[1]);
+}
+
+function downloadImage() {
+  waitForImages().then(() =>
+    html2canvas(document.getElementById("captureArea"), {
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: false,
+      scale: 2
+    })
+  ).then(canvas => {
+    const link = document.createElement("a");
+    link.download = "bird-bingo.jpg";
+    link.href = canvas.toDataURL("image/jpeg", 0.92);
+    link.click();
+  }).catch(err => console.error("Export failed:", err));
+}
+
+async function downloadZip() {
+  const btn = document.getElementById("zipBtn");
+  const overlay = document.getElementById("overlay");
+  const progressBar = document.getElementById("progressBar");
+  const progressLabel = document.getElementById("progressLabel");
+  const progressPct = document.getElementById("progressPct");
+  const overlayMsg = document.getElementById("overlayMsg");
+  const overlayTitle = document.getElementById("overlayTitle");
+
+  btn.disabled = true;
+  overlayTitle.textContent = "Generating Boards";
+  overlay.classList.add("active");
+
+  const zip = new JSZip();
+  const total = 30;
+
+  for (let i = 1; i <= total; i++) {
+    const pct = Math.round(((i - 1) / total) * 100);
+    overlayMsg.textContent = `Creating board ${i} of ${total}...`;
+    progressLabel.textContent = `${i - 1} / ${total}`;
+    progressPct.textContent = `${pct}%`;
+    progressBar.style.width = `${pct}%`;
+
+    generateGrid();
+    await new Promise(r => setTimeout(r, 350));
+
+    try {
+      const jpegData = await captureGrid();
+      zip.file(`bird-bingo-${String(i).padStart(2, "0")}.jpg`, jpegData, { base64: true });
+    } catch (err) {
+      console.error(`Board ${i} failed:`, err);
+    }
+  }
+
+  overlayMsg.textContent = "Zipping everything up...";
+  progressBar.style.width = "100%";
+  progressLabel.textContent = `${total} / ${total}`;
+  progressPct.textContent = "100%";
+
+  const blob = await zip.generateAsync({ type: "blob" });
+  const link = document.createElement("a");
+  link.download = "bird-bingo-sheets.zip";
+  link.href = URL.createObjectURL(blob);
+  link.click();
+
+  overlay.classList.remove("active");
+  btn.disabled = false;
+  generateGrid();
+}
+
+async function downloadPDF() {
+  const btn = document.getElementById("pdfBtn");
+  const zipBtn = document.getElementById("zipBtn");
+  const overlay = document.getElementById("overlay");
+  const progressBar = document.getElementById("progressBar");
+  const progressLabel = document.getElementById("progressLabel");
+  const progressPct = document.getElementById("progressPct");
+  const overlayMsg = document.getElementById("overlayMsg");
+  const overlayTitle = document.getElementById("overlayTitle");
+
+  btn.disabled = true;
+  zipBtn.disabled = true;
+  overlayTitle.textContent = "Building PDF";
+  progressBar.style.width = "0%";
+  progressLabel.textContent = "0 / 30";
+  progressPct.textContent = "0%";
+  overlay.classList.add("active");
+
+  const { jsPDF } = window.jspdf;
+
+  // 8.5 x 11 inches — jsPDF "in" unit so we work in inches directly
+  const PAGE_W = 8.5;
+  const PAGE_H = 11;
+  const MARGIN = 0.4;      // inches, all sides
+  const GUTTER = 0.2;      // inches, vertical gap between the two cards
+
+  // Each card slot: full width minus margins; half height minus margins and gutter
+  const SLOT_W = PAGE_W - MARGIN * 2;
+  const SLOT_H = (PAGE_H - MARGIN * 2 - GUTTER) / 2;
+
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "in",
+    format: "letter"
+  });
+
+  const captureEl = document.getElementById("captureArea");
+  const total = 30;
+
+  // Capture helper — returns { dataUrl, cssW, cssH }
+  async function captureCard() {
+    await waitForImages();
+    // Brief extra frame so browser fully paints
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const canvas = await html2canvas(captureEl, {
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      allowTaint: true,
+      scale: 2,
+      logging: false,
+      imageTimeout: 0
+    });
+    // CSS dimensions (canvas is rendered at scale:2 so divide by 2)
+    const cssW = canvas.width / 2;
+    const cssH = canvas.height / 2;
+    return { dataUrl: canvas.toDataURL("image/jpeg", 0.92), cssW, cssH };
+  }
+
+  // Screen resolution → inches: html2canvas renders at 96 dpi
+  const DPI = 96;
+
+  for (let i = 0; i < total; i++) {
+    const cardNum = i + 1;
+    const pct = Math.round((i / total) * 100);
+    overlayMsg.textContent = `Rendering card ${cardNum} of ${total}...`;
+    progressLabel.textContent = `${i} / ${total}`;
+    progressPct.textContent = `${pct}%`;
+    progressBar.style.width = `${pct}%`;
+
+    generateGrid();
+    // Wait for images to load + a settle frame
+    await new Promise(r => setTimeout(r, 400));
+
+    try {
+      const { dataUrl, cssW, cssH } = await captureCard();
+
+      // Convert CSS pixels → inches at 96 dpi
+      const cardInW = cssW / DPI;
+      const cardInH = cssH / DPI;
+
+      // Fit card into slot, preserving aspect ratio
+      const scaleX = SLOT_W / cardInW;
+      const scaleY = SLOT_H / cardInH;
+      const fit = Math.min(scaleX, scaleY, 1); // never upscale beyond natural size
+
+      const drawW = cardInW * fit;
+      const drawH = cardInH * fit;
+
+      // Center horizontally in page
+      const x = MARGIN + (SLOT_W - drawW) / 2;
+
+      // slotIndex: 0 = top half, 1 = bottom half
+      const slotIndex = i % 2;
+      const slotTop = MARGIN + slotIndex * (SLOT_H + GUTTER);
+      const y = slotTop + (SLOT_H - drawH) / 2;
+
+      // New page for every pair of cards
+      if (slotIndex === 0 && i > 0) {
+        pdf.addPage();
+      }
+
+      pdf.addImage(dataUrl, "JPEG", x, y, drawW, drawH, undefined, "FAST");
+
+    } catch (err) {
+      console.error(`Card ${cardNum} failed:`, err);
+    }
+  }
+
+  overlayMsg.textContent = "Saving PDF...";
+  progressBar.style.width = "100%";
+  progressLabel.textContent = `${total} / ${total}`;
+  progressPct.textContent = "100%";
+
+  await new Promise(r => setTimeout(r, 200));
+  pdf.save("bird-bingo-30-cards.pdf");
+
+  overlay.classList.remove("active");
+  btn.disabled = false;
+  zipBtn.disabled = false;
+  generateGrid();
+}
+
+generateGrid();
+</script>
+</body>
+</html>
