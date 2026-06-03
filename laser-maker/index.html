@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Laser Maker — NYC FIRST</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/paper@0.12.18/dist/paper-core.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
+</head>
+<body>
+
+  <!-- ============== TOP BAR ============== -->
+  <header class="topbar" role="banner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <img src="./assets/horizontal-logo.svg" width="100" height="50" />
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">Laser Maker [BETA]</span>
+        <span class="brand-sub">NYC FIRST · Design Studio</span>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="artboard-control" title="Artboard size">
+        <label class="ac-label">Artboard</label>
+        <div class="ac-inputs">
+          <input id="ab-w" type="number" min="1" max="96" step="0.5" value="36" inputmode="decimal" />
+          <span class="ac-x">×</span>
+          <input id="ab-h" type="number" min="1" max="96" step="0.5" value="24" inputmode="decimal" />
+          <span class="ac-unit">in</span>
+        </div>
+        <div class="ac-presets" role="group" aria-label="Presets">
+          <button data-preset="36x24">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <button class="btn ghost" id="undo-btn" title="Undo (⌘Z)">
+        <svg viewBox="0 0 20 20" width="16" height="16"><path d="M7 5 L3 9 L7 13 M3 9 H13 a4 4 0 0 1 0 8 H10" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="btn ghost" id="redo-btn" title="Redo (⇧⌘Z)">
+        <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13 5 L17 9 L13 13 M17 9 H7 a4 4 0 0 0 0 8 H10" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="divider"></div>
+      <label class="btn" id="import-svg-btn" style="cursor:pointer">
+        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 14 V5 M6 8 L10 4 L14 8 M4 16 H16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Import SVG</span>
+      </label>
+      <input type="file" id="import-svg-input" accept=".svg,image/svg+xml" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" />
+      <button class="btn primary" id="export-btn">
+        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3 V12 M6 9 L10 13 L14 9 M4 16 H16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Export SVG</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============== APP SHELL ============== -->
+  <main class="shell">
+
+    <!-- LEFT: Tool palette -->
+    <aside class="tools" role="toolbar" aria-label="Tools">
+      <button class="tool" data-tool="select" title="Select (V)"></button>
+      <button class="tool" data-tool="direct" title="Direct Select (A)"></button>
+      <div class="tools-sep"></div>
+      <button class="tool" data-tool="rect" title="Rectangle (R)"></button>
+      <button class="tool" data-tool="ellipse" title="Ellipse (E)"></button>
+      <button class="tool" data-tool="line" title="Line (L)"></button>
+      <button class="tool" data-tool="polygon" title="Polygon (P)"></button>
+      <div class="tools-sep"></div>
+      <button class="tool" data-tool="pen" title="Pen (B)"></button>
+      <button class="tool" data-tool="text" title="Text (T)"></button>
+      <div class="tools-sep"></div>
+      <button class="tool" data-tool="shapebuilder" title="Shape Builder (M)"></button>
+      <div class="tools-sep"></div>
+      <button class="tool" data-tool="hand" title="Hand · pan (H)"></button>
+    </aside>
+
+    <!-- CENTER: Workspace -->
+    <section class="workspace" id="workspace">
+      <div class="ruler ruler-corner" id="ruler-corner"></div>
+      <canvas class="ruler ruler-h" id="ruler-h"></canvas>
+      <canvas class="ruler ruler-v" id="ruler-v"></canvas>
+
+      <div class="canvas-area" id="canvas-area">
+        <div class="canvas-stage" id="canvas-stage">
+          <!-- artboard wrapper holds the white paper, grid overlay, and the actual SVG -->
+          <div class="artboard-wrap" id="artboard-wrap">
+            <div class="artboard-shadow" aria-hidden="true"></div>
+            <svg class="artboard-grid" id="artboard-grid" xmlns="http://www.w3.org/2000/svg"></svg>
+            <svg class="artboard" id="artboard" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <pattern id="hairline" width="1" height="1" patternUnits="userSpaceOnUse">
+                  <path d="M0 0 L1 0 L1 1 L0 1 Z" fill="none"/>
+                </pattern>
+              </defs>
+              <g id="layer-root"></g>
+              <g id="overlay"></g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Floating viewport controls -->
+        <div class="viewport-controls">
+          <button class="vc-btn" id="zoom-out" title="Zoom out (−)">
+            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 8 H12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </button>
+          <button class="vc-btn vc-level" id="zoom-level" title="Reset zoom">100%</button>
+          <button class="vc-btn" id="zoom-in" title="Zoom in (+)">
+            <svg viewBox="0 0 16 16" width="14" height="14"><path d="M4 8 H12 M8 4 V12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </button>
+          <div class="vc-sep"></div>
+          <button class="vc-btn" id="fit-btn" title="Fit to view (F)">Fit</button>
+          <button class="vc-btn vc-accent" id="actual-btn" title="True 1:1 physical scale">1 : 1</button>
+        </div>
+
+        <!-- Grid + snap controls -->
+        <div class="grid-controls">
+          <div class="pill-group">
+            <label class="pill">
+              <input type="checkbox" id="grid-toggle" />
+              <span>Grid</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" id="snap-toggle" />
+              <span>Snap</span>
+            </label>
+          </div>
+          <div class="pill-group">
+            <label class="pill">
+              <input type="checkbox" id="guides-toggle" checked />
+              <span>Smart Snap</span>
+            </label>
+            <label class="pill">
+              <input type="checkbox" id="midpoints-toggle" checked />
+              <span>Midpoints</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Inspector -->
+    <aside class="inspector" aria-label="Properties">
+
+      <!-- Text -->
+      <div class="panel" id="text-panel" style="display:none">
+        <header class="panel-h"><span>Text</span></header>
+        <div class="prop-row">
+          <label class="prop-label">Size</label>
+          <div class="numeric">
+            <input type="number" id="text-size" min="1" max="1000" step="1" value="150" />
+            <span class="suffix">pt</span>
+          </div>
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Weight</label>
+          <select id="text-weight" class="prop-select"></select>
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Align</label>
+          <div class="icon-btn-group" id="text-align-group">
+            <button class="icon-btn" data-align="left" title="Left">
+              <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            </button>
+            <button class="icon-btn" data-align="center" title="Center">
+              <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4h12M4 8h8M3 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            </button>
+            <button class="icon-btn" data-align="right" title="Right">
+              <svg viewBox="0 0 16 16" width="14" height="14"><path d="M2 4h12M6 8h8M4 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+            </button>
+          </div>
+        </div>
+        <input type="text" id="font-search" class="font-search-input" placeholder="Search fonts…" />
+        <div id="font-list" class="font-list" role="listbox"></div>
+        <div class="prop-row" style="margin-top:6px">
+          <label class="btn ghost" id="upload-font-btn" for="upload-font-input" style="flex:1;cursor:pointer;text-align:center">Upload Font</label>
+          <input type="file" id="upload-font-input" accept=".ttf,.otf,.woff,.woff2" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" />
+        </div>
+        <div class="prop-row">
+          <button class="btn ghost" id="convert-to-path-btn" style="flex:1">Convert to Path</button>
+        </div>
+      </div>
+
+      <!-- Expand SVG (shown only when rawsvg selected) -->
+      <div class="panel" id="expand-svg-panel" style="display:none">
+        <header class="panel-h"><span>SVG</span></header>
+        <div class="prop-row">
+          <button class="btn ghost" id="expand-svg-btn" style="flex:1">Expand to Paths</button>
+        </div>
+      </div>
+
+      <!-- Pathfinder -->
+      <div class="panel">
+        <header class="panel-h">
+          <span>Pathfinder</span>
+        </header>
+        <div class="pathfinder">
+          <button class="pf" data-op="unite" title="Unite">
+            <svg viewBox="0 0 32 24"><circle cx="13" cy="12" r="8" /><circle cx="20" cy="12" r="8" /></svg>
+            <span>Unite</span>
+          </button>
+          <button class="pf" data-op="subtract" title="Subtract">
+            <svg viewBox="0 0 32 24"><path d="M21 4 a8 8 0 1 0 0 16 a8 8 0 0 1 0 -16 Z M13 4 a8 8 0 1 0 0 16 a8 8 0 0 0 0 -16 Z" fill-rule="evenodd"/></svg>
+            <span>Subtract</span>
+          </button>
+          <button class="pf" data-op="intersect" title="Intersect">
+            <svg viewBox="0 0 32 24"><path d="M16.5 5 a8 8 0 0 1 0 14 a8 8 0 0 1 0 -14 Z"/></svg>
+            <span>Intersect</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Offset Path -->
+      <div class="panel">
+        <header class="panel-h">
+          <span>Path</span>
+        </header>
+        <div class="prop-row">
+          <label class="prop-label">Offset</label>
+          <div class="numeric" style="flex:1">
+            <input type="number" id="offset-amount" step="0.01" value="1.0" />
+            <span class="suffix">in</span>
+          </div>
+          <button class="btn ghost" id="offset-apply">Apply</button>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="panel">
+        <header class="panel-h"><span>Appearance</span></header>
+        <div class="prop-row">
+          <label class="prop-label">Fill</label>
+          <div class="color-control">
+            <input type="color" id="fill-color" value="#0f1419" />
+            <input type="text" id="fill-hex" class="hex" value="#0F1419" />
+            <button class="swatch-clear" id="fill-none" title="No fill">∅</button>
+          </div>
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Stroke</label>
+          <div class="color-control">
+            <input type="color" id="stroke-color" value="#0f1419" />
+            <input type="text" id="stroke-hex" class="hex" value="#0F1419" />
+            <button class="swatch-clear" id="stroke-none" title="No stroke">∅</button>
+          </div>
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Weight</label>
+          <div class="numeric">
+            <input type="number" id="stroke-width" min="0" max="40" step="0.25" value="1" />
+            <span class="suffix">pt</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Transform -->
+      <div class="panel">
+        <header class="panel-h"><span>Transform</span></header>
+        <div class="grid-2">
+          <div class="numeric"><label>X</label><input type="number" id="t-x" step="0.01" /><span class="suffix">in</span></div>
+          <div class="numeric"><label>Y</label><input type="number" id="t-y" step="0.01" /><span class="suffix">in</span></div>
+          <div class="numeric"><label>W</label><input type="number" id="t-w" step="0.01" min="0" /><span class="suffix">in</span></div>
+          <div class="numeric"><label>H</label><input type="number" id="t-h" step="0.01" min="0" /><span class="suffix">in</span></div>
+          <div class="numeric numeric-wide"><label>Rotate</label><input type="number" id="t-r" step="1" value="0" /><span class="suffix">°</span></div>
+        </div>
+      </div>
+
+      <!-- Layers -->
+      <div class="panel panel-flex">
+        <header class="panel-h">
+          <span>Layers</span>
+          <div class="panel-h-actions">
+            <button class="icon-btn" id="layer-up" title="Bring forward">
+              <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 11 V3 M4 7 L8 3 L12 7" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="icon-btn" id="layer-down" title="Send backward">
+              <svg viewBox="0 0 16 16" width="12" height="12"><path d="M8 5 V13 M4 9 L8 13 L12 9" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <button class="icon-btn" id="layer-del" title="Delete">
+              <svg viewBox="0 0 16 16" width="12" height="12"><path d="M4 5 H12 M6 5 V3 H10 V5 M5 5 L6 13 H10 L11 5" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </header>
+        <ul class="layers" id="layers"></ul>
+      </div>
+    </aside>
+  </main>
+
+  <!-- ============== STATUS BAR ============== -->
+  <footer class="statusbar">
+    <div class="status-cell">
+      <span class="status-label">Tool</span>
+      <span class="status-value" id="status-tool">Select</span>
+    </div>
+    <div class="status-cell">
+      <span class="status-label">Cursor</span>
+      <span class="status-value mono" id="status-cursor">0.00, 0.00 in</span>
+    </div>
+    <div class="status-cell">
+      <span class="status-label">Selection</span>
+      <span class="status-value mono" id="status-sel">—</span>
+    </div>
+    <div class="status-cell push">
+      <span class="status-label">Zoom</span>
+      <span class="status-value mono" id="status-zoom">100%</span>
+    </div>
+    <div class="status-cell">
+      <span class="status-label">Artboard</span>
+      <span class="status-value mono" id="status-ab">36.00 × 24.00 in</span>
+    </div>
+  </footer>
+
+  <!-- ============== TOAST ============== -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

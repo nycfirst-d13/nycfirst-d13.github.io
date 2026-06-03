@@ -1,0 +1,281 @@
+// =============================================================================
+// export.js — clean SVG export sized in inches
+// =============================================================================
+import { store } from './state.js';
+import { artboard } from './artboard.js';
+import { inToPx, applyPathCorners, wordWrapLines } from './utils.js';
+import { fetchFontBuffer, fontkit } from './text-panel.js';
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
+}
+
+// Convert a text shape to a single SVG path d string using fontkit.
+// Returns null if conversion fails (caller falls back to <text> element).
+async function textShapeToPathD(sh) {
+  const a = sh.attrs;
+  const family = a.family || 'Geist';
+  const weight = a.weight || 400;
+  const size   = a.size   || 16;
+  const lh     = a.lineHeight || 1.2;
+  const align  = a.align  || 'left';
+  const content = a.content || '';
+
+  const rawBuffer = await fetchFontBuffer(family, weight);
+  const font = fontkit.create(new Uint8Array(rawBuffer));
+  const scale = size / font.unitsPerEm;
+  const ascender = (font.ascent || font.unitsPerEm * 0.8) * scale;
+
+  // Split into lines — frame text wraps, point text splits on \n
+  let lines;
+  if (a.width != null) {
+    lines = wordWrapLines(content, a.width, family, size, weight);
+  } else {
+    lines = content.split('\n');
+  }
+
+  const allParts = [];
+
+  for (let li = 0; li < lines.length; li++) {
+    const lineText = lines[li];
+    const glyphRun = font.layout(lineText);
+    const lineWidth = glyphRun.positions.reduce((s, p) => s + p.xAdvance, 0) * scale;
+
+    // Determine anchor x for this line
+    let anchorX;
+    if (a.width != null) {
+      // Frame text: origin is top-left of box
+      if (align === 'center') anchorX = a.x + a.width / 2 - lineWidth / 2;
+      else if (align === 'right') anchorX = a.x + a.width - lineWidth;
+      else anchorX = a.x;
+    } else {
+      // Point text: x is anchor
+      if (align === 'center') anchorX = a.x - lineWidth / 2;
+      else if (align === 'right') anchorX = a.x - lineWidth;
+      else anchorX = a.x;
+    }
+
+    const baselineY = a.y + ascender + li * size * lh;
+    let curX = anchorX;
+
+    for (let i = 0; i < glyphRun.glyphs.length; i++) {
+      const glyph = glyphRun.glyphs[i];
+      const pos   = glyphRun.positions[i];
+      const tx = curX + pos.xOffset * scale;
+      const ty = baselineY - pos.yOffset * scale;
+
+      for (const cmd of (glyph.path.commands || [])) {
+        const ca = cmd.args;
+        switch (cmd.command) {
+          case 'moveTo':
+            allParts.push(`M${(tx+ca[0]*scale).toFixed(2)} ${(ty-ca[1]*scale).toFixed(2)}`);
+            break;
+          case 'lineTo':
+            allParts.push(`L${(tx+ca[0]*scale).toFixed(2)} ${(ty-ca[1]*scale).toFixed(2)}`);
+            break;
+          case 'quadraticCurveTo':
+            allParts.push(`Q${(tx+ca[0]*scale).toFixed(2)} ${(ty-ca[1]*scale).toFixed(2)} ${(tx+ca[2]*scale).toFixed(2)} ${(ty-ca[3]*scale).toFixed(2)}`);
+            break;
+          case 'bezierCurveTo':
+            allParts.push(`C${(tx+ca[0]*scale).toFixed(2)} ${(ty-ca[1]*scale).toFixed(2)} ${(tx+ca[2]*scale).toFixed(2)} ${(ty-ca[3]*scale).toFixed(2)} ${(tx+ca[4]*scale).toFixed(2)} ${(ty-ca[5]*scale).toFixed(2)}`);
+            break;
+          case 'closePath':
+            allParts.push('Z');
+            break;
+        }
+      }
+      curX += pos.xAdvance * scale;
+    }
+  }
+
+  return allParts.join(' ') || null;
+}
+
+function shapeToSVG(sh, pathMap = new Map()) {
+  if (sh.visible === false) return '';
+
+  if (sh.type === 'rawsvg') {
+    const tx = sh.attrs.x || 0;
+    const ty = sh.attrs.y || 0;
+    const tr = (tx !== 0 || ty !== 0) ? ` transform="translate(${tx.toFixed(3)},${ty.toFixed(3)})"` : '';
+    return `<g${tr}>\n  ${sh.attrs.markup}\n</g>`;
+  }
+
+  if (sh.type === 'group') {
+    const children = (sh.children || []).map(c => shapeToSVG(c, pathMap)).filter(Boolean).join('\n    ');
+    if (!children) return '';
+    let transform = '';
+    if (sh.rotation) {
+      const b = artboard.getShapeBBox(sh);
+      transform = ` transform="rotate(${sh.rotation} ${(b.x+b.w/2).toFixed(3)} ${(b.y+b.h/2).toFixed(3)})"`;
+    }
+    return `<g${transform}>\n    ${children}\n  </g>`;
+  }
+
+  const a = sh.attrs;
+  let style = '';
+  const fill   = sh.fill   ?? 'none';
+  const stroke = sh.stroke ?? 'none';
+  const sw     = sh.strokeWidth ?? 0;
+  style = ` fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"`;
+
+  let transform = '';
+  if (sh.rotation) {
+    const b = artboard.getShapeBBox(sh);
+    transform = ` transform="rotate(${sh.rotation} ${(b.x+b.w/2).toFixed(3)} ${(b.y+b.h/2).toFixed(3)})"`;
+  }
+
+  switch (sh.type) {
+    case 'rect': {
+      const hasPC = a.r_nw || a.r_ne || a.r_se || a.r_sw;
+      if (hasPC) {
+        const half = Math.min(a.w, a.h) / 2;
+        const r = {
+          nw: Math.min(Math.max(0, a.r_nw ?? a.rx ?? 0), half),
+          ne: Math.min(Math.max(0, a.r_ne ?? a.rx ?? 0), half),
+          se: Math.min(Math.max(0, a.r_se ?? a.rx ?? 0), half),
+          sw: Math.min(Math.max(0, a.r_sw ?? a.rx ?? 0), half),
+        };
+        const { x, y, w, h } = a;
+        let d = `M ${x + r.nw} ${y}`;
+        d += ` L ${x + w - r.ne} ${y}`;
+        if (r.ne > 0) d += ` A ${r.ne} ${r.ne} 0 0 1 ${x + w} ${y + r.ne}`;
+        d += ` L ${x + w} ${y + h - r.se}`;
+        if (r.se > 0) d += ` A ${r.se} ${r.se} 0 0 1 ${x + w - r.se} ${y + h}`;
+        d += ` L ${x + r.sw} ${y + h}`;
+        if (r.sw > 0) d += ` A ${r.sw} ${r.sw} 0 0 1 ${x} ${y + h - r.sw}`;
+        d += ` L ${x} ${y + r.nw}`;
+        if (r.nw > 0) d += ` A ${r.nw} ${r.nw} 0 0 1 ${x + r.nw} ${y}`;
+        d += ' Z';
+        return `<path d="${d}"${style}${transform}/>`;
+      }
+      return `<rect x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" width="${a.w.toFixed(3)}" height="${a.h.toFixed(3)}"${a.rx ? ` rx="${a.rx}"` : ''}${style}${transform}/>`;
+    }
+    case 'ellipse':
+      return `<ellipse cx="${a.cx.toFixed(3)}" cy="${a.cy.toFixed(3)}" rx="${a.rx.toFixed(3)}" ry="${a.ry.toFixed(3)}"${style}${transform}/>`;
+    case 'line':
+      return `<line x1="${a.x1.toFixed(3)}" y1="${a.y1.toFixed(3)}" x2="${a.x2.toFixed(3)}" y2="${a.y2.toFixed(3)}"${style}${transform}/>`;
+    case 'polygon': {
+      const pts = polyPoints(a).map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
+      return `<polygon points="${pts}"${style}${transform}/>`;
+    }
+    case 'path': {
+      const pd = a.corners ? applyPathCorners(a.d, a.corners) : a.d;
+      const fr = a.fillRule ? ` fill-rule="${a.fillRule}"` : '';
+      return `<path d="${pd}"${fr}${style}${transform}/>`;
+    }
+    case 'text': {
+      if (pathMap.has(sh.id)) {
+        const d = pathMap.get(sh.id);
+        const fillStr = (!fill || fill === 'none') ? '#0F1419' : fill;
+        return `<path d="${d}" fill="${fillStr}" stroke="${stroke === 'none' ? 'none' : stroke}" stroke-width="${sw}" fill-rule="nonzero"${transform}/>`;
+      }
+      const anchorMap = { left: 'start', center: 'middle', right: 'end' };
+      const al     = a.align || 'left';
+      const anchor = anchorMap[al] || 'start';
+      const ff     = esc(a.family || 'sans-serif');
+      const fw     = a.weight || 400;
+      const sz     = a.size || 16;
+      const lh     = a.lineHeight || 1.2;
+      const fillStr = (!fill || fill === 'none') ? '#0F1419' : fill;
+      const baseStyle = ` font-family="${ff}" font-size="${sz}" font-weight="${fw}" ` +
+        `text-anchor="${anchor}" dominant-baseline="text-before-edge" ` +
+        `fill="${fillStr}" stroke="${stroke === 'none' ? 'none' : stroke}" stroke-width="${sw}"${transform}`;
+
+      if (a.width != null) {
+        let textX = a.x;
+        if (al === 'center') textX = a.x + a.width / 2;
+        else if (al === 'right') textX = a.x + a.width;
+        const lines = wordWrapLines(a.content || '', a.width, a.family || 'sans-serif', sz, fw);
+        const tspans = lines.map((line, i) => {
+          const pos = i === 0
+            ? `x="${textX.toFixed(3)}" y="${a.y.toFixed(3)}"`
+            : `x="${textX.toFixed(3)}" dy="${lh}em"`;
+          return `<tspan ${pos}>${esc(line)}</tspan>`;
+        }).join('');
+        return `<text${baseStyle}>${tspans}</text>`;
+      }
+      return `<text x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}"${baseStyle}>${esc(a.content || '')}</text>`;
+    }
+  }
+  return '';
+}
+
+function polyPoints(a) {
+  const pts = [];
+  const start = -Math.PI / 2;
+  for (let i = 0; i < a.sides; i++) {
+    const ang = start + i * 2 * Math.PI / a.sides;
+    pts.push({ x: a.cx + a.r * Math.cos(ang), y: a.cy + a.r * Math.sin(ang) });
+  }
+  return pts;
+}
+
+function buildSVG(pathMap = new Map()) {
+  const s = store.get();
+  const wPx = inToPx(s.artboard.w);
+  const hPx = inToPx(s.artboard.h);
+  const body = s.shapes.map(sh => shapeToSVG(sh, pathMap)).filter(Boolean).join('\n  ');
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+     width="${s.artboard.w}in" height="${s.artboard.h}in"
+     viewBox="0 0 ${wPx} ${hPx}">
+  <title>Laser Maker Export</title>
+  <desc>${s.artboard.w} × ${s.artboard.h} inches</desc>
+  ${body}
+</svg>
+`;
+}
+
+// Collect all text shapes recursively from the shape tree
+function collectTextShapes(shapes) {
+  const result = [];
+  for (const sh of shapes) {
+    if (sh.visible === false) continue;
+    if (sh.type === 'text') result.push(sh);
+    if (sh.type === 'group' && sh.children) result.push(...collectTextShapes(sh.children));
+  }
+  return result;
+}
+
+async function download() {
+  const s = store.get();
+  const textShapes = collectTextShapes(s.shapes);
+  const pathMap = new Map();
+
+  if (fontkit && textShapes.length) {
+    await Promise.all(textShapes.map(async sh => {
+      try {
+        const d = await textShapeToPathD(sh);
+        if (d) pathMap.set(sh.id, d);
+      } catch (err) {
+        console.warn('text-to-path failed for', sh.id, err);
+        // falls back to <text> element
+      }
+    }));
+  }
+
+  const svg = buildSVG(pathMap);
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `laser-maker-${date}.svg`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
+  toast('SVG exported');
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+document.getElementById('export-btn').addEventListener('click', download);
+
+export const exporter = { download, buildSVG };

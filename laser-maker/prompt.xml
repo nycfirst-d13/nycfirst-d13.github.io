@@ -1,0 +1,248 @@
+<prompt>
+
+  <startup_instruction>
+    Before generating any code, first consult my Taste MCP and design front-end skills context on front end design.
+    Use those references to guide all interface design, layout hierarchy, spacing, typography, interaction polish, and visual decision-making.
+
+    The interface should feel thoughtfully designed, modern, minimal, and educationally approachable for middle school students.
+
+    Prioritize excellent front-end craftsmanship over feature bloat.
+  </startup_instruction>
+
+  <project>
+    Build a browser-based SVG vector editor called "Laser Maker" for middle school students creating designs for laser cutting machines.
+
+    The application should feel like a simplified Adobe Illustrator built specifically for children and rapid prototyping.
+  </project>
+
+  <technical_requirements>
+    <stack>HTML</stack>
+    <stack>CSS</stack>
+    <stack>Modern JavaScript</stack>
+
+    <allowed_libraries>
+      <library>svg.js</library>
+      <library>paper.js</library>
+      <library>interact.js</library>
+      <library>tinycolor</library>
+    </allowed_libraries>
+
+    <constraint>No backend</constraint>
+    <constraint>Runs fully in browser</constraint>
+    <constraint>Modular architecture</constraint>
+    <constraint>Easy future expansion</constraint>
+  </technical_requirements>
+
+  <core_workspace>
+
+    <feature>
+      SVG artboard centered in workspace
+    </feature>
+
+    <feature>
+      Artboard size can be set by user in real-world inches
+      (example: 12x12, 18x24, 24x36)
+    </feature>
+
+    <feature>
+      Horizontal and vertical rulers on workspace edges
+      similar to Adobe Illustrator
+    </feature>
+
+    <feature>
+      Rulers display real measurement increments
+    </feature>
+
+    <feature>
+      Zoom controls
+    </feature>
+
+    <feature>
+      Button to reset zoom to true 1:1 physical scale
+      where on-screen inches match real design inches
+      as accurately as browser/device allows
+    </feature>
+
+    <feature>
+      Pan canvas
+    </feature>
+
+    <feature>
+      Grid overlay
+    </feature>
+
+    <feature>
+      Snap to grid
+    </feature>
+
+  </core_workspace>
+
+  <tools>
+
+    <tool>Select tool</tool>
+
+    <tool>Direct select tool</tool>
+
+    <tool>Rectangle tool</tool>
+
+    <tool>Ellipse tool</tool>
+
+    <tool>Line tool</tool>
+
+    <tool>Polygon tool</tool>
+
+    <tool>Text tool</tool>
+
+    <tool>
+      Bézier pen tool behaving similarly to Adobe Illustrator:
+      click to place anchors,
+      drag for handles,
+      edit curves cleanly
+    </tool>
+
+  </tools>
+
+  <editing_features>
+
+    <feature>Move objects</feature>
+
+    <feature>Resize objects</feature>
+
+    <feature>Rotate objects</feature>
+
+    <feature>Stroke color picker</feature>
+
+    <feature>Fill color picker</feature>
+
+    <feature>Stroke width controls</feature>
+
+    <feature>Transform controls</feature>
+
+    <feature>Simple layers panel</feature>
+
+    <feature>Undo</feature>
+
+    <feature>Redo</feature>
+
+  </editing_features>
+
+  <path_operations>
+
+    <feature>Unite</feature>
+
+    <feature>Subtract</feature>
+
+    <feature>Intersect</feature>
+
+    <feature>
+      Shape-builder style interaction if practical,
+      otherwise keep simple pathfinder buttons
+    </feature>
+
+  </path_operations>
+
+  <export>
+
+    <feature>Export clean SVG to size of canvas board</feature>
+
+    <feature>Preserve physical sizing for laser cutting workflows</feature>
+
+  </export>
+
+  <design_requirements>
+
+    <ui>
+      Minimal and clean
+    </ui>
+
+    <ui>
+      Large obvious controls for children
+    </ui>
+
+    <ui>
+      Clear visual hierarchy
+    </ui>
+
+    <ui>
+      Educational and approachable
+    </ui>
+
+    <ui>
+      Professional enough to feel real
+    </ui>
+
+    <ui>
+      Clear, modern interface that is on brand for NYC FIRST
+    </ui>
+
+    <ui>
+      Similar layout conventions to Illustrator
+      but dramatically simplified
+    </ui>
+
+  </design_requirements>
+
+  <implementation_priority>
+
+    <priority>Stable SVG rendering</priority>
+
+    <priority>Artboard sizing system</priority>
+
+    <priority>Ruler accuracy</priority>
+
+    <priority>1:1 scale reset</priority>
+
+    <priority>Selection + transforms</priority>
+
+    <priority>Shape creation</priority>
+
+    <priority>Bezier editing</priority>
+
+    <priority>Export workflow</priority>
+
+  </implementation_priority>
+
+  <important_constraints>
+
+    <constraint>
+      Do NOT attempt full Illustrator complexity
+    </constraint>
+
+     <constraint>
+      Relying on less external libraries is better. Make decisions on what implementation to leverage in order to achieve the goal.
+    </constraint>
+
+
+    <constraint>
+      Keep first prototype simple and highly functional
+    </constraint>
+
+    <constraint>
+      Prioritize reliability of interaction
+    </constraint>
+
+    <constraint>
+      Avoid unnecessary advanced features
+    </constraint>
+
+    <constraint>
+      Build only enough to establish strong foundation
+    </constraint>
+
+  </important_constraints>
+
+  <deliverables>
+
+    <file>index.html</file>
+
+    <file>styles.css</file>
+
+    <file>app.js</file>
+
+    <file>modular JS files</file>
+
+    <file>README.md</file>
+
+  </deliverables>
+
+</prompt>
