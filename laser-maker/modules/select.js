@@ -20,12 +20,16 @@ function px(v) { return v / store.get().viewport.zoom; } // convert CSS px -> ar
 // =============== Marquee + hit testing ==============================
 
 function hitShape(clientX, clientY) {
-  const node = document.elementFromPoint(clientX, clientY);
-  if (!node) return null;
-  let el = node;
-  while (el && el !== document.body) {
-    if (el.dataset && el.dataset.id) return resolveHitId(el.dataset.id);
-    el = el.parentNode;
+  const overlayEl = document.getElementById('overlay');
+  const nodes = document.elementsFromPoint(clientX, clientY);
+  for (const node of nodes) {
+    // Skip overlay elements (handles, anchors, CP circles, etc.)
+    if (overlayEl && (node === overlayEl || overlayEl.contains(node))) continue;
+    let el = node;
+    while (el && el !== document.body) {
+      if (el.dataset && el.dataset.id) return resolveHitId(el.dataset.id);
+      el = el.parentNode;
+    }
   }
   return null;
 }
@@ -486,8 +490,29 @@ tools.register('select', {
 });
 
 // =============== Direct select tool ==============================
+let _lastDirectDownTime = 0;
+let _lastDirectDownSeg = null; // { shapeId, idx1, idx2 }
+
 tools.register('direct', {
   onDown({ raw, event }) {
+    // Bezier control point handle?
+    const cpEl = event.target.closest?.('[data-cp]');
+    if (cpEl) {
+      const parts = cpEl.dataset.cp.split(':');
+      const shapeId = parts[0], segIdx = parseInt(parts[1]), role = parts[2];
+      this._mode = 'cp';
+      this._cpShapeId = shapeId;
+      this._cpSegIdx = segIdx;
+      this._cpRole = role;
+      this._rawStart = raw;
+      this._snapStart = artboard.snapPoint(raw);
+      const sh = store.findShape(shapeId);
+      this._cpOrigSegs = sh?.type === 'path' ? _parseAllPathSegs(sh.attrs.d) : null;
+      this._cpOrigRot = sh?.rotation || 0;
+      store.beginTransaction();
+      return;
+    }
+
     // Corner widget?
     const cwEl = event.target.closest?.('[data-corner-widget]');
     if (cwEl) {
@@ -567,11 +592,26 @@ tools.register('direct', {
     const { isolationGroup } = store.get();
     const effectiveHit = (isolationGroup && hit === isolationGroup) ? null : hit;
 
-    // Segment drag: click on already-selected shape body → move the edge between two anchors
+    // Segment click on already-selected shape body
     if (effectiveHit && store.get().selection[0] === effectiveHit) {
       const sh = store.findShape(effectiveHit);
       const seg = sh ? findNearestSegment(sh, raw) : null;
       if (seg) {
+        // Custom double-click detection (event.detail unreliable — DOM rebuilds between clicks)
+        const now = Date.now();
+        const prev = _lastDirectDownSeg;
+        const isDouble = sh.type === 'path'
+          && (now - _lastDirectDownTime) < 400
+          && prev?.shapeId === effectiveHit
+          && prev?.idx1 === seg.idx1
+          && prev?.idx2 === seg.idx2;
+        _lastDirectDownTime = now;
+        _lastDirectDownSeg = { shapeId: effectiveHit, idx1: seg.idx1, idx2: seg.idx2 };
+        if (isDouble) {
+          _lastDirectDownTime = 0; _lastDirectDownSeg = null;
+          _toggleSegmentCurve(effectiveHit, seg.idx1, seg.idx2);
+          return;
+        }
         hoveredSegment = null;
         selectedAnchors = [
           { shapeId: effectiveHit, idx: seg.idx1 },
@@ -629,6 +669,36 @@ tools.register('direct', {
           live.attrs.corners[cornerIdx] = newR;
         }, 'transform');
       }
+      return;
+    }
+    if (this._mode === 'cp') {
+      const s = store.get();
+      let dx, dy;
+      if (s.guides?.enabled) {
+        const snapResult = computePointSnap(raw);
+        dx = snapResult.pt.x - this._rawStart.x;
+        dy = snapResult.pt.y - this._rawStart.y;
+      } else {
+        clearGuides();
+        const snapped = artboard.snapPoint(raw);
+        dx = snapped.x - this._snapStart.x;
+        dy = snapped.y - this._snapStart.y;
+      }
+      let ldx = dx, ldy = dy;
+      if (this._cpOrigRot) {
+        const sh = store.findShape(this._cpShapeId);
+        const ob = sh ? artboard.getShapeBBox(sh) : null;
+        if (ob) {
+          const ocx = ob.x + ob.w / 2, ocy = ob.y + ob.h / 2;
+          const unrot = rotatePoint(ocx + dx, ocy + dy, ocx, ocy, -this._cpOrigRot);
+          ldx = unrot.x - ocx; ldy = unrot.y - ocy;
+        }
+      }
+      store.patch(() => {
+        const sh = store.findShape(this._cpShapeId);
+        if (!sh || !this._cpOrigSegs) return;
+        sh.attrs.d = _rebuildPathCP(this._cpOrigSegs, this._cpSegIdx, this._cpRole, ldx, ldy);
+      }, 'transform');
       return;
     }
     if (this._mode === 'anchor') {
@@ -699,6 +769,7 @@ tools.register('direct', {
   },
 
   onUp() {
+    if (this._mode === 'cp') store.endTransaction('cp-move');
     if (this._mode === 'anchor') store.endTransaction('anchor-move');
     if (this._mode === 'corner-round') {
       store.endTransaction('corner-round');
@@ -1016,14 +1087,23 @@ function drawAnchors(id) {
 
   // Hovered segment highlight — draw before anchors so anchors render on top
   if (hoveredSegment && hoveredSegment.shapeId === id) {
-    const p1 = pts[hoveredSegment.idx1];
-    const p2 = pts[hoveredSegment.idx2] || pts[0]; // idx2 can wrap to 0 for closed paths
-    if (p1 && p2) {
-      const vp1 = rot ? rotatePoint(p1.x, p1.y, cx, cy, rot) : p1;
-      const vp2 = rot ? rotatePoint(p2.x, p2.y, cx, cy, rot) : p2;
-      const line = svgNS('line');
-      setAttrs(line, { x1: vp1.x, y1: vp1.y, x2: vp2.x, y2: vp2.y, class: 'seg-hover' });
-      overlay.appendChild(line);
+    if (sh.type === 'path' && sh.attrs.d) {
+      const segD = _getHoverSegPath(sh, hoveredSegment.idx1, hoveredSegment.idx2, cx, cy, rot);
+      if (segD) {
+        const pathEl = svgNS('path');
+        setAttrs(pathEl, { d: segD, class: 'seg-hover' });
+        overlay.appendChild(pathEl);
+      }
+    } else {
+      const p1 = pts[hoveredSegment.idx1];
+      const p2 = pts[hoveredSegment.idx2] || pts[0];
+      if (p1 && p2) {
+        const vp1 = rot ? rotatePoint(p1.x, p1.y, cx, cy, rot) : p1;
+        const vp2 = rot ? rotatePoint(p2.x, p2.y, cx, cy, rot) : p2;
+        const line = svgNS('line');
+        setAttrs(line, { x1: vp1.x, y1: vp1.y, x2: vp2.x, y2: vp2.y, class: 'seg-hover' });
+        overlay.appendChild(line);
+      }
     }
   }
 
@@ -1102,6 +1182,29 @@ function drawAnchors(id) {
     r.dataset.anchor = `${id}:${i}`;
     overlay.appendChild(r);
   }
+
+  // Bezier control point handles for selected path anchors
+  if (sh.type === 'path' && sh.attrs.d) {
+    const selIdxs = selectedAnchors.filter(a => a.shapeId === id).map(a => a.idx);
+    if (selIdxs.length) {
+      const cpHs = (ANCHOR_SIZE * 0.7) / z;
+      const cpList = getPathCPs(sh.attrs.d, selIdxs);
+      for (const cp of cpList) {
+        let px = cp.x, py = cp.y, lax = cp.ax, lay = cp.ay;
+        if (rot) {
+          const rp = rotatePoint(px, py, cx, cy, rot); px = rp.x; py = rp.y;
+          const ra = rotatePoint(lax, lay, cx, cy, rot); lax = ra.x; lay = ra.y;
+        }
+        const line = svgNS('line');
+        setAttrs(line, { x1: lax, y1: lay, x2: px, y2: py, class: 'anchor-handle-line', 'pointer-events': 'none' });
+        overlay.appendChild(line);
+        const c = svgNS('circle');
+        setAttrs(c, { cx: px, cy: py, r: cpHs, class: 'anchor-handle' });
+        c.dataset.cp = `${id}:${cp.segIdx}:${cp.role}`;
+        overlay.appendChild(c);
+      }
+    }
+  }
 }
 
 function rectToPath(sh) {
@@ -1116,8 +1219,10 @@ function applyAnchorsDelta(sh, orig, idxs, dx, dy) {
       // Anchors: 0=nw, 1=ne, 2=se, 3=sw  (matches anchorPoints order)
       const o = orig.attrs;
       const isSimple = !o.rx && !o.r_nw && !o.r_ne && !o.r_se && !o.r_sw;
-      // Single corner drag on a simple rect → convert to free-form path
-      if (idxs.length === 1 && isSimple) {
+      // Single corner drag, or adjacent-segment drag on a simple rect → convert to free-form path
+      const s2 = idxs.length === 2 && [...idxs].sort((a, b) => a - b);
+      const isAdjacentSegment = s2 && (s2[1] - s2[0] === 1 || (s2[0] === 0 && s2[1] === 3));
+      if ((idxs.length === 1 || isAdjacentSegment) && isSimple) {
         const origSegs = _parseAllPathSegs(rectToPathData(o));
         sh.type = 'path';
         sh.attrs = { d: _rebuildPath(origSegs, idxs, dx, dy) };
@@ -1302,7 +1407,246 @@ function _rebuildPath(origSegs, anchorIdxs, dx, dy) {
   return d.trim();
 }
 
+// Toggle a path segment between straight (L) and cubic bezier (C).
+// Double-click on L segment → C with collinear handles at 1/3 and 2/3 (ready to drag).
+// Double-click on C segment → L (strips handles).
+// Z-close segment (idx1=n-1, idx2=0) is handled by inserting an explicit C before Z.
+function _toggleSegmentCurve(shapeId, idx1, idx2) {
+  const sh = store.findShape(shapeId);
+  if (!sh || sh.type !== 'path') return;
+
+  const allSegs = _parseAllPathSegs(sh.attrs.d);
+  let anchorCount = 0;
+  const anchorToSeg = new Map();
+  for (let i = 0; i < allSegs.length; i++) {
+    if (!allSegs[i].isZ) { anchorToSeg.set(anchorCount, i); anchorCount++; }
+  }
+  const n = anchorCount;
+
+  const segSX = [], segSY = [];
+  let lx = 0, ly = 0;
+  for (let i = 0; i < allSegs.length; i++) {
+    segSX[i] = lx; segSY[i] = ly;
+    if (!allSegs[i].isZ) { lx = allSegs[i].x; ly = allSegs[i].y; }
+  }
+
+  const closed = /z/i.test(sh.attrs.d);
+
+  // Z-close segment (straight line implied by Z, no explicit segment)
+  if (idx2 === 0 && closed && idx1 === n - 1) {
+    const lastSi = anchorToSeg.get(n - 1);
+    const m0si   = anchorToSeg.get(0);
+    if (lastSi == null || m0si == null) return;
+    const x0 = allSegs[lastSi].x, y0 = allSegs[lastSi].y;
+    const mx = allSegs[m0si].x,   my = allSegs[m0si].y;
+    const cp1x = x0 + (mx - x0) / 3, cp1y = y0 + (my - y0) / 3;
+    const cp2x = x0 + (mx - x0) * 2/3, cp2y = y0 + (my - y0) * 2/3;
+    let d = '', inserted = false;
+    for (let i = 0; i < allSegs.length; i++) {
+      if (allSegs[i].isZ && !inserted) {
+        d += ` C ${cp1x.toFixed(3)} ${cp1y.toFixed(3)} ${cp2x.toFixed(3)} ${cp2y.toFixed(3)} ${mx.toFixed(3)} ${my.toFixed(3)} Z`;
+        inserted = true;
+      } else if (allSegs[i].isZ) {
+        d += ' Z';
+      } else {
+        d += ' ' + allSegs[i].rawSegment;
+      }
+    }
+    store.commit(s => { const live = store.findShape(shapeId); if (live) live.attrs.d = d.trim(); }, 'toggle-curve');
+    selectedAnchors = [{ shapeId, idx: n - 1 }, { shapeId, idx: n }];
+    renderOverlay();
+    return;
+  }
+
+  const si = anchorToSeg.get(idx2);
+  if (si == null) return;
+  const seg = allSegs[si];
+  const ucmd = seg.cmd.toUpperCase();
+  const sx = segSX[si], sy = segSY[si];
+
+  let newRaw;
+  if (ucmd === 'C') {
+    newRaw = `L ${seg.x.toFixed(3)} ${seg.y.toFixed(3)}`;
+  } else if (ucmd === 'L' || ucmd === 'H' || ucmd === 'V') {
+    const ex = seg.x, ey = seg.y;
+    const cp1x = sx + (ex - sx) / 3, cp1y = sy + (ey - sy) / 3;
+    const cp2x = sx + (ex - sx) * 2/3, cp2y = sy + (ey - sy) * 2/3;
+    newRaw = `C ${cp1x.toFixed(3)} ${cp1y.toFixed(3)} ${cp2x.toFixed(3)} ${cp2y.toFixed(3)} ${ex.toFixed(3)} ${ey.toFixed(3)}`;
+  } else {
+    return; // M, Q, S, A — not handled
+  }
+
+  let d = '';
+  for (let i = 0; i < allSegs.length; i++) {
+    if (allSegs[i].isZ) { d += ' Z'; continue; }
+    d += ' ' + (i === si ? newRaw : allSegs[i].rawSegment);
+  }
+  store.commit(s => { const live = store.findShape(shapeId); if (live) live.attrs.d = d.trim(); }, 'toggle-curve');
+  selectedAnchors = [{ shapeId, idx: idx1 }, { shapeId, idx: idx2 }];
+  renderOverlay();
+}
+
+// Returns SVG `d` string (in artboard/screen space) for the segment between anchor idx1→idx2.
+function _getHoverSegPath(sh, idx1, idx2, cx, cy, rot) {
+  const allSegs = _parseAllPathSegs(sh.attrs.d);
+  let anchorCount = 0;
+  const anchorToSeg = new Map();
+  for (let i = 0; i < allSegs.length; i++) {
+    if (!allSegs[i].isZ) { anchorToSeg.set(anchorCount, i); anchorCount++; }
+  }
+  const segSX = [], segSY = [];
+  let lx = 0, ly = 0;
+  for (let i = 0; i < allSegs.length; i++) {
+    segSX[i] = lx; segSY[i] = ly;
+    if (!allSegs[i].isZ) { lx = allSegs[i].x; ly = allSegs[i].y; }
+  }
+  const rp = (x, y) => {
+    const pt = rot ? rotatePoint(x, y, cx, cy, rot) : { x, y };
+    return `${pt.x.toFixed(2)} ${pt.y.toFixed(2)}`;
+  };
+  const n = anchorCount;
+  // Closing segment: straight line back to anchor 0
+  if (idx1 === n - 1 && idx2 === 0) {
+    const s0 = anchorToSeg.get(n - 1), s1 = anchorToSeg.get(0);
+    if (s0 == null || s1 == null) return null;
+    return `M ${rp(allSegs[s0].x, allSegs[s0].y)} L ${rp(allSegs[s1].x, allSegs[s1].y)}`;
+  }
+  const si = anchorToSeg.get(idx2);
+  if (si == null) return null;
+  const seg = allSegs[si];
+  const sx = segSX[si], sy = segSY[si];
+  const ucmd = seg.cmd.toUpperCase();
+  const start = `M ${rp(sx, sy)}`;
+  if (ucmd === 'C') {
+    const cp1x = seg.isAbs ? seg.nums[0] : sx + seg.nums[0];
+    const cp1y = seg.isAbs ? seg.nums[1] : sy + seg.nums[1];
+    const cp2x = seg.isAbs ? seg.nums[2] : sx + seg.nums[2];
+    const cp2y = seg.isAbs ? seg.nums[3] : sy + seg.nums[3];
+    return `${start} C ${rp(cp1x, cp1y)} ${rp(cp2x, cp2y)} ${rp(seg.x, seg.y)}`;
+  } else if (ucmd === 'Q') {
+    const cpx = seg.isAbs ? seg.nums[0] : sx + seg.nums[0];
+    const cpy = seg.isAbs ? seg.nums[1] : sy + seg.nums[1];
+    return `${start} Q ${rp(cpx, cpy)} ${rp(seg.x, seg.y)}`;
+  }
+  return `${start} L ${rp(seg.x, seg.y)}`;
+}
+
+// Returns bezier control points for rendering, for the given selected anchor indices.
+// Each entry: { segIdx, role, x, y, ax, ay } where (x,y) is the CP position in shape-local
+// space and (ax,ay) is the anchor end for the handle line.
+function getPathCPs(d, selectedAnchorIdxs) {
+  const allSegs = _parseAllPathSegs(d);
+  let anchorCount = 0;
+  const anchorToSeg = new Map();
+  for (let i = 0; i < allSegs.length; i++) {
+    if (!allSegs[i].isZ) { anchorToSeg.set(anchorCount, i); anchorCount++; }
+  }
+  // Pre-compute start point of each segment (= endpoint of previous non-Z seg)
+  const segSX = [], segSY = [];
+  let lx = 0, ly = 0;
+  for (let i = 0; i < allSegs.length; i++) {
+    segSX[i] = lx; segSY[i] = ly;
+    if (!allSegs[i].isZ) { lx = allSegs[i].x; ly = allSegs[i].y; }
+  }
+
+  const cps = [];
+  const seen = new Set();
+
+  const addCP = (si, role) => {
+    const key = `${si}:${role}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    const seg = allSegs[si];
+    const sx = segSX[si], sy = segSY[si];
+    const ucmd = seg.cmd.toUpperCase();
+    let cpx, cpy, ax, ay;
+    if (ucmd === 'C') {
+      if (role === 'cp1') {
+        cpx = seg.isAbs ? seg.nums[0] : sx + seg.nums[0];
+        cpy = seg.isAbs ? seg.nums[1] : sy + seg.nums[1];
+        ax = sx; ay = sy;
+      } else {
+        cpx = seg.isAbs ? seg.nums[2] : sx + seg.nums[2];
+        cpy = seg.isAbs ? seg.nums[3] : sy + seg.nums[3];
+        ax = seg.x; ay = seg.y;
+      }
+    } else if (ucmd === 'Q' && role === 'cp1') {
+      cpx = seg.isAbs ? seg.nums[0] : sx + seg.nums[0];
+      cpy = seg.isAbs ? seg.nums[1] : sy + seg.nums[1];
+      ax = sx; ay = sy;
+    } else {
+      return;
+    }
+    cps.push({ segIdx: si, role, x: cpx, y: cpy, ax, ay });
+  };
+
+  for (const ai of selectedAnchorIdxs) {
+    const si = anchorToSeg.get(ai);
+    if (si == null) continue;
+    const ucmd = allSegs[si].cmd.toUpperCase();
+    if (ucmd === 'C') { addCP(si, 'cp1'); addCP(si, 'cp2'); }
+    else if (ucmd === 'Q') { addCP(si, 'cp1'); }
+    // Outgoing handle: cp1 of next non-Z segment
+    let nextSi = si + 1;
+    while (nextSi < allSegs.length && allSegs[nextSi].isZ) nextSi++;
+    if (nextSi < allSegs.length) {
+      const nc = allSegs[nextSi].cmd.toUpperCase();
+      if (nc === 'C') addCP(nextSi, 'cp1');
+      else if (nc === 'Q') addCP(nextSi, 'cp1');
+    }
+  }
+  return cps;
+}
+
+// Rebuild path moving a single bezier control point by (dx, dy).
+function _rebuildPathCP(origSegs, segIdx, role, dx, dy) {
+  let d = '';
+  for (let si = 0; si < origSegs.length; si++) {
+    const s = origSegs[si];
+    if (s.isZ) { d += ' Z'; continue; }
+    if (si !== segIdx) { d += ' ' + s.rawSegment; continue; }
+    const nums = [...s.nums];
+    const ucmd = s.cmd.toUpperCase();
+    if (ucmd === 'C') {
+      if (role === 'cp1')      { nums[0] += dx; nums[1] += dy; }
+      else if (role === 'cp2') { nums[2] += dx; nums[3] += dy; }
+    } else if (ucmd === 'Q' && role === 'cp1') {
+      nums[0] += dx; nums[1] += dy;
+    }
+    d += ' ' + s.cmd + ' ' + nums.map(n => n.toFixed(3)).join(' ');
+  }
+  return d.trim();
+}
+
 // =============== Segment hit helpers ==============================
+
+function distToCubicBezier(p, p0, cp1, cp2, p1, samples = 24) {
+  let minDist = Infinity, prev = p0;
+  for (let k = 1; k <= samples; k++) {
+    const t = k / samples, mt = 1 - t;
+    const x = mt*mt*mt*p0.x + 3*mt*mt*t*cp1.x + 3*mt*t*t*cp2.x + t*t*t*p1.x;
+    const y = mt*mt*mt*p0.y + 3*mt*mt*t*cp1.y + 3*mt*t*t*cp2.y + t*t*t*p1.y;
+    const cur = { x, y };
+    const d = distToSegment(p, prev, cur);
+    if (d < minDist) minDist = d;
+    prev = cur;
+  }
+  return minDist;
+}
+
+function distToQuadBezier(p, p0, cp, p1, samples = 16) {
+  let minDist = Infinity, prev = p0;
+  for (let k = 1; k <= samples; k++) {
+    const t = k / samples, mt = 1 - t;
+    const x = mt*mt*p0.x + 2*mt*t*cp.x + t*t*p1.x;
+    const y = mt*mt*p0.y + 2*mt*t*cp.y + t*t*p1.y;
+    const cur = { x, y };
+    const d = distToSegment(p, prev, cur);
+    if (d < minDist) minDist = d;
+    prev = cur;
+  }
+  return minDist;
+}
 
 function distToSegment(p, a, b) {
   const dx = b.x - a.x, dy = b.y - a.y;
@@ -1320,6 +1664,8 @@ function findNearestSegment(sh, raw) {
       || (sh.attrs.r_se || 0) > 0 || (sh.attrs.r_sw || 0) > 0;
     if (anyRound) return null;
   }
+  if (sh.type === 'path' && sh.attrs.d) return _findNearestPathSegment(sh, raw);
+
   const pts = anchorPoints(sh);
   if (pts.length < 2) return null;
 
@@ -1343,6 +1689,65 @@ function findNearestSegment(sh, raw) {
     const d = distToSegment(raw, visPts[i], visPts[j]);
     if (d < minDist) { minDist = d; bestI = i; bestJ = j; }
   }
+  if (minDist > threshold) return null;
+  return bestI >= 0 ? { idx1: bestI, idx2: bestJ } : null;
+}
+
+function _findNearestPathSegment(sh, raw) {
+  const d = sh.attrs.d;
+  const allSegs = _parseAllPathSegs(d);
+  const rot = sh.rotation || 0;
+  let cx = 0, cy = 0;
+  if (rot) { const b = artboard.getShapeBBox(sh); cx = b.x + b.w/2; cy = b.y + b.h/2; }
+  const rp = (x, y) => rot ? rotatePoint(x, y, cx, cy, rot) : { x, y };
+
+  let anchorCount = 0;
+  const anchorToSeg = new Map();
+  for (let i = 0; i < allSegs.length; i++) {
+    if (!allSegs[i].isZ) { anchorToSeg.set(anchorCount, i); anchorCount++; }
+  }
+  const n = anchorCount;
+  if (n < 2) return null;
+
+  const segSX = [], segSY = [];
+  let lx = 0, ly = 0;
+  for (let i = 0; i < allSegs.length; i++) {
+    segSX[i] = lx; segSY[i] = ly;
+    if (!allSegs[i].isZ) { lx = allSegs[i].x; ly = allSegs[i].y; }
+  }
+
+  const closed = /z/i.test(d);
+  const threshold = 10 / store.get().viewport.zoom;
+  let minDist = Infinity, bestI = -1, bestJ = -1;
+
+  for (let ai = 1; ai < n; ai++) {
+    const si = anchorToSeg.get(ai);
+    const seg = allSegs[si];
+    const ucmd = seg.cmd.toUpperCase();
+    if (ucmd === 'M') continue;
+    const sx = segSX[si], sy = segSY[si];
+    const p0 = rp(sx, sy), p1 = rp(seg.x, seg.y);
+    let dist;
+    if (ucmd === 'C') {
+      const cp1 = rp(seg.isAbs ? seg.nums[0] : sx + seg.nums[0], seg.isAbs ? seg.nums[1] : sy + seg.nums[1]);
+      const cp2 = rp(seg.isAbs ? seg.nums[2] : sx + seg.nums[2], seg.isAbs ? seg.nums[3] : sy + seg.nums[3]);
+      dist = distToCubicBezier(raw, p0, cp1, cp2, p1);
+    } else if (ucmd === 'Q') {
+      const cp = rp(seg.isAbs ? seg.nums[0] : sx + seg.nums[0], seg.isAbs ? seg.nums[1] : sy + seg.nums[1]);
+      dist = distToQuadBezier(raw, p0, cp, p1);
+    } else {
+      dist = distToSegment(raw, p0, p1);
+    }
+    if (dist < minDist) { minDist = dist; bestI = ai - 1; bestJ = ai; }
+  }
+
+  if (closed) {
+    const p0 = rp(allSegs[anchorToSeg.get(n-1)].x, allSegs[anchorToSeg.get(n-1)].y);
+    const p1 = rp(allSegs[anchorToSeg.get(0)].x, allSegs[anchorToSeg.get(0)].y);
+    const dist = distToSegment(raw, p0, p1);
+    if (dist < minDist) { minDist = dist; bestI = n - 1; bestJ = 0; }
+  }
+
   if (minDist > threshold) return null;
   return bestI >= 0 ? { idx1: bestI, idx2: bestJ } : null;
 }

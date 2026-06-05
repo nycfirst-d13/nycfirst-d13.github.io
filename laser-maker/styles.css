@@ -739,8 +739,9 @@ input { font-family: inherit; }
 .anchor.selected { fill: var(--blue); }
 .anchor.selected:hover { fill: #93c5fd; }
 .seg-hover { fill: none; stroke: #93c5fd; stroke-width: 3; vector-effect: non-scaling-stroke; pointer-events: none; }
-.anchor-handle-line { stroke: var(--blue); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.anchor-handle { fill: var(--blue); stroke: var(--surface); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.anchor-handle-line { stroke: var(--blue); stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; opacity: 0.6; }
+.anchor-handle { fill: white; stroke: var(--blue); stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: pointer; }
+.anchor-handle:hover { fill: var(--blue); }
 
 /* Corner rounding widgets */
 .corner-widget {
