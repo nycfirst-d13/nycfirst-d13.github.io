@@ -3,6 +3,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { enterIsolation } from './group.js';
+import { PROCESS_DEFINITIONS } from './process-registry.js';
 
 const list = document.getElementById('layers');
 
@@ -64,7 +65,7 @@ function renderLayerList(shapes, depth, s) {
         <span class="layer-indent" style="width:${indent}px;flex-shrink:0"></span>
         <span class="layer-expand" data-expand="${sh.id}">${isExpanded ? '▾' : '▸'}</span>
         <span class="layer-thumb">${TYPE_ICON.group}</span>
-        <span class="layer-name">${escapeHtml(sh.name)} <span class="layer-count">(${childCount})</span></span>
+        <span class="layer-name">${escapeHtml(layerDisplayName(sh))} <span class="layer-count">(${childCount})</span></span>
         <span class="layer-actions">
           <button data-act="lock" title="Toggle lock" class="${sh.locked ? 'active' : ''}">${lockIcon}</button>
           <button data-act="vis" title="Toggle visibility">${visIcon}</button>
@@ -73,7 +74,7 @@ function renderLayerList(shapes, depth, s) {
       li.innerHTML = `
         <span class="layer-indent" style="width:${indent + 16}px;flex-shrink:0"></span>
         <span class="layer-thumb">${TYPE_ICON[sh.type] || ''}</span>
-        <span class="layer-name">${escapeHtml(sh.name)}</span>
+        <span class="layer-name">${escapeHtml(layerDisplayName(sh))}</span>
         <span class="layer-actions">
           <button data-act="lock" title="Toggle lock" class="${sh.locked ? 'active' : ''}">${lockIcon}</button>
           <button data-act="vis" title="Toggle visibility">${visIcon}</button>
@@ -88,6 +89,12 @@ function renderLayerList(shapes, depth, s) {
 }
 
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function layerDisplayName(sh) {
+  if (sh.type === 'group') return sh.name;
+  const def = PROCESS_DEFINITIONS[sh.processType ?? 'free'] ?? PROCESS_DEFINITIONS.free;
+  return `${def.prefix} — ${sh.name}`;
+}
 
 list.addEventListener('click', e => {
   // Toggle group expand/collapse

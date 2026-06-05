@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(python3 -m http.server 9877)",
+      "Bash(node -e \"require\\('playwright'\\)\")",
+      "Bash(open \"http://localhost:9877\")",
+      "WebFetch(domain:localhost)",
+      "Bash(curl -s http://localhost:9877)",
+      "Bash(node --input-type=module)",
+      "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/process-registry.js)",
+      "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/state.js)",
+      "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/shapes.js)",
+      "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/properties.js)",
+      "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/layers.js)",
+      "Bash(git checkout *)"
     ]
   }
 }

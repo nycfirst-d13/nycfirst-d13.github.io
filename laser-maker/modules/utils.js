@@ -87,6 +87,15 @@ export function deepClone(o) {
   return JSON.parse(JSON.stringify(o));
 }
 
+export function deepCloneWithNewIds(sh) {
+  const clone = deepClone(sh);
+  clone.id = uid();
+  if (clone.type === 'group' && clone.children) {
+    clone.children = clone.children.map(deepCloneWithNewIds);
+  }
+  return clone;
+}
+
 export function parsePathAnchors(d) {
   if (!d) return [];
   const pts = [];

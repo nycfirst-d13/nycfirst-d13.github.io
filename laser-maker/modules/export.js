@@ -5,6 +5,7 @@ import { store } from './state.js';
 import { artboard } from './artboard.js';
 import { inToPx, applyPathCorners, wordWrapLines } from './utils.js';
 import { fetchFontBuffer, fontkit } from './text-panel.js';
+import { resolveAppearance } from './process-registry.js';
 
 function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
@@ -114,9 +115,10 @@ function shapeToSVG(sh, pathMap = new Map()) {
 
   const a = sh.attrs;
   let style = '';
-  const fill   = sh.fill   ?? 'none';
-  const stroke = sh.stroke ?? 'none';
-  const sw     = sh.strokeWidth ?? 0;
+  const resolved = resolveAppearance(sh);
+  const fill   = resolved.fill;
+  const stroke = resolved.stroke;
+  const sw     = resolved.strokeWidth;
   style = ` fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"`;
 
   let transform = '';

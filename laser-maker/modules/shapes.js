@@ -9,6 +9,7 @@ import { artboard } from './artboard.js';
 const SHAPE_DEFAULTS = () => {
   const d = store.get().defaults;
   return {
+    processType: 'free',
     fill: d.fillEnabled ? d.fill : 'none',
     stroke: d.strokeEnabled ? d.stroke : 'none',
     strokeWidth: d.strokeWidth,

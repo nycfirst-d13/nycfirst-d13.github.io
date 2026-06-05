@@ -43,6 +43,7 @@ function importSVG(svgText) {
         x: 0,
         y: 0,
       },
+      processType: 'free',
       rotation: 0,
       visible: true,
       locked: false,

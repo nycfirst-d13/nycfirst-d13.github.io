@@ -3,6 +3,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { svgNS, setAttrs, inToPx, pxToIn, clamp, fmtIn, snap as snapVal, applyPathCorners, rotatedCorners } from './utils.js';
+import { resolveAppearance } from './process-registry.js';
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 16;
@@ -414,10 +415,11 @@ class Artboard {
     }
     const { type, attrs } = sh;
     let el;
+    const resolved = resolveAppearance(sh);
     const styleAttrs = {
-      fill: sh.fill ?? 'none',
-      stroke: sh.stroke ?? 'none',
-      'stroke-width': sh.strokeWidth ?? 1,
+      fill: resolved.fill,
+      stroke: resolved.stroke,
+      'stroke-width': resolved.strokeWidth,
       'stroke-linejoin': 'round',
       'stroke-linecap': 'round',
       'vector-effect': sh.strokeNonScaling ? 'non-scaling-stroke' : null,
@@ -459,9 +461,8 @@ class Artboard {
       case 'line':
         el = svgNS('line');
         setAttrs(el, { x1: attrs.x1, y1: attrs.y1, x2: attrs.x2, y2: attrs.y2 });
-        // line needs stroke, no fill
         styleAttrs.fill = 'none';
-        if (!sh.stroke || sh.stroke === 'none') styleAttrs.stroke = '#0F1419';
+        if (!resolved.stroke || resolved.stroke === 'none') styleAttrs.stroke = '#0F1419';
         break;
       case 'polygon':
         el = svgNS('polygon');
@@ -482,7 +483,7 @@ class Artboard {
           const fw   = attrs.weight || 500;
           const ff   = attrs.family || 'Geist, sans-serif';
           const al   = attrs.align  || 'left';
-          const fill = sh.fill && sh.fill !== 'none' ? sh.fill : '#0F1419';
+          const fill = resolved.fill && resolved.fill !== 'none' ? resolved.fill : '#0F1419';
 
           const fo = svgNS('foreignObject');
           setAttrs(fo, { x: attrs.x, y: attrs.y, width: attrs.width, height: attrs.height });
@@ -528,7 +529,7 @@ class Artboard {
           'dominant-baseline': 'text-before-edge',
         });
         el.textContent = attrs.content || '';
-        if (!sh.fill || sh.fill === 'none') styleAttrs.fill = '#0F1419';
+        if (!resolved.fill || resolved.fill === 'none') styleAttrs.fill = '#0F1419';
         styleAttrs.stroke = 'none';
         break;
       }

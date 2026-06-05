@@ -5,6 +5,13 @@ import { deepClone } from './utils.js';
 
 const HISTORY_LIMIT = 80;
 
+function _migrateShapes(shapes) {
+  for (const sh of shapes) {
+    if (!sh.processType) sh.processType = 'free';
+    if (sh.type === 'group' && sh.children) _migrateShapes(sh.children);
+  }
+}
+
 const initial = {
   artboard: { w: 36, h: 24, unit: 'in' },         // inches
   viewport: { zoom: 1, panX: 60, panY: 60 },      // CSS pixels
@@ -98,6 +105,7 @@ class Store {
     this.s.shapes = deepClone(snap.shapes);
     this.s.selection = [...snap.selection];
     this.s.isolationGroup = null;
+    _migrateShapes(this.s.shapes);
   }
 
   // Convenience accessors — all recursive through group children

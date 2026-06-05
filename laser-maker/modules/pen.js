@@ -153,6 +153,7 @@ function commit(closed) {
     s.shapes.push({
       id, type: 'path', name: `Path ${s.shapes.filter(x => x.type === 'path').length + 1}`,
       attrs: { d },
+      processType: 'free',
       fill: closed && def.fillEnabled ? def.fill : 'none',
       stroke: def.strokeEnabled ? def.stroke : (closed ? 'none' : def.stroke),
       strokeWidth: def.strokeWidth || 1,

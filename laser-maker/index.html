@@ -7,6 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.bunny.net" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <link rel="stylesheet" href="./styles.css" />
@@ -79,6 +80,7 @@
       <button class="tool" data-tool="text" title="Text (T)"></button>
       <div class="tools-sep"></div>
       <button class="tool" data-tool="shapebuilder" title="Shape Builder (M)"></button>
+      <button class="tool" data-tool="reflect" title="Reflect (O)"></button>
       <div class="tools-sep"></div>
       <button class="tool" data-tool="hand" title="Hand · pan (H)"></button>
     </aside>
@@ -179,7 +181,7 @@
           </div>
         </div>
         <input type="text" id="font-search" class="font-search-input" placeholder="Search fonts…" />
-        <div id="font-list" class="font-list" role="listbox"></div>
+        <div class="font-list-outer"><div id="font-list" class="font-list" role="listbox"></div></div>
         <div class="prop-row" style="margin-top:6px">
           <label class="btn ghost" id="upload-font-btn" for="upload-font-input" style="flex:1;cursor:pointer;text-align:center">Upload Font</label>
           <input type="file" id="upload-font-input" accept=".ttf,.otf,.woff,.woff2" style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" />
@@ -197,8 +199,102 @@
         </div>
       </div>
 
-      <!-- Pathfinder -->
+      <!-- Transform -->
       <div class="panel">
+        <header class="panel-h"><span>Transform</span></header>
+        <div class="grid-2">
+          <div class="numeric"><label>X</label><input type="number" id="t-x" step="0.01" /><span class="suffix">in</span></div>
+          <div class="numeric"><label>Y</label><input type="number" id="t-y" step="0.01" /><span class="suffix">in</span></div>
+          <div class="numeric"><label>W</label><input type="number" id="t-w" step="0.01" min="0" /><span class="suffix">in</span></div>
+          <div class="numeric"><label>H</label><input type="number" id="t-h" step="0.01" min="0" /><span class="suffix">in</span></div>
+          <div class="numeric numeric-wide"><label>Rotate</label><input type="number" id="t-r" step="1" value="0" /><span class="suffix">°</span></div>
+        </div>
+      </div>
+
+      <!-- Fabrication / Appearance -->
+      <div class="panel">
+        <header class="panel-h"><span>Fabrication</span></header>
+        <!-- Process type selector -->
+        <div class="prop-row">
+          <label class="prop-label">Process</label>
+          <select id="process-type" class="prop-select">
+            <option value="mainCut">Main Cut</option>
+            <option value="fold">Fold / Score</option>
+            <option value="finalCut">Final Cut</option>
+            <option value="etch">Etch</option>
+            <option value="free" selected>Free</option>
+            <option value="__mixed__" disabled hidden>— Mixed —</option>
+          </select>
+        </div>
+
+        <!-- Free / full appearance controls -->
+        <div id="appearance-free">
+          <div class="prop-row">
+            <label class="prop-label">Fill</label>
+            <div class="color-control">
+              <input type="color" id="fill-color" value="#0f1419" />
+              <input type="text" id="fill-hex" class="hex" value="#0F1419" />
+              <button class="swatch-clear" id="fill-none" title="No fill">∅</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Stroke</label>
+            <div class="color-control">
+              <input type="color" id="stroke-color" value="#0f1419" />
+              <input type="text" id="stroke-hex" class="hex" value="#0F1419" />
+              <button class="swatch-clear" id="stroke-none" title="No stroke">∅</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Weight</label>
+            <div class="numeric">
+              <input type="number" id="stroke-width" min="0" max="40" step="0.25" value="1" />
+              <span class="suffix">pt</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Locked process preview (mainCut / fold / finalCut) -->
+        <div id="appearance-locked" style="display:none">
+          <div class="prop-row">
+            <label class="prop-label">Stroke</label>
+            <span id="locked-stroke-preview" style="display:flex;align-items:center;gap:6px">
+              <span id="locked-stroke-swatch" style="display:inline-block;width:14px;height:14px;border-radius:2px;border:1px solid rgba(0,0,0,.25)"></span>
+              <span id="locked-stroke-label" style="font-size:11px;opacity:.7"></span>
+            </span>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Fill</label>
+            <span style="font-size:11px;opacity:.7">None</span>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Weight</label>
+            <span style="font-size:11px;opacity:.7">1 pt</span>
+          </div>
+        </div>
+
+        <!-- Etch controls (color locked black, stroke/fill toggleable) -->
+        <div id="appearance-etch" style="display:none">
+          <div class="prop-row">
+            <label class="prop-label">Stroke</label>
+            <button id="etch-stroke-toggle" class="btn ghost" style="flex:1">On</button>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Fill</label>
+            <button id="etch-fill-toggle" class="btn ghost" style="flex:1">On</button>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Weight</label>
+            <div class="numeric">
+              <input type="number" id="stroke-width-etch" min="0" max="40" step="0.25" value="1" />
+              <span class="suffix">pt</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pathfinder -->
+      <div class="panel collapsed">
         <header class="panel-h">
           <span>Pathfinder</span>
         </header>
@@ -219,7 +315,7 @@
       </div>
 
       <!-- Offset Path -->
-      <div class="panel">
+      <div class="panel collapsed">
         <header class="panel-h">
           <span>Path</span>
         </header>
@@ -233,48 +329,8 @@
         </div>
       </div>
 
-      <!-- Appearance -->
-      <div class="panel">
-        <header class="panel-h"><span>Appearance</span></header>
-        <div class="prop-row">
-          <label class="prop-label">Fill</label>
-          <div class="color-control">
-            <input type="color" id="fill-color" value="#0f1419" />
-            <input type="text" id="fill-hex" class="hex" value="#0F1419" />
-            <button class="swatch-clear" id="fill-none" title="No fill">∅</button>
-          </div>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">Stroke</label>
-          <div class="color-control">
-            <input type="color" id="stroke-color" value="#0f1419" />
-            <input type="text" id="stroke-hex" class="hex" value="#0F1419" />
-            <button class="swatch-clear" id="stroke-none" title="No stroke">∅</button>
-          </div>
-        </div>
-        <div class="prop-row">
-          <label class="prop-label">Weight</label>
-          <div class="numeric">
-            <input type="number" id="stroke-width" min="0" max="40" step="0.25" value="1" />
-            <span class="suffix">pt</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Transform -->
-      <div class="panel">
-        <header class="panel-h"><span>Transform</span></header>
-        <div class="grid-2">
-          <div class="numeric"><label>X</label><input type="number" id="t-x" step="0.01" /><span class="suffix">in</span></div>
-          <div class="numeric"><label>Y</label><input type="number" id="t-y" step="0.01" /><span class="suffix">in</span></div>
-          <div class="numeric"><label>W</label><input type="number" id="t-w" step="0.01" min="0" /><span class="suffix">in</span></div>
-          <div class="numeric"><label>H</label><input type="number" id="t-h" step="0.01" min="0" /><span class="suffix">in</span></div>
-          <div class="numeric numeric-wide"><label>Rotate</label><input type="number" id="t-r" step="1" value="0" /><span class="suffix">°</span></div>
-        </div>
-      </div>
-
-      <!-- Layers -->
-      <div class="panel panel-flex">
+      <!-- Layers (fixed to bottom) -->
+      <div class="panel panel-flex panel-fixed-bottom">
         <header class="panel-h">
           <span>Layers</span>
           <div class="panel-h-actions">

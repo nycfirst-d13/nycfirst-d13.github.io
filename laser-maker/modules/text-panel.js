@@ -5,7 +5,7 @@ import { store } from './state.js';
 import { uid } from './utils.js';
 import * as fontkit from 'https://esm.sh/fontkit@2.0.4';
 
-const FONTS = [
+let FONTS = [
   // Sans-serif
   { family: 'Inter',              category: 'Sans-serif',  weights: [100,200,300,400,500,600,700,800,900] },
   { family: 'Roboto',             category: 'Sans-serif',  weights: [100,300,400,500,700,900] },
@@ -61,6 +61,8 @@ const WEIGHT_LABELS = {
 const loadedFonts = new Set();
 const customFonts = [];
 const fontBufferCache = new Map();
+const collapsedCategories = new Set();
+const knownCategories = new Set();
 
 const sizeInput    = document.getElementById('text-size');
 const weightSelect = document.getElementById('text-weight');
@@ -75,14 +77,16 @@ let observer = null;
 let syncing = false;
 let searchDebounce = null;
 
-// ---- Google Fonts loading ----
+// ---- Bunny Fonts loading ----
 
-function loadGoogleFont(family, weights) {
+function loadBunnyFont(family, weights) {
   const key = family + ':' + weights.join(',');
   if (loadedFonts.has(key)) return;
   loadedFonts.add(key);
-  const wStr = weights.join(';');
-  const url = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family)}:wght@${wStr}&display=swap`;
+  const fontEntry = [...FONTS, ...customFonts].find(f => f.family === family);
+  const slug = fontEntry?.slug || family.toLowerCase().replace(/\s+/g, '-');
+  const wStr = weights.join(',');
+  const url = `https://fonts.bunny.net/css?family=${encodeURIComponent(slug)}:${wStr}&display=swap`;
   const link = document.createElement('link');
   link.rel = 'stylesheet';
   link.href = url;
@@ -129,11 +133,38 @@ function buildFontList(filter) {
     return;
   }
 
+  // New categories default to collapsed
   for (const cat of categories) {
+    if (!knownCategories.has(cat)) {
+      knownCategories.add(cat);
+      collapsedCategories.add(cat);
+    }
+  }
+
+  // When filtering, expand all matching categories
+  if (filterLower) {
+    for (const cat of categories) collapsedCategories.delete(cat);
+  }
+
+  for (const cat of categories) {
+    const collapsed = collapsedCategories.has(cat);
+
     const header = document.createElement('div');
-    header.className = 'font-category';
+    header.className = 'font-category' + (collapsed ? ' collapsed' : '');
     header.textContent = cat;
     fontList.appendChild(header);
+
+    const itemsWrapper = document.createElement('div');
+    itemsWrapper.className = 'font-category-items';
+    if (collapsed) itemsWrapper.hidden = true;
+
+    header.addEventListener('click', () => {
+      const isNowCollapsed = !itemsWrapper.hidden;
+      itemsWrapper.hidden = isNowCollapsed;
+      header.classList.toggle('collapsed', isNowCollapsed);
+      if (isNowCollapsed) collapsedCategories.add(cat);
+      else collapsedCategories.delete(cat);
+    });
 
     for (const font of byCategory[cat]) {
       const item = document.createElement('div');
@@ -155,8 +186,10 @@ function buildFontList(filter) {
       item.appendChild(nameEl);
       item.appendChild(sampleEl);
       item.addEventListener('click', () => applyFontFamily(font.family));
-      fontList.appendChild(item);
+      itemsWrapper.appendChild(item);
     }
+
+    fontList.appendChild(itemsWrapper);
   }
 
   // Lazy-load fonts as items scroll into view
@@ -164,7 +197,7 @@ function buildFontList(filter) {
     for (const entry of entries) {
       if (entry.isIntersecting) {
         const family = entry.target.dataset.family;
-        if (family) loadGoogleFont(family, [400]);
+        if (family) loadBunnyFont(family, [400]);
       }
     }
   }, { root: fontList, threshold: 0.1 });
@@ -211,7 +244,7 @@ function applyFontFamily(family) {
   }, 'text-family');
 
   const font = allFonts().find(f => f.family === family);
-  if (font) loadGoogleFont(family, font.weights);
+  if (font) loadBunnyFont(family, font.weights);
 
   // Update list highlight without full rebuild
   fontList.querySelectorAll('.font-item').forEach(el => {
@@ -326,19 +359,16 @@ async function fetchFontBuffer(family, weight) {
     return custom.buffer;
   }
 
-  // Fetch CSS from Google Fonts to get the actual font file URL
-  const cssUrl = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(cleanFamily)}:wght@${weight}&display=swap`;
-  const cssResp = await fetch(cssUrl);
-  if (!cssResp.ok) throw new Error(`Font CSS not found for "${cleanFamily}"`);
-  const css = await cssResp.text();
-
-  // Extract font file URL — last match is typically the basic Latin subset
-  const matches = [...css.matchAll(/url\(([^)]+)\)/g)];
-  if (!matches.length) throw new Error(`No font URL in CSS for "${cleanFamily}"`);
-  const fontUrl = matches[matches.length - 1][1].replace(/['"]/g, '');
+  // Fetch font file directly from Bunny's predictable URL pattern
+  const fontEntry = allFonts().find(f => f.family === cleanFamily || f.family === family);
+  const slug = fontEntry?.slug || cleanFamily.toLowerCase().replace(/\s+/g, '-');
+  const availableWeights = fontEntry?.weights || [400];
+  const snappedWeight = availableWeights.reduce((best, w) =>
+    Math.abs(w - weight) < Math.abs(best - weight) ? w : best, availableWeights[0]);
+  const fontUrl = `https://fonts.bunny.net/${slug}/files/${slug}-latin-${snappedWeight}-normal.woff2`;
 
   const fontResp = await fetch(fontUrl);
-  if (!fontResp.ok) throw new Error(`Failed to download font file for "${cleanFamily}"`);
+  if (!fontResp.ok) throw new Error(`Font file not found for "${cleanFamily}" (${snappedWeight})`);
   const buffer = await fontResp.arrayBuffer();
 
   fontBufferCache.set(key, buffer);
@@ -515,9 +545,53 @@ uploadInput.addEventListener('change', () => {
 
 convertBtn.addEventListener('click', convertTextToPath);
 
+// ---- Bunny Fonts catalog ----
+
+async function loadBunnyFontList() {
+  fontList.innerHTML = '';
+  const loading = document.createElement('div');
+  loading.style.cssText = 'padding:12px 10px;font-size:12px;color:var(--muted);text-align:center';
+  loading.textContent = 'Loading fonts…';
+  fontList.appendChild(loading);
+
+  const CATEGORY_ORDER = ['Sans-serif', 'Serif', 'Display', 'Handwriting', 'Monospace'];
+  const CATEGORY_LABELS = {
+    'sans-serif': 'Sans-serif', 'serif': 'Serif',
+    'display': 'Display', 'handwriting': 'Handwriting', 'monospace': 'Monospace',
+  };
+
+  try {
+    const resp = await fetch('https://fonts.bunny.net/list');
+    if (!resp.ok) throw new Error('fetch failed');
+    const data = await resp.json();
+
+    FONTS = Object.entries(data)
+      .map(([slug, info]) => {
+        const family = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        const rawCat = (info.category || 'sans-serif').toLowerCase();
+        const category = CATEGORY_LABELS[rawCat] || rawCat.charAt(0).toUpperCase() + rawCat.slice(1);
+        const weights = (info.weights || ['400'])
+          .filter(w => /^\d+$/.test(String(w)))
+          .map(Number)
+          .sort((a, b) => a - b);
+        return { family, slug, category, weights: weights.length ? weights : [400] };
+      })
+      .sort((a, b) => {
+        const ai = CATEGORY_ORDER.indexOf(a.category);
+        const bi = CATEGORY_ORDER.indexOf(b.category);
+        const catCmp = (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+        return catCmp !== 0 ? catCmp : a.family.localeCompare(b.family);
+      });
+  } catch (e) {
+    console.warn('Bunny Fonts list fetch failed, using built-in list', e);
+  }
+
+  buildFontList(fontSearch.value);
+}
+
 // ---- Init ----
 
 store.subscribe(syncFromStore);
-buildFontList('');
+loadBunnyFontList();
 
 export { fetchFontBuffer, fontkit };

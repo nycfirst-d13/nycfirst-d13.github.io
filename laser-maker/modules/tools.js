@@ -18,6 +18,7 @@ const TOOL_LABELS = {
   text:         'Text',
   hand:         'Hand',
   shapebuilder: 'Shape Builder',
+  reflect:      'Reflect',
 };
 
 class Tools {

@@ -1,9 +1,10 @@
 // =============================================================================
-// properties.js — inspector controls (fill, stroke, weight, x/y/w/h, rotate)
+// properties.js — inspector controls (process type, fill, stroke, weight, x/y/w/h, rotate)
 // =============================================================================
 import { store } from './state.js';
 import { artboard } from './artboard.js';
 import { inToPx, pxToIn, round, rotatedCorners } from './utils.js';
+import { PROCESS_DEFINITIONS, normalizeForProcess } from './process-registry.js';
 
 const fillColor   = document.getElementById('fill-color');
 const fillHex     = document.getElementById('fill-hex');
@@ -19,6 +20,16 @@ const tH = document.getElementById('t-h');
 const tR = document.getElementById('t-r');
 
 const textPanel = document.getElementById('text-panel');
+
+const processTypeSelect  = document.getElementById('process-type');
+const appearanceFree     = document.getElementById('appearance-free');
+const appearanceLocked   = document.getElementById('appearance-locked');
+const appearanceEtch     = document.getElementById('appearance-etch');
+const lockedStrokeSwatch = document.getElementById('locked-stroke-swatch');
+const lockedStrokeLabel  = document.getElementById('locked-stroke-label');
+const etchStrokeToggle   = document.getElementById('etch-stroke-toggle');
+const etchFillToggle     = document.getElementById('etch-fill-toggle');
+const strokeWidthEtch    = document.getElementById('stroke-width-etch');
 
 const HEX_RE = /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
 
@@ -40,6 +51,12 @@ function commonValue(arr, fn) {
 
 let syncing = false;
 
+function _showAppearanceMode(mode) {
+  appearanceFree.style.display   = mode === 'free'   ? '' : 'none';
+  appearanceLocked.style.display = mode === 'locked' ? '' : 'none';
+  appearanceEtch.style.display   = mode === 'etch'   ? '' : 'none';
+}
+
 function syncFromState() {
   if (syncing) return;
   syncing = true;
@@ -51,6 +68,9 @@ function syncFromState() {
   if (textPanel) textPanel.style.display = (isSingleText || isTextTool) ? '' : 'none';
 
   if (!sel.length) {
+    // No selection — show free controls using defaults
+    processTypeSelect.value = 'free';
+    _showAppearanceMode('free');
     fillColor.value   = ensureColor(s.defaults.fill);
     fillHex.value     = s.defaults.fillEnabled ? s.defaults.fill : 'none';
     strokeColor.value = ensureColor(s.defaults.stroke);
@@ -63,17 +83,47 @@ function syncFromState() {
 
   [tX, tY, tW, tH, tR].forEach(i => i.disabled = false);
 
-  const fill   = commonValue(sel, sh => sh.fill);
-  const stroke = commonValue(sel, sh => sh.stroke);
-  const sw     = commonValue(sel, sh => sh.strokeWidth);
+  // Process type across selection (groups don't have processType)
+  const nonGroups = sel.filter(sh => sh.type !== 'group');
+  const pt = nonGroups.length
+    ? commonValue(nonGroups, sh => sh.processType ?? 'free')
+    : null;
 
-  fillHex.value     = fill   ?? '—';
-  fillColor.value   = ensureColor(fill);
-  strokeHex.value   = stroke ?? '—';
-  strokeColor.value = ensureColor(stroke);
-  strokeWidth.value = sw ?? '';
+  // Update process dropdown
+  const isMixed = nonGroups.length > 0 && pt === null;
+  processTypeSelect.querySelector('option[value="__mixed__"]').hidden = !isMixed;
+  processTypeSelect.value = isMixed ? '__mixed__' : (pt ?? 'free');
 
-  // bounding box across selection (ignores rotation for the input read)
+  // Show correct appearance section
+  if (isMixed || pt === 'free' || pt === null) {
+    _showAppearanceMode('free');
+    const fill   = commonValue(sel, sh => sh.fill);
+    const stroke = commonValue(sel, sh => sh.stroke);
+    const sw     = commonValue(sel, sh => sh.strokeWidth);
+    fillHex.value     = fill   ?? '—';
+    fillColor.value   = ensureColor(fill);
+    strokeHex.value   = stroke ?? '—';
+    strokeColor.value = ensureColor(stroke);
+    strokeWidth.value = sw ?? '';
+  } else if (pt === 'etch') {
+    _showAppearanceMode('etch');
+    const stroke = commonValue(nonGroups, sh => sh.stroke);
+    const fill   = commonValue(nonGroups, sh => sh.fill);
+    const sw     = commonValue(nonGroups, sh => sh.strokeWidth);
+    etchStrokeToggle.textContent = stroke === 'none' ? 'Off' : (stroke === null ? '—' : 'On');
+    etchStrokeToggle.classList.toggle('active', stroke !== 'none');
+    etchFillToggle.textContent = fill === 'none' ? 'Off' : (fill === null ? '—' : 'On');
+    etchFillToggle.classList.toggle('active', fill !== 'none');
+    strokeWidthEtch.value = sw ?? '';
+  } else {
+    // locked process type (mainCut, fold, finalCut)
+    _showAppearanceMode('locked');
+    const def = PROCESS_DEFINITIONS[pt];
+    lockedStrokeSwatch.style.background = def.stroke;
+    lockedStrokeLabel.textContent = def.stroke;
+  }
+
+  // bounding box across selection
   if (sel.length === 1) {
     const b = artboard.getShapeBBox(sel[0]);
     tX.value = round(pxToIn(b.x), 2);
@@ -113,6 +163,29 @@ function _applyAppearanceToGroup(group, prop, value) {
     if (child.type === 'group') _applyAppearanceToGroup(child, prop, value);
     else child[prop] = value;
   }
+}
+
+function _applyProcessTypeToGroup(group, pt) {
+  for (const child of group.children) {
+    if (child.type === 'group') _applyProcessTypeToGroup(child, pt);
+    else { child.processType = pt; normalizeForProcess(child, pt); }
+  }
+}
+
+function setProcessType(pt) {
+  if (syncing) return;
+  store.commit(() => {
+    for (const id of store.get().selection) {
+      const sh = store.findShape(id);
+      if (!sh) continue;
+      if (sh.type === 'group') {
+        _applyProcessTypeToGroup(sh, pt);
+      } else {
+        sh.processType = pt;
+        normalizeForProcess(sh, pt);
+      }
+    }
+  }, 'process-type');
 }
 
 function ensureColor(v) {
@@ -171,6 +244,33 @@ bindColor(strokeColor, strokeHex, 'stroke', strokeNone);
 
 strokeWidth.addEventListener('change', () => {
   const v = Math.max(0, parseFloat(strokeWidth.value) || 0);
+  setAppearance('strokeWidth', v);
+});
+
+// Process type dropdown
+processTypeSelect.addEventListener('change', () => {
+  const pt = processTypeSelect.value;
+  if (pt === '__mixed__') return;
+  setProcessType(pt);
+});
+
+// Etch toggle buttons
+etchStrokeToggle.addEventListener('click', () => {
+  const s = store.get();
+  const sel = s.selection.map(id => store.findShape(id)).filter(Boolean)
+    .filter(sh => sh.type !== 'group');
+  const cur = commonValue(sel, sh => sh.stroke);
+  setAppearance('stroke', cur !== 'none' ? 'none' : '#000000');
+});
+etchFillToggle.addEventListener('click', () => {
+  const s = store.get();
+  const sel = s.selection.map(id => store.findShape(id)).filter(Boolean)
+    .filter(sh => sh.type !== 'group');
+  const cur = commonValue(sel, sh => sh.fill);
+  setAppearance('fill', cur !== 'none' ? 'none' : '#000000');
+});
+strokeWidthEtch.addEventListener('change', () => {
+  const v = Math.max(0, parseFloat(strokeWidthEtch.value) || 0);
   setAppearance('strokeWidth', v);
 });
 
