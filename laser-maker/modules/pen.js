@@ -13,7 +13,8 @@ import { computeDrawSnap, renderGuides, clearGuides, renderSnapHighlight, clearS
 
 const overlay = document.getElementById('overlay');
 
-const PEN_SNAP_THRESHOLD = 10; // screen px
+const PEN_SNAP_THRESHOLD = 10;   // screen px
+const CLOSE_SNAP_THRESHOLD = 18; // screen px — ring + magnetic snap to close path
 
 let nodes = [];          // [{ p, hIn, hOut }]
 let dragging = false;
@@ -21,6 +22,7 @@ let closeOnUp = false;
 let snapCommitOnUp = false;
 let penSnapPt = null;        // snapped position from guide system, or null
 let penSnapToAnchor = false; // true when snapping to an existing shape's anchor
+let nearClose = false;       // true when cursor is within close-snap threshold of first anchor
 
 function reset() {
   nodes = [];
@@ -29,9 +31,28 @@ function reset() {
   snapCommitOnUp = false;
   penSnapPt = null;
   penSnapToAnchor = false;
+  nearClose = false;
   clearGuides();
   clearSnapHighlight();
   redraw();
+}
+
+// When cursor is near the first anchor, snap magnetically and set nearClose flag.
+// Returns true if close-snap took over (skip applyPenSnap).
+function checkCloseSnap(raw) {
+  if (nodes.length < 2) { nearClose = false; return false; }
+  const z = store.get().viewport.zoom;
+  const threshold = CLOSE_SNAP_THRESHOLD / z;
+  const first = nodes[0].p;
+  if (Math.hypot(raw.x - first.x, raw.y - first.y) < threshold) {
+    nearClose = true;
+    penSnapPt = { ...first };
+    clearGuides();
+    clearSnapHighlight();
+    return true;
+  }
+  nearClose = false;
+  return false;
 }
 
 // Resolve snap for the pen cursor. Uses the guide system (computeDrawSnap) so
@@ -120,6 +141,16 @@ function redraw(rubber, closed = false) {
       const n = nodes[i];
       if (n.hIn) drawHandle(n.p, n.hIn, hs);
       if (n.hOut) drawHandle(n.p, n.hOut, hs);
+      if (nearClose && i === 0 && nodes.length >= 2) {
+        const ring = svgNS('circle');
+        setAttrs(ring, {
+          cx: n.p.x, cy: n.p.y, r: hs * 1.6,
+          fill: 'none', stroke: '#1B4FE5', 'stroke-width': 1.5,
+          'vector-effect': 'non-scaling-stroke', opacity: '0.7',
+        });
+        ring.dataset.pen = 'close-ring';
+        overlay.appendChild(ring);
+      }
       const r = svgNS('rect');
       setAttrs(r, {
         x: n.p.x - hs/2, y: n.p.y - hs/2,
@@ -144,8 +175,19 @@ function drawHandle(p, h, hs) {
   overlay.appendChild(c);
 }
 
+const _popAudio = new Audio(new URL('../assets/sounds/pop.ogg', import.meta.url).href);
+
+function playPop() {
+  try {
+    const snd = _popAudio.cloneNode();
+    snd.volume = 0.6;
+    snd.play();
+  } catch (_) {}
+}
+
 function commit(closed) {
   if (nodes.length < 2) { reset(); return; }
+  playPop();
   const d = buildD(nodes, closed, null);
   const id = uid('pa');
   const def = store.get().defaults;
@@ -212,13 +254,13 @@ tools.register('pen', {
         redraw();
       }
     } else {
-      applyPenSnap(raw);
+      if (!checkCloseSnap(raw)) applyPenSnap(raw);
       const rubber = penSnapPt || { x: raw.x, y: raw.y };
       if (nodes.length) redraw(rubber); else redraw();
     }
   },
   onHover({ raw }) {
-    applyPenSnap(raw);
+    if (!checkCloseSnap(raw)) applyPenSnap(raw);
     const rubber = penSnapPt || { x: raw.x, y: raw.y };
     if (nodes.length) redraw(rubber); else redraw();
   },
@@ -246,6 +288,7 @@ tools.register('pen', {
     }
     dragging = false;
     this._dragIdx = null;
+    nearClose = false;
     clearGuides();
     clearSnapHighlight();
     redraw();
