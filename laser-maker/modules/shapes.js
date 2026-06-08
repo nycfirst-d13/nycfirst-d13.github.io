@@ -4,12 +4,14 @@
 import { store } from './state.js';
 import { tools } from './tools.js';
 import { uid, svgNS, setAttrs } from './utils.js';
+import { normalizeForProcess } from './process-registry.js';
 import { artboard } from './artboard.js';
 
 const SHAPE_DEFAULTS = () => {
   const d = store.get().defaults;
-  return {
-    processType: 'free',
+  const pt = store.get().activeProcess ?? 'free';
+  const defaults = {
+    processType: pt,
     fill: d.fillEnabled ? d.fill : 'none',
     stroke: d.strokeEnabled ? d.stroke : 'none',
     strokeWidth: d.strokeWidth,
@@ -17,6 +19,9 @@ const SHAPE_DEFAULTS = () => {
     locked: false,
     rotation: 0,
   };
+  if (pt === 'fold' && d.foldDash) defaults.foldDash = { ...d.foldDash };
+  normalizeForProcess(defaults, pt);
+  return defaults;
 };
 
 const baseName = {

@@ -36,14 +36,13 @@ const NUDGE_BIG = 10 / 96;     // 10px (shift+arrow)
 const TOOL_KEYS = {
   v: 'select',
   a: 'direct',
-  r: 'rect',
-  e: 'ellipse',
-  l: 'line',
-  p: 'polygon',
-  b: 'pen',
+  m: 'rect',
+  l: 'ellipse',
+  '\\': 'line',
+  p: 'pen',
   t: 'text',
   h: 'hand',
-  m: 'shapebuilder',
+  o: 'reflect',
 };
 
 function zOrder(dir, toExtreme) {
@@ -182,8 +181,15 @@ window.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && key === '0') { e.preventDefault(); artboard.setZoom(1, true); return; }
   if (key === 'f') { e.preventDefault(); artboard.fit(); return; }
 
+  // Shape Builder: Shift+M (matches Illustrator)
+  if (key === 'm' && e.shiftKey && !e.metaKey && !e.ctrlKey) {
+    e.preventDefault();
+    tools.setActive('shapebuilder');
+    return;
+  }
+
   // Tool keys
-  if (TOOL_KEYS[key] && !e.metaKey && !e.ctrlKey) {
+  if (TOOL_KEYS[key] && !e.metaKey && !e.ctrlKey && !e.shiftKey) {
     e.preventDefault();
     tools.setActive(TOOL_KEYS[key]);
   }

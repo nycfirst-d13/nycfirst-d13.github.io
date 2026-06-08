@@ -18,6 +18,7 @@ const initial = {
   shapes: [],                                      // ordered, last = top (top-level only; groups embed children)
   selection: [],                                   // shape ids
   activeTool: 'select',
+  activeProcess: 'free',
   grid: { enabled: false, size: 0.25, snap: false }, // inches
   guides: { enabled: true },
   midpoints: { enabled: true },
@@ -28,6 +29,7 @@ const initial = {
     stroke: '#0F1419',
     strokeEnabled: true,
     strokeWidth: 1,
+    foldDash: { enabled: false, dashLen: 8, gapLen: 4, align: 'natural' },
   },
 };
 

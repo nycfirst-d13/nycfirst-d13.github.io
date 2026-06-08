@@ -10,6 +10,7 @@ import { tools } from './tools.js';
 import { artboard } from './artboard.js';
 import { svgNS, setAttrs, uid } from './utils.js';
 import { computeDrawSnap, renderGuides, clearGuides, renderSnapHighlight, clearSnapHighlight } from './guides.js';
+import { normalizeForProcess } from './process-registry.js';
 
 const overlay = document.getElementById('overlay');
 
@@ -191,16 +192,19 @@ function commit(closed) {
   const d = buildD(nodes, closed, null);
   const id = uid('pa');
   const def = store.get().defaults;
+  const pt = store.get().activeProcess ?? 'free';
+  const shapeData = {
+    id, type: 'path', name: `Path ${store.get().shapes.filter(x => x.type === 'path').length + 1}`,
+    attrs: { d },
+    processType: pt,
+    fill: closed && def.fillEnabled ? def.fill : 'none',
+    stroke: def.strokeEnabled ? def.stroke : (closed ? 'none' : def.stroke),
+    strokeWidth: def.strokeWidth || 1,
+    visible: true, locked: false, rotation: 0,
+  };
+  normalizeForProcess(shapeData, pt);
   store.commit(s => {
-    s.shapes.push({
-      id, type: 'path', name: `Path ${s.shapes.filter(x => x.type === 'path').length + 1}`,
-      attrs: { d },
-      processType: 'free',
-      fill: closed && def.fillEnabled ? def.fill : 'none',
-      stroke: def.strokeEnabled ? def.stroke : (closed ? 'none' : def.stroke),
-      strokeWidth: def.strokeWidth || 1,
-      visible: true, locked: false, rotation: 0,
-    });
+    s.shapes.push(shapeData);
     s.selection = [id];
   }, 'pen-commit');
   reset();

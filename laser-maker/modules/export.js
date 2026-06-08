@@ -116,10 +116,15 @@ function shapeToSVG(sh, pathMap = new Map()) {
   const a = sh.attrs;
   let style = '';
   const resolved = resolveAppearance(sh);
-  const fill   = resolved.fill;
-  const stroke = resolved.stroke;
-  const sw     = resolved.strokeWidth;
-  style = ` fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"`;
+  const fill    = resolved.fill;
+  const stroke  = resolved.stroke;
+  const sw      = resolved.strokeWidth;
+  const linecap = resolved.strokeLinecap ?? 'round';
+  style = ` fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="${linecap}"`;
+  if (resolved.strokeDasharray) {
+    style += ` stroke-dasharray="${resolved.strokeDasharray}"`;
+    if (resolved.strokeDashoffset) style += ` stroke-dashoffset="${resolved.strokeDashoffset}"`;
+  }
 
   let transform = '';
   if (sh.rotation) {

@@ -421,7 +421,7 @@ class Artboard {
       stroke: resolved.stroke,
       'stroke-width': resolved.strokeWidth,
       'stroke-linejoin': 'round',
-      'stroke-linecap': 'round',
+      'stroke-linecap': resolved.strokeLinecap ?? 'round',
       'vector-effect': sh.strokeNonScaling ? 'non-scaling-stroke' : null,
     };
     switch (type) {
@@ -540,6 +540,10 @@ class Artboard {
       styleAttrs['stroke-width'] = Math.max(3, sh.strokeWidth ?? 1);
       styleAttrs['vector-effect'] = 'non-scaling-stroke';
     }
+    if (resolved.strokeDasharray) {
+      styleAttrs['stroke-dasharray']  = resolved.strokeDasharray;
+      styleAttrs['stroke-dashoffset'] = resolved.strokeDashoffset ?? 0;
+    }
     setAttrs(el, styleAttrs);
 
     // Transparent click-catcher — gives every shape a wide click zone (10px screen-space)
@@ -564,6 +568,10 @@ class Artboard {
       'vector-effect': 'non-scaling-stroke',
       'pointer-events': 'none',
     });
+    if (resolved.strokeDasharray) {
+      highlight.removeAttribute('stroke-dasharray');
+      highlight.removeAttribute('stroke-dashoffset');
+    }
     highlight.classList.add('shape-hover-highlight');
 
     const g = svgNS('g');

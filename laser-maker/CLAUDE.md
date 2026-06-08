@@ -62,8 +62,8 @@ After updating CLAUDE.md, commit the change with a message like `docs: update CL
 
 ## Memory
 
-Memory for this project lives at `.claude/memory/` inside this repo — **not** the default system memory path. Always read from and write to `.claude/memory/` here. When the user says "remember X" or "save this", write the appropriate memory file and update `.claude/memory/MEMORY.md`.
-
+Auto-memory lives at `/Users/avigoldman/.claude/projects/-Users-avigoldman-Desktop-nycfirst-d13-github-io/memory/`. When the user says "remember X" or "save this", write the appropriate memory file and update `MEMORY.md`. See the memory system instructions for file format details.
+Ca
 CLAUDE.md and memory serve different purposes:
 - **Memory** — user preferences, feedback, project context, external references. Persists across all conversations.
 - **CLAUDE.md** — codebase architecture, feature implementation notes, key design decisions. Scoped to this project's code.

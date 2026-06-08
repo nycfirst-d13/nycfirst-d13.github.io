@@ -35,7 +35,7 @@ export const PROCESS_DEFINITIONS = {
     colorLocked: true,
   },
   free: {
-    label: 'Free',
+    label: 'Free Appearance',
     prefix: 'FREE',
     locked: false,
     colorLocked: false,
@@ -44,16 +44,26 @@ export const PROCESS_DEFINITIONS = {
 
 // Returns the effective fill/stroke/strokeWidth for rendering and export.
 // Process type is the source of truth for locked types.
+// For fold shapes with foldDash.enabled, also returns strokeDasharray/strokeDashoffset/strokeLinecap.
 export function resolveAppearance(sh) {
   const pt = sh.processType ?? 'free';
   const def = PROCESS_DEFINITIONS[pt] ?? PROCESS_DEFINITIONS.free;
 
   if (def.locked) {
-    return {
+    const result = {
       fill: def.fill,
       stroke: def.stroke,
       strokeWidth: def.strokeWidth,
     };
+    if (pt === 'fold' && sh.foldDash?.enabled) {
+      const fd = sh.foldDash;
+      const dashLen = fd.dashLen ?? 8;
+      const gapLen  = fd.gapLen  ?? 4;
+      result.strokeDasharray  = `${dashLen} ${gapLen}`;
+      result.strokeDashoffset = fd.align === 'centered' ? -(dashLen / 2) : 0;
+      result.strokeLinecap    = 'butt';
+    }
+    return result;
   }
 
   if (pt === 'etch') {

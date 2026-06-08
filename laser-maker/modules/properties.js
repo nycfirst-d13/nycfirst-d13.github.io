@@ -21,7 +21,64 @@ const tR = document.getElementById('t-r');
 
 const textPanel = document.getElementById('text-panel');
 
-const processTypeSelect  = document.getElementById('process-type');
+// Custom process-type dropdown
+const _ptWrapper  = document.getElementById('process-type-wrapper');
+const _ptTrigger  = document.getElementById('process-type-trigger');
+const _ptLabel    = document.getElementById('process-type-label');
+const _ptDropdown = document.getElementById('process-type-dropdown');
+const _ptOptions  = () => [..._ptDropdown.querySelectorAll('.custom-select-option:not([hidden])')];
+
+let _ptValue = 'free';
+const _ptChangeListeners = [];
+
+function _ptOpen() { _ptDropdown.classList.add('open'); _ptWrapper.classList.add('open'); }
+function _ptClose() { _ptDropdown.classList.remove('open'); _ptWrapper.classList.remove('open'); }
+
+_ptTrigger.addEventListener('click', () => {
+  _ptDropdown.classList.contains('open') ? _ptClose() : _ptOpen();
+});
+_ptDropdown.addEventListener('click', (e) => {
+  const opt = e.target.closest('.custom-select-option');
+  if (!opt || opt.hidden) return;
+  const val = opt.dataset.value;
+  _ptSetValue(val);
+  _ptClose();
+  _ptChangeListeners.forEach(fn => fn(val));
+});
+document.addEventListener('click', (e) => {
+  if (!_ptTrigger.contains(e.target) && !_ptDropdown.contains(e.target)) _ptClose();
+});
+
+function _ptSetValue(val) {
+  _ptValue = val;
+  const opt = _ptDropdown.querySelector(`.custom-select-option[data-value="${val}"]`);
+  _ptLabel.textContent = opt ? opt.textContent : val;
+  _ptDropdown.querySelectorAll('.custom-select-option').forEach(o => o.classList.toggle('selected', o.dataset.value === val));
+  _updateProcessDesc(val);
+}
+
+const processTypeSelect = {
+  get value() { return _ptValue; },
+  set value(v) { _ptSetValue(v); },
+  querySelector(sel) { return _ptDropdown.querySelector(sel); },
+  addEventListener(evt, fn) { if (evt === 'change') _ptChangeListeners.push(fn); },
+};
+const processDescEl = document.getElementById('process-type-desc');
+const PROCESS_DESCS = {
+  mainCut:  { title: 'Main Cut',        body: 'Cuts the primary outline of the part all the way through the material.' },
+  fold:     { title: 'Fold / Score',    body: 'Scores the surface or perforates the material without cutting through. Either a clean line or dashed line.' },
+  finalCut: { title: 'Final Cut',       body: 'Releases the finished piece from the sheet. Runs last so parts stay in place during cutting.' },
+  etch:     { title: 'Etch',            body: 'Burns a design into the surface without cutting through. Used for labels, artwork, or texture.' },
+  free:     { title: 'Free Appearance', body: '</br><span style="color:#cc0000">No laser process assigned.</span></br>Full control over color and appearance.' },
+};
+
+function _updateProcessDesc(val) {
+  const d = PROCESS_DESCS[val];
+  if (!d) { processDescEl.innerHTML = ''; return; }
+  processDescEl.innerHTML = `<strong>${d.title}:</strong> ${d.body}`;
+}
+_updateProcessDesc('free');
+
 const appearanceFree     = document.getElementById('appearance-free');
 const appearanceLocked   = document.getElementById('appearance-locked');
 const appearanceEtch     = document.getElementById('appearance-etch');
@@ -31,11 +88,40 @@ const etchStrokeToggle   = document.getElementById('etch-stroke-toggle');
 const etchFillToggle     = document.getElementById('etch-fill-toggle');
 const strokeWidthEtch    = document.getElementById('stroke-width-etch');
 
+// Fold dash controls
+const foldDashSection   = document.getElementById('fold-dash-section');
+const foldSolidBtn      = document.getElementById('fold-solid-btn');
+const foldDashedBtn     = document.getElementById('fold-dashed-btn');
+const foldDashOptions   = document.getElementById('fold-dash-options');
+const foldAlignGroup    = document.getElementById('fold-align-group');
+const foldAlignLabel    = document.getElementById('fold-align-label');
+const foldDashLenInput  = document.getElementById('fold-dash-len');
+const foldGapLenInput   = document.getElementById('fold-gap-len');
+const foldAlignNatBtn   = document.getElementById('fold-align-natural');
+const foldAlignCtrBtn   = document.getElementById('fold-align-centered');
+
 const HEX_RE = /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
+
+function hexToRgbStr(hex) {
+  if (!hex || hex === 'none' || hex === '—') return hex;
+  const h = (hex.startsWith('#') ? hex.slice(1) : hex);
+  const full = h.length === 3 ? h.split('').map(c => c+c).join('') : h;
+  const r = parseInt(full.slice(0,2), 16);
+  const g = parseInt(full.slice(2,4), 16);
+  const b = parseInt(full.slice(4,6), 16);
+  return `RGB(${r}, ${g}, ${b})`;
+}
 
 function normalizeHex(v) {
   if (!v) return null;
   if (v.toLowerCase() === 'none') return 'none';
+  const rgbMatch = v.match(/^RGB?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i);
+  if (rgbMatch) {
+    const r = parseInt(rgbMatch[1]).toString(16).padStart(2, '0');
+    const g = parseInt(rgbMatch[2]).toString(16).padStart(2, '0');
+    const b = parseInt(rgbMatch[3]).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`.toUpperCase();
+  }
   if (!HEX_RE.test(v)) return null;
   let h = v.startsWith('#') ? v : '#' + v;
   if (h.length === 4) h = '#' + [...h.slice(1)].map(c => c+c).join('');
@@ -49,12 +135,74 @@ function commonValue(arr, fn) {
   return v0;
 }
 
+const FOLD_DASH_DEFAULTS = { enabled: false, dashLen: 8, gapLen: 4, caps: 'butt', align: 'natural' };
+
+function _getFoldDash(sh) {
+  return sh.foldDash ? { ...FOLD_DASH_DEFAULTS, ...sh.foldDash } : { ...FOLD_DASH_DEFAULTS };
+}
+
+function _syncFoldDash(shapes) {
+  const fds = shapes.map(_getFoldDash);
+  const enabled = commonValue(fds, d => d.enabled);
+  const isDashed = enabled === true;
+  foldSolidBtn.classList.toggle('active', !isDashed);
+  foldDashedBtn.classList.toggle('active', isDashed);
+  foldDashOptions.style.display = isDashed ? '' : 'none';
+  foldAlignGroup.style.display = isDashed ? '' : 'none';
+  foldAlignLabel.style.display = isDashed ? '' : 'none';
+  if (isDashed) {
+    const dashLen = commonValue(fds, d => d.dashLen);
+    const gapLen  = commonValue(fds, d => d.gapLen);
+    const align   = commonValue(fds, d => d.align);
+    foldDashLenInput.value = dashLen ?? '';
+    foldGapLenInput.value  = gapLen  ?? '';
+    foldAlignNatBtn.classList.toggle('active', align !== 'centered');
+    foldAlignCtrBtn.classList.toggle('active', align === 'centered');
+  }
+}
+
+function _setFoldDashInGroup(group, prop, value) {
+  for (const child of group.children) {
+    if (child.type === 'group') _setFoldDashInGroup(child, prop, value);
+    else if (child.processType === 'fold') {
+      if (!child.foldDash) child.foldDash = { ...FOLD_DASH_DEFAULTS };
+      child.foldDash[prop] = value;
+    }
+  }
+}
+
+function _setFoldDash(prop, value) {
+  const hasSelection = store.get().selection.length > 0;
+  if (hasSelection) {
+    store.commit(() => {
+      const s = store.get();
+      if (!s.defaults.foldDash) s.defaults.foldDash = { ...FOLD_DASH_DEFAULTS };
+      s.defaults.foldDash[prop] = value;
+      for (const id of s.selection) {
+        const sh = store.findShape(id);
+        if (!sh) continue;
+        if (sh.type === 'group') _setFoldDashInGroup(sh, prop, value);
+        else if (sh.processType === 'fold') {
+          if (!sh.foldDash) sh.foldDash = { ...FOLD_DASH_DEFAULTS };
+          sh.foldDash[prop] = value;
+        }
+      }
+    }, 'fold-dash');
+  } else {
+    store.patch(s => {
+      if (!s.defaults.foldDash) s.defaults.foldDash = { ...FOLD_DASH_DEFAULTS };
+      s.defaults.foldDash[prop] = value;
+    }, 'defaults');
+  }
+}
+
 let syncing = false;
 
 function _showAppearanceMode(mode) {
   appearanceFree.style.display   = mode === 'free'   ? '' : 'none';
   appearanceLocked.style.display = mode === 'locked' ? '' : 'none';
   appearanceEtch.style.display   = mode === 'etch'   ? '' : 'none';
+  if (mode !== 'locked') foldDashSection.style.display = 'none';
 }
 
 function syncFromState() {
@@ -68,14 +216,35 @@ function syncFromState() {
   if (textPanel) textPanel.style.display = (isSingleText || isTextTool) ? '' : 'none';
 
   if (!sel.length) {
-    // No selection — show free controls using defaults
-    processTypeSelect.value = 'free';
-    _showAppearanceMode('free');
-    fillColor.value   = ensureColor(s.defaults.fill);
-    fillHex.value     = s.defaults.fillEnabled ? s.defaults.fill : 'none';
-    strokeColor.value = ensureColor(s.defaults.stroke);
-    strokeHex.value   = s.defaults.strokeEnabled ? s.defaults.stroke : 'none';
-    strokeWidth.value = s.defaults.strokeWidth;
+    // No selection — show activeProcess (default for next shape)
+    const ap = s.activeProcess ?? 'free';
+    processTypeSelect.value = ap;
+    if (ap === 'etch') {
+      _showAppearanceMode('etch');
+      etchStrokeToggle.textContent = s.defaults.strokeEnabled ? 'On' : 'Off';
+      etchStrokeToggle.classList.toggle('active', s.defaults.strokeEnabled);
+      etchFillToggle.textContent = s.defaults.fillEnabled ? 'On' : 'Off';
+      etchFillToggle.classList.toggle('active', s.defaults.fillEnabled);
+      strokeWidthEtch.value = s.defaults.strokeWidth;
+    } else if (ap === 'mainCut' || ap === 'fold' || ap === 'finalCut') {
+      _showAppearanceMode('locked');
+      const def = PROCESS_DEFINITIONS[ap];
+      lockedStrokeSwatch.style.background = def.stroke;
+      lockedStrokeLabel.textContent = hexToRgbStr(def.stroke);
+      if (ap === 'fold') {
+        foldDashSection.style.display = '';
+        _syncFoldDash([{ foldDash: s.defaults.foldDash ?? FOLD_DASH_DEFAULTS }]);
+      } else {
+        foldDashSection.style.display = 'none';
+      }
+    } else {
+      _showAppearanceMode('free');
+      fillColor.value   = ensureColor(s.defaults.fill);
+      fillHex.value     = s.defaults.fillEnabled ? hexToRgbStr(s.defaults.fill) : 'none';
+      strokeColor.value = ensureColor(s.defaults.stroke);
+      strokeHex.value   = s.defaults.strokeEnabled ? hexToRgbStr(s.defaults.stroke) : 'none';
+      strokeWidth.value = s.defaults.strokeWidth;
+    }
     [tX, tY, tW, tH, tR].forEach(i => { i.value = ''; i.disabled = true; });
     syncing = false;
     return;
@@ -91,7 +260,7 @@ function syncFromState() {
 
   // Update process dropdown
   const isMixed = nonGroups.length > 0 && pt === null;
-  processTypeSelect.querySelector('option[value="__mixed__"]').hidden = !isMixed;
+  processTypeSelect.querySelector('.custom-select-option[data-value="__mixed__"]').hidden = !isMixed;
   processTypeSelect.value = isMixed ? '__mixed__' : (pt ?? 'free');
 
   // Show correct appearance section
@@ -100,9 +269,9 @@ function syncFromState() {
     const fill   = commonValue(sel, sh => sh.fill);
     const stroke = commonValue(sel, sh => sh.stroke);
     const sw     = commonValue(sel, sh => sh.strokeWidth);
-    fillHex.value     = fill   ?? '—';
+    fillHex.value     = fill != null ? hexToRgbStr(fill) : '—';
     fillColor.value   = ensureColor(fill);
-    strokeHex.value   = stroke ?? '—';
+    strokeHex.value   = stroke != null ? hexToRgbStr(stroke) : '—';
     strokeColor.value = ensureColor(stroke);
     strokeWidth.value = sw ?? '';
   } else if (pt === 'etch') {
@@ -120,7 +289,10 @@ function syncFromState() {
     _showAppearanceMode('locked');
     const def = PROCESS_DEFINITIONS[pt];
     lockedStrokeSwatch.style.background = def.stroke;
-    lockedStrokeLabel.textContent = def.stroke;
+    lockedStrokeLabel.textContent = hexToRgbStr(def.stroke);
+    // Show fold dash controls only for fold type
+    foldDashSection.style.display = pt === 'fold' ? '' : 'none';
+    if (pt === 'fold') _syncFoldDash(nonGroups);
   }
 
   // bounding box across selection
@@ -223,7 +395,7 @@ function bindColor(colorInput, hexInput, prop, noneBtn) {
   colorInput.addEventListener('input', () => {
     const v = colorInput.value.toUpperCase();
     if (!tx) { store.beginTransaction(); tx = true; }
-    hexInput.value = v;
+    hexInput.value = hexToRgbStr(v);
     setAppearance(prop, v);
   });
   colorInput.addEventListener('change', () => { if (tx) { store.endTransaction(prop); tx = false; } });
@@ -251,7 +423,11 @@ strokeWidth.addEventListener('change', () => {
 processTypeSelect.addEventListener('change', () => {
   const pt = processTypeSelect.value;
   if (pt === '__mixed__') return;
-  setProcessType(pt);
+  if (!store.get().selection.length) {
+    store.patch(s => { s.activeProcess = pt; }, 'active-process');
+  } else {
+    setProcessType(pt);
+  }
 });
 
 // Etch toggle buttons
@@ -273,6 +449,22 @@ strokeWidthEtch.addEventListener('change', () => {
   const v = Math.max(0, parseFloat(strokeWidthEtch.value) || 0);
   setAppearance('strokeWidth', v);
 });
+
+// Fold dash event listeners
+foldSolidBtn.addEventListener('click', () => _setFoldDash('enabled', false));
+foldDashedBtn.addEventListener('click', () => _setFoldDash('enabled', true));
+foldDashLenInput.addEventListener('change', () => {
+  const v = Math.max(1, parseFloat(foldDashLenInput.value) || 8);
+  foldDashLenInput.value = v;
+  _setFoldDash('dashLen', v);
+});
+foldGapLenInput.addEventListener('change', () => {
+  const v = Math.max(0.5, parseFloat(foldGapLenInput.value) || 4);
+  foldGapLenInput.value = v;
+  _setFoldDash('gapLen', v);
+});
+foldAlignNatBtn.addEventListener('click', () => _setFoldDash('align', 'natural'));
+foldAlignCtrBtn.addEventListener('click', () => _setFoldDash('align', 'centered'));
 
 // ---------------- Transform ----------------
 function applyTransform() {
