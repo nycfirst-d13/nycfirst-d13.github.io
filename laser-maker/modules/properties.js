@@ -346,7 +346,8 @@ function _applyProcessTypeToGroup(group, pt) {
 
 function setProcessType(pt) {
   if (syncing) return;
-  store.commit(() => {
+  store.commit(s => {
+    s.activeProcess = pt;
     for (const id of store.get().selection) {
       const sh = store.findShape(id);
       if (!sh) continue;

@@ -13,7 +13,10 @@
       "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/shapes.js)",
       "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/properties.js)",
       "Bash(node --check /Users/avigoldman/Desktop/nycfirst-d13.github.io/laser-maker/modules/layers.js)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io diff --stat)",
+      "Bash(git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io status)",
+      "Bash(git *)"
     ]
   }
 }

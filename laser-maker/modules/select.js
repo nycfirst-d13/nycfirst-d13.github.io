@@ -4,7 +4,7 @@
 import { store } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
-import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos } from './utils.js';
+import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, deepCloneWithNewIds } from './utils.js';
 import { computeSnap, computePointSnap, renderGuides, clearGuides } from './guides.js';
 import { enterTextEdit } from './shapes.js';
 import { enterIsolation, exitIsolation } from './group.js';
@@ -156,12 +156,12 @@ tools.register('select', {
         } else {
           store.patch(st => st.selection = [...st.selection, hit], 'selection');
         }
-        this._beginMove(raw);
+        this._beginMove(raw, event);
       } else {
         if (!s.selection.includes(hit)) {
           store.patch(st => st.selection = [hit], 'selection');
         }
-        this._beginMove(raw);
+        this._beginMove(raw, event);
       }
     } else {
       // Empty area → marquee
@@ -180,20 +180,41 @@ tools.register('select', {
     if (this._mode && this._mode !== 'marquee') store.endTransaction(this._mode);
     if (this._mode === 'marquee') this._endMarquee();
     if (this._mode === 'corner-round') { selectCWActive = null; renderOverlay(); }
+    _isDragging = false;
     clearGuides();
     this._mode = null;
     this._origs = null;
     this._movingBbox = null;
   },
   // ---- Move ----
-  _beginMove(raw) {
+  _beginMove(raw, event) {
     const s = store.get();
     if (!s.selection.length) return;
+
+    if (event?.altKey) {
+      // Clone selected shapes and drag the copies
+      const origIds = [...s.selection];
+      const clones = origIds.map(id => deepCloneWithNewIds(store.findShape(id)));
+      store.commit(st => {
+        if (st.isolationGroup) {
+          const grp = _findShapeInTree(st.shapes, st.isolationGroup);
+          if (grp?.type === 'group') {
+            for (const clone of clones) grp.children.push(clone);
+          }
+        } else {
+          for (const clone of clones) st.shapes.push(clone);
+        }
+        st.selection = clones.map(c => c.id);
+      }, 'duplicate');
+    }
+
+    _isDragging = true;
     store.beginTransaction();
     this._mode = 'move';
     this._startPt = raw;
-    this._origs = s.selection.map(id => ({ id, snap: snapshotGeom(store.findShape(id)) }));
-    const shapes = s.selection.map(id => store.findShape(id)).filter(Boolean);
+    const sel = store.get().selection;
+    this._origs = sel.map(id => ({ id, snap: snapshotGeom(store.findShape(id)) }));
+    const shapes = sel.map(id => store.findShape(id)).filter(Boolean);
     this._movingBbox = computeCompoundBBox(shapes);
   },
   _doMove(raw, event) {
@@ -460,8 +481,14 @@ tools.register('select', {
 
   onHover({ raw, event }) {
     const s = store.get();
+    const hit = hitShape(event.clientX, event.clientY);
+    const newHoverHit = hit ?? null;
+    let changed = newHoverHit !== _selectHoverHitId;
+    _selectHoverHitId = newHoverHit;
+
     if (s.selection.length !== 1) {
-      if (selectHoveredId !== null) { selectHoveredId = null; renderOverlay(); }
+      if (selectHoveredId !== null) { selectHoveredId = null; changed = true; }
+      if (changed) renderOverlay();
       return;
     }
     const selId = s.selection[0];
@@ -469,22 +496,21 @@ tools.register('select', {
     const supportsCorners = sh?.type === 'rect'
       || (sh?.type === 'path' && getPathCornerInfos(sh.attrs.d || '').length > 0);
     if (!supportsCorners) {
-      if (selectHoveredId !== null) { selectHoveredId = null; renderOverlay(); }
+      if (selectHoveredId !== null) { selectHoveredId = null; changed = true; }
+      if (changed) renderOverlay();
       return;
     }
-    const hit = hitShape(event.clientX, event.clientY);
     const cwEl = event.target.closest?.('[data-corner-widget]');
     const cwShapeId = cwEl ? cwEl.dataset.cornerWidget.split(':')[0] : null;
     const newHover = (hit === selId || cwShapeId === selId) ? selId : null;
-    if (newHover !== selectHoveredId) {
-      selectHoveredId = newHover;
-      renderOverlay();
-    }
+    if (newHover !== selectHoveredId) { selectHoveredId = newHover; changed = true; }
+    if (changed) renderOverlay();
   },
 
   onDeactivate() {
     selectHoveredId = null;
     selectCWActive = null;
+    _selectHoverHitId = null;
     renderOverlay();
   },
 });
@@ -896,12 +922,44 @@ let selectHoveredId = null;     // select-tool: shape id under cursor (corner wi
 let selectCWActive = null;      // corner name being dragged in select tool
 let directCWActiveCorner = null; // corner name being dragged in direct select tool
 let directHoveredCorner = null; // { shapeId, name } | null — nearest corner under cursor in direct tool
+let _altHeld = false;           // whether Alt is currently pressed
+let _selectHoverHitId = null;   // shape id under cursor in select tool (any shape, not just selected)
+let _isDragging = false;        // true while a move drag is in progress
+
+function _drawAltCloneIndicator(s) {
+  if (!_altHeld || !_selectHoverHitId || s.activeTool !== 'select' || _isDragging) return;
+  const hsh = store.findShape(_selectHoverHitId);
+  if (!hsh) return;
+  // If hovering a selected shape, center '+' on compound bbox of entire selection
+  let hcx, hcy;
+  if (s.selection.includes(_selectHoverHitId) && s.selection.length > 1) {
+    const shapes = s.selection.map(id => store.findShape(id)).filter(Boolean);
+    const cb = computeCompoundBBox(shapes);
+    hcx = cb.x + cb.w / 2; hcy = cb.y + cb.h / 2;
+  } else {
+    const hb = artboard.getShapeBBox(hsh);
+    hcx = hb.x + hb.w / 2; hcy = hb.y + hb.h / 2;
+  }
+  const z = s.viewport.zoom;
+  const arm = 6 / z, sw = 1.5 / z;
+  const h = svgNS('line');
+  setAttrs(h, { x1: hcx - arm, y1: hcy, x2: hcx + arm, y2: hcy,
+    stroke: '#888', 'stroke-width': sw, 'pointer-events': 'none' });
+  const v = svgNS('line');
+  setAttrs(v, { x1: hcx, y1: hcy - arm, x2: hcx, y2: hcy + arm,
+    stroke: '#888', 'stroke-width': sw, 'pointer-events': 'none' });
+  overlay.appendChild(h);
+  overlay.appendChild(v);
+}
 
 function renderOverlay() {
   overlay.replaceChildren();
   const s = store.get();
 
-  if (!s.selection.length) return;
+  if (!s.selection.length) {
+    _drawAltCloneIndicator(s);
+    return;
+  }
 
   if (s.activeTool === 'direct' && s.selection.length === 1) {
     drawAnchors(s.selection[0]);
@@ -920,6 +978,8 @@ function renderOverlay() {
   } else {
     drawMultiSelection(bboxes);
   }
+
+  _drawAltCloneIndicator(s);
 }
 
 function drawSingleSelection(sh, b) {
@@ -1941,6 +2001,17 @@ function scalePathD(d, ob, nb) {
   });
 }
 
+function _findShapeInTree(shapes, id) {
+  for (const sh of shapes) {
+    if (sh.id === id) return sh;
+    if (sh.type === 'group' && sh.children) {
+      const found = _findShapeInTree(sh.children, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
 // =============== Status / wiring ==============================
 function updateStatusSel() {
   const el = document.getElementById('status-sel');
@@ -2009,6 +2080,14 @@ window.addEventListener('keydown', e => {
   }
 });
 
+
+// Alt key tracking for clone-drag indicator
+window.addEventListener('keydown', e => {
+  if (e.key === 'Alt' && !_altHeld) { _altHeld = true; renderOverlay(); }
+});
+window.addEventListener('keyup', e => {
+  if (e.key === 'Alt' && _altHeld) { _altHeld = false; renderOverlay(); }
+});
 
 function _removeIdsFromGroups(shapes, ids) {
   for (const sh of shapes) {

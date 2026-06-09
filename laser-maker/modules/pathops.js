@@ -79,8 +79,10 @@ function runOp(op) {
 
   if (!d) { toast('No result'); return; }
 
-  // Take appearance from first selected
+  // Take appearance from first selected; process type from top shape (highest z-order)
   const first = sel[0];
+  const selIds = new Set(s.selection);
+  const topShape = [...s.shapes].reverse().find(sh => selIds.has(sh.id)) ?? first;
   const id = uid('po');
   store.commit(st => {
     // remove originals
@@ -90,6 +92,7 @@ function runOp(op) {
       name: `${op[0].toUpperCase()+op.slice(1)} ${st.shapes.length+1}`,
       attrs: { d, fillRule: 'evenodd' },
       fill: first.fill, stroke: first.stroke, strokeWidth: first.strokeWidth,
+      processType: topShape.processType ?? 'free',
       visible: true, locked: false, rotation: 0,
     });
     st.selection = [id];

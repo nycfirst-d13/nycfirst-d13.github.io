@@ -4,7 +4,7 @@
 import { store } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
-import { deepClone, uid } from './utils.js';
+import { deepClone, uid, inToPx } from './utils.js';
 import { nudgeShape } from './select.js';
 import { groupSelected, ungroupSelected } from './group.js';
 
@@ -29,9 +29,36 @@ function deepCloneWithNewIds(sh) {
   }
   return clone;
 }
-const PASTE_OFFSET = 10 / 96;  // 10px in artboard units (inches)
-const NUDGE = 1 / 96;          // 1px
-const NUDGE_BIG = 10 / 96;     // 10px (shift+arrow)
+const PASTE_OFFSET = 40;   // 40 artboard px (= ~5/12 in)
+const NUDGE = 10;          // 10 artboard px
+const NUDGE_BIG = 40;      // 40 artboard px (shift+arrow)
+
+// Returns a stable reference {x, y} for a shape — used to compute grid-snap nudge delta
+function _shapeRefPos(sh) {
+  if (sh.type === 'group') return sh.children?.length ? _shapeRefPos(sh.children[0]) : { x: 0, y: 0 };
+  switch (sh.type) {
+    case 'rect':
+    case 'text':
+    case 'rawsvg':  return { x: sh.attrs.x,  y: sh.attrs.y  };
+    case 'ellipse':
+    case 'polygon': return { x: sh.attrs.cx, y: sh.attrs.cy };
+    case 'line':    return { x: sh.attrs.x1, y: sh.attrs.y1 };
+    case 'path': {
+      const m = sh.attrs.d?.match(/[Mm]\s*([-\d.e]+)[,\s]+([-\d.e]+)/);
+      return m ? { x: parseFloat(m[1]), y: parseFloat(m[2]) } : { x: 0, y: 0 };
+    }
+    default: return { x: 0, y: 0 };
+  }
+}
+
+// Returns delta to move val to the next grid line in dir (+1/-1)
+function _snapNudgeDelta(val, stepPx, dir) {
+  const onGrid = Math.abs(val - Math.round(val / stepPx) * stepPx) < 0.5;
+  if (onGrid) return stepPx * dir;
+  return dir > 0
+    ? Math.ceil(val  / stepPx) * stepPx - val
+    : Math.floor(val / stepPx) * stepPx - val;
+}
 
 const TOOL_KEYS = {
   v: 'select',
@@ -155,11 +182,27 @@ window.addEventListener('keydown', (e) => {
 
   // Arrow nudge
   if (key === 'arrowleft' || key === 'arrowright' || key === 'arrowup' || key === 'arrowdown') {
-    if (!store.get().selection.length) return;
+    const s = store.get();
+    if (!s.selection.length) return;
     e.preventDefault();
-    const step = e.shiftKey ? NUDGE_BIG : NUDGE;
-    const dx = key === 'arrowleft' ? -step : key === 'arrowright' ? step : 0;
-    const dy = key === 'arrowup' ? -step : key === 'arrowdown' ? step : 0;
+    const dirX = key === 'arrowleft' ? -1 : key === 'arrowright' ? 1 : 0;
+    const dirY = key === 'arrowup'   ? -1 : key === 'arrowdown'  ? 1 : 0;
+    let dx = 0, dy = 0;
+    if (s.grid.snap) {
+      const stepPx = inToPx(s.grid.size);
+      if (e.shiftKey) {
+        dx = dirX * inToPx(1);
+        dy = dirY * inToPx(1);
+      } else {
+        const ref = _shapeRefPos(store.selectedShapes()[0]);
+        if (dirX !== 0) dx = _snapNudgeDelta(ref.x, stepPx, dirX);
+        if (dirY !== 0) dy = _snapNudgeDelta(ref.y, stepPx, dirY);
+      }
+    } else {
+      const step = e.shiftKey ? NUDGE_BIG : NUDGE;
+      dx = dirX * step;
+      dy = dirY * step;
+    }
     store.commit(() => {
       for (const id of store.get().selection) {
         const sh = store.findShape(id);
