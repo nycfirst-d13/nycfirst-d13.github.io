@@ -26,6 +26,11 @@ function shapeToPaper(sh) {
       p = new paper.Path({ segments: pts.map(pt => [pt.x, pt.y]), closed: true });
       break;
     }
+    case 'star': {
+      const pts = starPoints(a);
+      p = new paper.Path({ segments: pts.map(pt => [pt.x, pt.y]), closed: true });
+      break;
+    }
     case 'line':    p = new paper.Path({ segments: [[a.x1, a.y1], [a.x2, a.y2]], closed: false }); break;
     case 'path':    p = new paper.CompoundPath(a.corners ? applyPathCorners(a.d, a.corners) : a.d); break;
     default: return null;
@@ -43,6 +48,19 @@ function polyPoints(a) {
   for (let i = 0; i < a.sides; i++) {
     const ang = start + i * 2 * Math.PI / a.sides;
     pts.push({ x: a.cx + a.r * Math.cos(ang), y: a.cy + a.r * Math.sin(ang) });
+  }
+  return pts;
+}
+
+function starPoints(a) {
+  const n = Math.max(3, (a.points)|0);
+  const ri = a.r * (a.innerRatio ?? 0.4);
+  const pts = [];
+  const start = -Math.PI / 2;
+  for (let i = 0; i < n * 2; i++) {
+    const ang = start + i * Math.PI / n;
+    const rad = i % 2 === 0 ? a.r : ri;
+    pts.push({ x: a.cx + rad * Math.cos(ang), y: a.cy + rad * Math.sin(ang) });
   }
   return pts;
 }
@@ -113,7 +131,7 @@ function runOffset(amountIn) {
   const pairs = [];
 
   for (const sh of sel) {
-    if (sh.type === 'text' || sh.type === 'line') continue;
+    if (sh.type === 'text' || sh.type === 'line' || sh.type === 'image') continue;
     const result = _offsetShape(sh, amount);
     if (result) pairs.push({ source: sh, offset: result });
   }

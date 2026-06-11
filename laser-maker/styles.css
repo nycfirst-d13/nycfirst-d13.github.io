@@ -282,7 +282,8 @@ input { font-family: inherit; }
 .canvas-area.tool-rect,
 .canvas-area.tool-ellipse,
 .canvas-area.tool-line,
-.canvas-area.tool-polygon { cursor: crosshair; }
+.canvas-area.tool-polygon,
+.canvas-area.tool-star { cursor: crosshair; }
 .canvas-area.tool-text { cursor: crosshair; }
 .canvas-area.tool-pen { cursor: crosshair; }
 .canvas-area.tool-shapebuilder { cursor: crosshair; }
@@ -591,7 +592,105 @@ input { font-family: inherit; }
 
 .prop-row .numeric { flex: 1; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+.stepper {
+  display: flex; align-items: center;
+  border: 1px solid var(--rule-2);
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  height: 28px;
+  overflow: hidden;
+  flex: 1;
+}
+.stepper:focus-within { border-color: var(--blue); }
+.stepper-btn {
+  width: 26px; height: 100%; flex-shrink: 0;
+  background: var(--surface-2);
+  border: none;
+  font-size: 15px; line-height: 1;
+  cursor: pointer; color: var(--ink-2);
+  display: flex; align-items: center; justify-content: center;
+  user-select: none;
+}
+.stepper-btn:first-child { border-right: 1px solid var(--rule-2); }
+.stepper-btn:last-child  { border-left:  1px solid var(--rule-2); }
+.stepper-btn:hover  { background: var(--paper); color: var(--ink); }
+.stepper-btn:active { background: var(--blue-soft); color: var(--blue); }
+.stepper input {
+  flex: 1; border: 0; background: transparent;
+  text-align: center;
+  font-family: var(--font-mono); font-size: 12px;
+  outline: none; color: var(--ink);
+  min-width: 0; padding: 0;
+}
+.stepper input::-webkit-outer-spin-button,
+.stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stepper input[type=number] { -moz-appearance: textfield; }
+
+.slider-ctrl {
+  display: flex; align-items: center;
+  border: 1px solid var(--rule-2);
+  background: var(--surface);
+  border-radius: var(--r-sm);
+  height: 28px; overflow: hidden; flex: 1;
+}
+.slider-ctrl .stepper-btn:first-child { border-right: 1px solid var(--rule-2); }
+.slider-ctrl .stepper-btn:last-child  { border-left:  1px solid var(--rule-2); }
+.slider-ctrl input[type=range] {
+  flex: 1; min-width: 0;
+  -webkit-appearance: none; appearance: none;
+  background: transparent; border: none; outline: none;
+  padding: 0 6px; margin: 0; cursor: pointer;
+}
+.slider-ctrl input[type=range]::-webkit-slider-runnable-track {
+  height: 3px; border-radius: 2px;
+  background: var(--rule-2);
+}
+.slider-ctrl input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--blue);
+  margin-top: -4.5px;
+  box-shadow: 0 0 0 1.5px var(--blue-soft);
+}
+.slider-ctrl input[type=range]::-moz-range-track {
+  height: 3px; border-radius: 2px;
+  background: var(--rule-2); border: none;
+}
+.slider-ctrl input[type=range]::-moz-range-thumb {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--blue); border: none;
+  box-shadow: 0 0 0 1.5px var(--blue-soft);
+}
+.slider-val {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  padding: 0 5px 0 3px;
+}
 .numeric-wide { grid-column: 1 / -1; }
+.quick-rotate { display: flex; flex-wrap: wrap; gap: 3px; align-content: center; }
+.qr-btn {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 0 4px;
+  height: 13px;
+  line-height: 13px;
+  background: var(--surface-2);
+  border: 1px solid var(--rule-2);
+  border-radius: 3px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background .1s, color .1s, border-color .1s;
+  user-select: none;
+}
+.qr-btn:hover { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+.qr-btn:active { background: var(--blue); color: white; border-color: var(--blue); }
+.qr-btn:disabled { opacity: 0.4; cursor: default; pointer-events: none; }
+.qr-btn.qr-flip { padding: 0 3px; display: inline-flex; align-items: center; justify-content: center; }
+.qr-btn.qr-flip svg { display: block; pointer-events: none; }
 
 /* Layers */
 .layers {
@@ -750,7 +849,7 @@ input { font-family: inherit; }
 .corner-widget {
   fill: white;
   stroke: var(--blue);
-  stroke-width: 1.25;
+  stroke-width: 1;
   vector-effect: non-scaling-stroke;
   cursor: crosshair;
   pointer-events: all;
@@ -789,6 +888,7 @@ input { font-family: inherit; }
 .tool[data-tool="ellipse"]::before,
 .tool[data-tool="line"]::before,
 .tool[data-tool="polygon"]::before,
+.tool[data-tool="star"]::before,
 .tool[data-tool="pen"]::before,
 .tool[data-tool="text"]::before,
 .tool[data-tool="hand"]::before,
@@ -808,6 +908,7 @@ input { font-family: inherit; }
 .tool[data-tool="ellipse"]::before { -webkit-mask-image: var(--ic-ellipse); mask-image: var(--ic-ellipse); }
 .tool[data-tool="line"]::before    { -webkit-mask-image: var(--ic-line);    mask-image: var(--ic-line); }
 .tool[data-tool="polygon"]::before { -webkit-mask-image: var(--ic-polygon); mask-image: var(--ic-polygon); }
+.tool[data-tool="star"]::before    { -webkit-mask-image: var(--ic-star);    mask-image: var(--ic-star); }
 .tool[data-tool="pen"]::before     { -webkit-mask-image: var(--ic-pen);     mask-image: var(--ic-pen); }
 .tool[data-tool="text"]::before    { -webkit-mask-image: var(--ic-text);    mask-image: var(--ic-text); }
 .tool[data-tool="hand"]::before         { -webkit-mask-image: var(--ic-hand);         mask-image: var(--ic-hand); }
@@ -821,6 +922,7 @@ input { font-family: inherit; }
   --ic-ellipse: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><ellipse cx='10' cy='10' rx='6.5' ry='5.5' fill='none' stroke='black' stroke-width='1.5'/></svg>");
   --ic-line:    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M4 16 L16 4' stroke='black' stroke-width='1.5' stroke-linecap='round'/><circle cx='4' cy='16' r='1.5' fill='black'/><circle cx='16' cy='4' r='1.5' fill='black'/></svg>");
   --ic-polygon: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 3 L17 8 L14.5 16 L5.5 16 L3 8 Z' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round'/></svg>");
+  --ic-star:    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M10 2 L11.8 7.6 L17.6 7.5 L12.9 10.9 L14.7 16.5 L10 13 L5.3 16.5 L7.1 10.9 L2.4 7.5 L8.2 7.6 Z' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round'/></svg>");
   --ic-pen:     url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M14 3 L17 6 L8 15 L4 16 L5 12 Z M11 6 L14 9' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round'/></svg>");
   --ic-text:    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M4 5 L4 4 L16 4 L16 5 M10 4 L10 16 M7 16 L13 16' stroke='black' stroke-width='1.5' fill='none' stroke-linecap='round'/></svg>");
   --ic-hand:         url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'><path d='M7 10 V5 a1.2 1.2 0 0 1 2.4 0 V9 M9.4 9 V4 a1.2 1.2 0 0 1 2.4 0 V9 M11.8 9 V5 a1.2 1.2 0 0 1 2.4 0 V11 M14.2 8 a1.2 1.2 0 0 1 2.2 .8 V13 a4 4 0 0 1 -4 4 H10 a4 4 0 0 1 -3.4 -2 L4 10.5 a1.2 1.2 0 0 1 2 -1.4 L7 10' fill='none' stroke='black' stroke-width='1.5' stroke-linejoin='round' stroke-linecap='round'/></svg>");

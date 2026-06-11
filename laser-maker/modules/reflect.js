@@ -7,6 +7,7 @@ import { svgNS, setAttrs, deepCloneWithNewIds } from './utils.js';
 import { artboard } from './artboard.js';
 
 const overlay = document.getElementById('overlay');
+const _statusSel = document.getElementById('status-sel');
 
 // ---- Math ----
 
@@ -189,10 +190,10 @@ function reflectShape(sh, ax1, ay1, ax2, ay2) {
   }
 
   const a = sh.attrs;
-  sh.rotation = reflectRotation(sh.rotation, ax1, ay1, ax2, ay2);
 
   switch (sh.type) {
     case 'rect': {
+      sh.rotation = reflectRotation(sh.rotation, ax1, ay1, ax2, ay2);
       const cx = a.x + a.w / 2, cy = a.y + a.h / 2;
       const nc = reflectPoint(cx, cy, ax1, ay1, ax2, ay2);
       a.x = nc.x - a.w / 2;
@@ -200,28 +201,46 @@ function reflectShape(sh, ax1, ay1, ax2, ay2) {
       break;
     }
     case 'ellipse': {
+      sh.rotation = reflectRotation(sh.rotation, ax1, ay1, ax2, ay2);
       const nc = reflectPoint(a.cx, a.cy, ax1, ay1, ax2, ay2);
       a.cx = nc.x; a.cy = nc.y;
       break;
     }
     case 'line': {
+      sh.rotation = reflectRotation(sh.rotation, ax1, ay1, ax2, ay2);
       const p1 = reflectPoint(a.x1, a.y1, ax1, ay1, ax2, ay2);
       const p2 = reflectPoint(a.x2, a.y2, ax1, ay1, ax2, ay2);
       a.x1 = p1.x; a.y1 = p1.y;
       a.x2 = p2.x; a.y2 = p2.y;
       break;
     }
-    case 'polygon': {
+    case 'polygon':
+    case 'star': {
+      sh.rotation = reflectRotation(sh.rotation, ax1, ay1, ax2, ay2);
       const nc = reflectPoint(a.cx, a.cy, ax1, ay1, ax2, ay2);
       a.cx = nc.x; a.cy = nc.y;
       break;
     }
     case 'path': {
-      a.d = reflectPathD(a.d, ax1, ay1, ax2, ay2);
+      // Path d-coordinates are in pre-rotation (local) space.
+      // Convert the world-space axis to local space before reflecting,
+      // and leave rotation unchanged — changing rotation + reflecting d double-applies.
+      const bbox = sh._bbox || { x: 0, y: 0, w: 0, h: 0 };
+      const pcx = bbox.x + bbox.w / 2, pcy = bbox.y + bbox.h / 2;
+      const r = -(sh.rotation || 0) * Math.PI / 180;
+      const cosR = Math.cos(r), sinR = Math.sin(r);
+      const toLocal = (wx, wy) => {
+        const dx = wx - pcx, dy = wy - pcy;
+        return { x: pcx + dx * cosR - dy * sinR, y: pcy + dx * sinR + dy * cosR };
+      };
+      const la1 = toLocal(ax1, ay1), la2 = toLocal(ax2, ay2);
+      a.d = reflectPathD(a.d, la1.x, la1.y, la2.x, la2.y);
       break;
     }
     case 'text':
+    case 'image':
     case 'rawsvg': {
+      sh.rotation = reflectRotation(sh.rotation, ax1, ay1, ax2, ay2);
       const nc = reflectPoint(a.x, a.y, ax1, ay1, ax2, ay2);
       a.x = nc.x; a.y = nc.y;
       break;
@@ -233,6 +252,62 @@ function reflectShape(sh, ax1, ay1, ax2, ay2) {
 
 function _clearOverlay() {
   overlay.querySelectorAll('[data-reflect]').forEach(n => n.remove());
+}
+
+// Returns SVG matrix(...) string for reflecting across the line (ax1,ay1)→(ax2,ay2).
+function _reflectionMatrix(ax1, ay1, ax2, ay2) {
+  const dx = ax2 - ax1, dy = ay2 - ay1;
+  const len2 = dx * dx + dy * dy;
+  if (len2 < 1e-10) return null;
+  const a = (dx * dx - dy * dy) / len2;
+  const b = 2 * dx * dy / len2;
+  const e = ax1 * (1 - a) - b * ay1;
+  const f = ay1 * (1 + a) - b * ax1;
+  return `matrix(${a},${b},${b},${-a},${e},${f})`;
+}
+
+function _drawGhostShapes(ax1, ay1, ax2, ay2) {
+  const mat = _reflectionMatrix(ax1, ay1, ax2, ay2);
+  if (!mat) return;
+  for (const id of store.get().selection) {
+    const node = artboard.getShapeNode(id);
+    if (!node) continue;
+    const ghost = node.cloneNode(true);
+    ghost.querySelectorAll('.shape-hover-highlight').forEach(n => n.remove());
+    ghost.querySelectorAll('[pointer-events="all"]').forEach(n =>
+      n.setAttribute('pointer-events', 'none'));
+    const wrapper = svgNS('g');
+    setAttrs(wrapper, { opacity: '0.35', 'data-reflect': '1', transform: mat });
+    wrapper.appendChild(ghost);
+    overlay.appendChild(wrapper);
+  }
+}
+
+function _setAngleDisplay(p1, p2) {
+  let deg = Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+  deg = ((deg % 180) + 180) % 180;
+  _statusSel.textContent = `Axis: ${deg.toFixed(1)}°`;
+}
+
+function _clearAngleDisplay() {
+  _statusSel.textContent = '—';
+}
+
+function _drawCenterHint() {
+  const bb = _selectionBBox();
+  if (!bb) return;
+  const cx = bb.x + bb.w / 2, cy = bb.y + bb.h / 2;
+  const ARM = 8;
+  const common = { stroke: '#1B4FE5', 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke', 'data-reflect': '1' };
+  const h = svgNS('line');
+  setAttrs(h, { x1: cx - ARM, y1: cy, x2: cx + ARM, y2: cy, ...common });
+  overlay.appendChild(h);
+  const v = svgNS('line');
+  setAttrs(v, { x1: cx, y1: cy - ARM, x2: cx, y2: cy + ARM, ...common });
+  overlay.appendChild(v);
+  const dot = svgNS('circle');
+  setAttrs(dot, { cx, cy, r: 2.5, fill: '#1B4FE5', 'vector-effect': 'non-scaling-stroke', 'data-reflect': '1' });
+  overlay.appendChild(dot);
 }
 
 function _drawAxis(p1, p2) {
@@ -265,6 +340,9 @@ function _drawAxis(p1, p2) {
   const c2 = svgNS('circle');
   setAttrs(c2, { cx: p2.x, cy: p2.y, r: 3, fill: '#1B4FE5', 'vector-effect': 'non-scaling-stroke', 'data-reflect': '1' });
   overlay.appendChild(c2);
+
+  _drawGhostShapes(p1.x, p1.y, p2.x, p2.y);
+  _setAngleDisplay(p1, p2);
 }
 
 function _drawP1(p1) {
@@ -329,11 +407,13 @@ function _quickFlip(dir) {
 
 // ---- Tool state ----
 
-const state = { phase: 'idle', p1: null };
+const state = { phase: 'idle', p1: null, copyMode: false };
 
 function _reset() {
   state.phase = 'idle';
   state.p1 = null;
+  state.copyMode = false;
+  _clearAngleDisplay();
   _clearOverlay();
 }
 
@@ -364,18 +444,20 @@ window.addEventListener('keydown', _keyHandler, { capture: true });
 tools.register('reflect', {
   onActivate() {
     _reset();
+    _drawCenterHint();
   },
 
   onDeactivate() {
     _reset();
   },
 
-  onDown({ snap }) {
+  onDown({ snap, event }) {
     // Only react when idle — set p1. When phase='axis', do nothing here;
     // the second onUp will handle it (keeping _activeHandler alive for onMove).
     if (state.phase === 'idle') {
       state.p1 = snap;
       state.phase = 'axis';
+      state.copyMode = event.altKey;
       _drawP1(snap);
     }
   },
@@ -404,9 +486,10 @@ tools.register('reflect', {
     if (Math.hypot(p2.x - p1.x, p2.y - p1.y) < 1e-6) return;
 
     // Second click (or drag release) with real axis — apply reflect
+    const copyMode = state.copyMode || event.altKey;
     _reset();
 
-    if (event.altKey) {
+    if (copyMode) {
       _applyReflectCopy(p1.x, p1.y, p2.x, p2.y);
     } else {
       _applyReflect(p1.x, p1.y, p2.x, p2.y);

@@ -61,6 +61,7 @@ export function shapeBBox(s) {
       return { x, y, w: Math.abs(s.attrs.x2-s.attrs.x1), h: Math.abs(s.attrs.y2-s.attrs.y1) };
     }
     case 'polygon':
+    case 'star':
     case 'path':
     case 'text':
       // computed from rendered element
@@ -166,43 +167,79 @@ export function rectToPathData(a) {
 
 // Parses SVG path d into straight-line subpaths.
 // Returns null if any curve commands (C, Q, S, T, A) are present.
-function _parseStraightSubpaths(d) {
-  if (/[CcSsQqTtAa]/.test(d)) return null;
+// Parse a path into subpaths handling both straight (L/H/V) and cubic-bezier (C) segments.
+// Returns null if d contains S/Q/T/A commands (unsupported).
+// Closed subpath: segTypes.length === nodes.length; segTypes[i] = seg from nodes[i] to nodes[(i+1)%n]
+// Open subpath:   segTypes.length === nodes.length - 1; segTypes[i] = seg from nodes[i] to nodes[i+1]
+function _parseMixedSubpaths(d) {
+  if (/[SsQqTtAa]/.test(d)) return null;
   const subpaths = [];
-  let cur = null;
+  let nodes = null, segTypes = null, segCPs = null;
   let cx = 0, cy = 0, mx = 0, my = 0;
-  const re = /([MmLlHhVvZz])([^MmLlHhVvZzCcSsQqTtAa]*)/g;
+  const re = /([MmLlHhVvCcZz])([^MmLlHhVvCcZzSsQqTtAa]*)/g;
   let m;
   while ((m = re.exec(d)) !== null) {
     const cmd = m[1], C = cmd.toUpperCase(), rel = cmd !== C;
     const nums = m[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
     if (C === 'M') {
-      if (cur) subpaths.push(cur);
+      if (nodes && nodes.length > 0) subpaths.push({ nodes, segTypes, segCPs, closed: false });
       const x = rel ? cx + nums[0] : nums[0], y = rel ? cy + nums[1] : nums[1];
-      cur = { pts: [{ x, y }], closed: false };
+      nodes = [{ x, y }]; segTypes = []; segCPs = [];
       cx = mx = x; cy = my = y;
       for (let i = 2; i + 1 < nums.length; i += 2) {
         const lx = rel ? cx + nums[i] : nums[i], ly = rel ? cy + nums[i + 1] : nums[i + 1];
-        cur.pts.push({ x: lx, y: ly }); cx = lx; cy = ly;
+        segTypes.push('L'); segCPs.push(null); nodes.push({ x: lx, y: ly });
+        cx = lx; cy = ly;
       }
     } else if (C === 'L') {
-      if (!cur) cur = { pts: [], closed: false };
+      if (!nodes) { nodes = [{ x: cx, y: cy }]; segTypes = []; segCPs = []; }
       for (let i = 0; i + 1 < nums.length; i += 2) {
         const x = rel ? cx + nums[i] : nums[i], y = rel ? cy + nums[i + 1] : nums[i + 1];
-        cur.pts.push({ x, y }); cx = x; cy = y;
+        segTypes.push('L'); segCPs.push(null); nodes.push({ x, y });
+        cx = x; cy = y;
       }
     } else if (C === 'H') {
-      if (!cur) cur = { pts: [], closed: false };
-      for (const v of nums) { const x = rel ? cx + v : v; cur.pts.push({ x, y: cy }); cx = x; }
+      if (!nodes) { nodes = [{ x: cx, y: cy }]; segTypes = []; segCPs = []; }
+      for (const v of nums) {
+        const x = rel ? cx + v : v;
+        segTypes.push('L'); segCPs.push(null); nodes.push({ x, y: cy });
+        cx = x;
+      }
     } else if (C === 'V') {
-      if (!cur) cur = { pts: [], closed: false };
-      for (const v of nums) { const y = rel ? cy + v : v; cur.pts.push({ x: cx, y }); cy = y; }
+      if (!nodes) { nodes = [{ x: cx, y: cy }]; segTypes = []; segCPs = []; }
+      for (const v of nums) {
+        const y = rel ? cy + v : v;
+        segTypes.push('L'); segCPs.push(null); nodes.push({ x: cx, y });
+        cy = y;
+      }
+    } else if (C === 'C') {
+      if (!nodes) { nodes = [{ x: cx, y: cy }]; segTypes = []; segCPs = []; }
+      for (let i = 0; i + 5 < nums.length; i += 6) {
+        const x1 = rel ? cx + nums[i]     : nums[i];
+        const y1 = rel ? cy + nums[i + 1] : nums[i + 1];
+        const x2 = rel ? cx + nums[i + 2] : nums[i + 2];
+        const y2 = rel ? cy + nums[i + 3] : nums[i + 3];
+        const x  = rel ? cx + nums[i + 4] : nums[i + 4];
+        const y  = rel ? cy + nums[i + 5] : nums[i + 5];
+        segTypes.push('C'); segCPs.push({ cp1: { x: x1, y: y1 }, cp2: { x: x2, y: y2 } });
+        nodes.push({ x, y }); cx = x; cy = y;
+      }
     } else if (C === 'Z') {
-      if (cur) { cur.closed = true; subpaths.push(cur); cur = null; }
-      cx = mx; cy = my;
+      if (nodes && nodes.length > 0) {
+        const first = nodes[0], last = nodes[nodes.length - 1];
+        if (nodes.length > 1 && Math.hypot(last.x - first.x, last.y - first.y) < 0.01) {
+          // Last node duplicates first (pen closes with explicit C ending at first pt)
+          nodes.pop(); // closing segment is already in segTypes as the last entry
+        } else {
+          segTypes.push('L'); segCPs.push(null); // implicit straight close
+        }
+        subpaths.push({ nodes, segTypes, segCPs, closed: true });
+        nodes = null; segTypes = null; segCPs = null;
+        cx = mx; cy = my;
+      }
     }
   }
-  if (cur) subpaths.push(cur);
+  if (nodes && nodes.length > 0) subpaths.push({ nodes, segTypes, segCPs, closed: false });
   return subpaths;
 }
 
@@ -213,35 +250,45 @@ function _cornerSweep(prev, curr, next) {
   return cross > 0 ? 1 : 0;
 }
 
-// Apply per-vertex corner radii (corners: {[vertexIdx]: radius}) to a straight-line path.
-// Returns original d if the path contains curve commands.
+// Apply per-vertex corner radii to a path with straight and/or cubic-bezier segments.
+// Only vertices where both adjacent segments are straight lines can be rounded.
+// Returns original d for unsupported commands (S/Q/T/A).
 export function applyPathCorners(d, corners) {
   if (!corners || !Object.keys(corners).length) return d;
-  const subpaths = _parseStraightSubpaths(d);
+  const subpaths = _parseMixedSubpaths(d);
   if (!subpaths) return d;
 
   let result = '';
   let gi = 0;
 
   for (const sp of subpaths) {
-    const pts = sp.pts, n = pts.length;
+    const pts = sp.nodes, n = pts.length;
+    const types = sp.segTypes, cps = sp.segCPs;
     if (n < 2) {
-      result += pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${_pcFmt(p.x)} ${_pcFmt(p.y)}`).join(' ');
-      if (sp.closed) result += ' Z';
-      result += ' ';
+      result += `M ${_pcFmt(pts[0].x)} ${_pcFmt(pts[0].y)} `;
+      if (sp.closed) result += 'Z ';
       gi += n; continue;
     }
 
     const arcs = pts.map((curr, i) => {
       const r = +(corners[gi + i] ?? corners[String(gi + i)] ?? 0);
-      if (r <= 0 || (!sp.closed && (i === 0 || i === n - 1))) return null;
+      if (r <= 0) return null;
+      if (!sp.closed && (i === 0 || i === n - 1)) return null;
+      const inIdx = sp.closed ? (i - 1 + n) % n : i - 1;
+      if (types[inIdx] !== 'L' || types[i] !== 'L') return null;
       const prev = pts[(i - 1 + n) % n], next = pts[(i + 1) % n];
       const dprev = Math.hypot(curr.x - prev.x, curr.y - prev.y);
       const dnext = Math.hypot(curr.x - next.x, curr.y - next.y);
       if (dprev < 0.01 || dnext < 0.01) return null;
       const ar = Math.min(r, dprev / 2, dnext / 2);
+      const e1x = (prev.x - curr.x) / dprev, e1y = (prev.y - curr.y) / dprev;
+      const e2x = (next.x - curr.x) / dnext, e2y = (next.y - curr.y) / dnext;
+      const sinθ = Math.abs(e1x * e2y - e1y * e2x);
+      const denom = 1 + e1x * e2x + e1y * e2y;
+      if (denom < 0.001) return null;
+      const rArc = ar * sinθ / denom;
       return {
-        r: ar,
+        r: rArc,
         start: { x: curr.x + (prev.x - curr.x) * ar / dprev, y: curr.y + (prev.y - curr.y) * ar / dprev },
         end:   { x: curr.x + (next.x - curr.x) * ar / dnext, y: curr.y + (next.y - curr.y) * ar / dnext },
         sweep: _cornerSweep(prev, curr, next),
@@ -249,40 +296,111 @@ export function applyPathCorners(d, corners) {
     });
 
     const a0 = arcs[0];
-    const sp0 = a0 ? a0.end : pts[0];
-    result += `M ${_pcFmt(sp0.x)} ${_pcFmt(sp0.y)} `;
+    result += `M ${_pcFmt(a0 ? a0.end.x : pts[0].x)} ${_pcFmt(a0 ? a0.end.y : pts[0].y)} `;
 
-    for (let i = 1; i < n; i++) {
-      const ai = arcs[i];
-      if (ai) {
-        result += `L ${_pcFmt(ai.start.x)} ${_pcFmt(ai.start.y)} A ${_pcFmt(ai.r)} ${_pcFmt(ai.r)} 0 0 ${ai.sweep} ${_pcFmt(ai.end.x)} ${_pcFmt(ai.end.y)} `;
+    const segCount = sp.closed ? n : n - 1;
+    for (let i = 0; i < segCount; i++) {
+      const nextI = (i + 1) % n;
+      const nextArc = arcs[nextI];
+      if (types[i] === 'C') {
+        const cp = cps[i];
+        result += `C ${_pcFmt(cp.cp1.x)} ${_pcFmt(cp.cp1.y)} ${_pcFmt(cp.cp2.x)} ${_pcFmt(cp.cp2.y)} ${_pcFmt(pts[nextI].x)} ${_pcFmt(pts[nextI].y)} `;
       } else {
-        result += `L ${_pcFmt(pts[i].x)} ${_pcFmt(pts[i].y)} `;
+        const toPt = nextArc ? nextArc.start : pts[nextI];
+        result += `L ${_pcFmt(toPt.x)} ${_pcFmt(toPt.y)} `;
+        if (nextArc) result += `A ${_pcFmt(nextArc.r)} ${_pcFmt(nextArc.r)} 0 0 ${nextArc.sweep} ${_pcFmt(nextArc.end.x)} ${_pcFmt(nextArc.end.y)} `;
       }
     }
 
-    if (sp.closed) {
-      if (a0) {
-        result += `L ${_pcFmt(a0.start.x)} ${_pcFmt(a0.start.y)} A ${_pcFmt(a0.r)} ${_pcFmt(a0.r)} 0 0 ${a0.sweep} ${_pcFmt(a0.end.x)} ${_pcFmt(a0.end.y)} `;
-      }
-      result += 'Z ';
-    }
+    if (sp.closed) result += 'Z ';
     gi += n;
   }
   return result.trim();
 }
 
-// Returns array of {idx, x, y, bisX, bisY, maxR} for each roundable corner
-// in a straight-line SVG path. Returns [] if path has curves.
+// Compute corner bisector info for each vertex of a closed polygon (same schema as getPathCornerInfos).
+// pts: array of {x, y}. Returns [{idx, x, y, bisX, bisY, maxR, sinHalf}].
+export function getPolyCornerInfos(pts) {
+  const n = pts.length;
+  const result = [];
+  for (let i = 0; i < n; i++) {
+    const curr = pts[i];
+    const prev = pts[(i - 1 + n) % n];
+    const next = pts[(i + 1) % n];
+    const dprev = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+    const dnext = Math.hypot(curr.x - next.x, curr.y - next.y);
+    if (dprev < 0.01 || dnext < 0.01) continue;
+    const e1x = (prev.x - curr.x) / dprev, e1y = (prev.y - curr.y) / dprev;
+    const e2x = (next.x - curr.x) / dnext, e2y = (next.y - curr.y) / dnext;
+    const bisX = e1x + e2x, bisY = e1y + e2y;
+    const bisLen = Math.hypot(bisX, bisY);
+    const cosθ = e1x * e2x + e1y * e2y;
+    result.push({
+      idx: i,
+      x: curr.x, y: curr.y,
+      bisX: bisLen > 0.01 ? bisX / bisLen : e1x,
+      bisY: bisLen > 0.01 ? bisY / bisLen : e1y,
+      maxR: Math.min(dprev, dnext) / 2,
+      sinHalf: Math.sqrt(Math.max(0, (1 - cosθ) / 2)),
+    });
+  }
+  return result;
+}
+
+// Build a rounded closed polygon path from an array of {x,y} points.
+// radii: single number (uniform) or array of numbers (one per vertex, same length as pts).
+export function roundedPolygonPath(pts, radii) {
+  const n = pts.length;
+  if (n < 3) return '';
+  const f = v => +v.toFixed(3);
+  const arcs = pts.map((curr, i) => {
+    const r = Array.isArray(radii) ? (radii[i] ?? 0) : (radii ?? 0);
+    if (r <= 0) return null;
+    const prev = pts[(i - 1 + n) % n];
+    const next = pts[(i + 1) % n];
+    const dprev = Math.hypot(curr.x - prev.x, curr.y - prev.y);
+    const dnext = Math.hypot(curr.x - next.x, curr.y - next.y);
+    if (dprev < 0.01 || dnext < 0.01) return null;
+    const ar = Math.min(r, dprev / 2, dnext / 2);
+    const e1x = (prev.x - curr.x) / dprev, e1y = (prev.y - curr.y) / dprev;
+    const e2x = (next.x - curr.x) / dnext, e2y = (next.y - curr.y) / dnext;
+    const sinθ = Math.abs(e1x * e2y - e1y * e2x);
+    const denom = 1 + e1x * e2x + e1y * e2y;
+    if (denom < 0.001) return null;
+    const rArc = ar * sinθ / denom;
+    return {
+      r: rArc,
+      start: { x: curr.x + (prev.x - curr.x) * ar / dprev, y: curr.y + (prev.y - curr.y) * ar / dprev },
+      end:   { x: curr.x + (next.x - curr.x) * ar / dnext, y: curr.y + (next.y - curr.y) * ar / dnext },
+      sweep: _cornerSweep(prev, curr, next),
+    };
+  });
+  const a0 = arcs[0];
+  let d = `M ${f(a0 ? a0.end.x : pts[0].x)} ${f(a0 ? a0.end.y : pts[0].y)}`;
+  for (let i = 0; i < n; i++) {
+    const ni = (i + 1) % n;
+    const na = arcs[ni];
+    const toPt = na ? na.start : pts[ni];
+    d += ` L ${f(toPt.x)} ${f(toPt.y)}`;
+    if (na) d += ` A ${f(na.r)} ${f(na.r)} 0 0 ${na.sweep} ${f(na.end.x)} ${f(na.end.y)}`;
+  }
+  return d + ' Z';
+}
+
+// Returns array of {idx, x, y, bisX, bisY, maxR} for each roundable corner in a path.
+// Only vertices where both adjacent segments are straight lines are eligible.
 export function getPathCornerInfos(d) {
-  const subpaths = _parseStraightSubpaths(d);
+  const subpaths = _parseMixedSubpaths(d);
   if (!subpaths) return [];
   const result = [];
   let gi = 0;
   for (const sp of subpaths) {
-    const pts = sp.pts, n = pts.length;
+    const pts = sp.nodes, n = pts.length;
+    const types = sp.segTypes;
     for (let i = 0; i < n; i++) {
       if (!sp.closed && (i === 0 || i === n - 1)) continue;
+      const inIdx = sp.closed ? (i - 1 + n) % n : i - 1;
+      if (types[inIdx] !== 'L' || types[i] !== 'L') continue;
       const curr = pts[i];
       const prev = pts[(i - 1 + n) % n], next = pts[(i + 1) % n];
       const dprev = Math.hypot(curr.x - prev.x, curr.y - prev.y);
@@ -290,14 +408,16 @@ export function getPathCornerInfos(d) {
       if (dprev < 0.01 || dnext < 0.01) continue;
       const e1x = (prev.x - curr.x) / dprev, e1y = (prev.y - curr.y) / dprev;
       const e2x = (next.x - curr.x) / dnext, e2y = (next.y - curr.y) / dnext;
-      if (Math.abs(e1x * e2y - e1y * e2x) < 0.17) continue; // skip near-collinear
+      if (Math.abs(e1x * e2y - e1y * e2x) < 0.17) continue;
       const bisX = e1x + e2x, bisY = e1y + e2y;
       const bisLen = Math.hypot(bisX, bisY);
+      const cosθ = e1x * e2x + e1y * e2y;
       result.push({
         idx: gi + i, x: curr.x, y: curr.y,
         bisX: bisLen > 0.01 ? bisX / bisLen : e1x,
         bisY: bisLen > 0.01 ? bisY / bisLen : e1y,
         maxR: Math.min(dprev, dnext) / 2,
+        sinHalf: Math.sqrt(Math.max(0, (1 - cosθ) / 2)),
       });
     }
     gi += n;

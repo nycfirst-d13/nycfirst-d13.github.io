@@ -39,9 +39,11 @@ function _shapeRefPos(sh) {
   switch (sh.type) {
     case 'rect':
     case 'text':
+    case 'image':
     case 'rawsvg':  return { x: sh.attrs.x,  y: sh.attrs.y  };
     case 'ellipse':
-    case 'polygon': return { x: sh.attrs.cx, y: sh.attrs.cy };
+    case 'polygon':
+    case 'star':    return { x: sh.attrs.cx, y: sh.attrs.cy };
     case 'line':    return { x: sh.attrs.x1, y: sh.attrs.y1 };
     case 'path': {
       const m = sh.attrs.d?.match(/[Mm]\s*([-\d.e]+)[,\s]+([-\d.e]+)/);

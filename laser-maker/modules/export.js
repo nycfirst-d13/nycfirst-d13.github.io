@@ -3,7 +3,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { artboard } from './artboard.js';
-import { inToPx, applyPathCorners, wordWrapLines } from './utils.js';
+import { inToPx, applyPathCorners, wordWrapLines, roundedPolygonPath } from './utils.js';
 import { fetchFontBuffer, fontkit } from './text-panel.js';
 import { resolveAppearance } from './process-registry.js';
 
@@ -163,14 +163,31 @@ function shapeToSVG(sh, pathMap = new Map()) {
     case 'line':
       return `<line x1="${a.x1.toFixed(3)}" y1="${a.y1.toFixed(3)}" x2="${a.x2.toFixed(3)}" y2="${a.y2.toFixed(3)}"${style}${transform}/>`;
     case 'polygon': {
-      const pts = polyPoints(a).map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ');
-      return `<polygon points="${pts}"${style}${transform}/>`;
+      const pts = polyPoints(a);
+      const radii = pts.map((_, i) => a.cornerRadii?.[i] ?? a.cornerRadius ?? 0);
+      if (radii.some(r => r > 0)) {
+        return `<path d="${roundedPolygonPath(pts, radii)}"${style}${transform}/>`;
+      }
+      return `<polygon points="${pts.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ')}"${style}${transform}/>`;
+    }
+    case 'star': {
+      const pts = starPoints(a);
+      const outerR = a.outerCornerR ?? 0;
+      const innerR = a.innerCornerR ?? 0;
+      const radii = pts.map((_, i) => a.cornerRadii?.[i] ?? (i % 2 === 0 ? outerR : innerR));
+      if (radii.some(r => r > 0)) {
+        return `<path d="${roundedPolygonPath(pts, radii)}"${style}${transform}/>`;
+      }
+      return `<polygon points="${pts.map(p => `${p.x.toFixed(3)},${p.y.toFixed(3)}`).join(' ')}"${style}${transform}/>`;
     }
     case 'path': {
       const pd = a.corners ? applyPathCorners(a.d, a.corners) : a.d;
       const fr = a.fillRule ? ` fill-rule="${a.fillRule}"` : '';
       return `<path d="${pd}"${fr}${style}${transform}/>`;
     }
+    case 'image':
+      // Embed raster as base64 data URL — survives the round-trip into Illustrator.
+      return `<image x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" width="${a.w.toFixed(3)}" height="${a.h.toFixed(3)}" preserveAspectRatio="none" xlink:href="${a.href}" href="${a.href}"${transform}/>`;
     case 'text': {
       if (pathMap.has(sh.id)) {
         const d = pathMap.get(sh.id);
@@ -218,13 +235,26 @@ function polyPoints(a) {
   return pts;
 }
 
+function starPoints(a) {
+  const n = Math.max(3, (a.points)|0);
+  const ri = a.r * (a.innerRatio ?? 0.4);
+  const pts = [];
+  const start = -Math.PI / 2;
+  for (let i = 0; i < n * 2; i++) {
+    const ang = start + i * Math.PI / n;
+    const rad = i % 2 === 0 ? a.r : ri;
+    pts.push({ x: a.cx + rad * Math.cos(ang), y: a.cy + rad * Math.sin(ang) });
+  }
+  return pts;
+}
+
 function buildSVG(pathMap = new Map()) {
   const s = store.get();
   const wPx = inToPx(s.artboard.w);
   const hPx = inToPx(s.artboard.h);
   const body = s.shapes.map(sh => shapeToSVG(sh, pathMap)).filter(Boolean).join('\n  ');
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1"
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
      width="${s.artboard.w}in" height="${s.artboard.h}in"
      viewBox="0 0 ${wPx} ${hPx}">
   <title>Laser Maker Export</title>

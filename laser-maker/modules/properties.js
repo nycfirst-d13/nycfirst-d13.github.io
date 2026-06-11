@@ -5,6 +5,7 @@ import { store } from './state.js';
 import { artboard } from './artboard.js';
 import { inToPx, pxToIn, round, rotatedCorners } from './utils.js';
 import { PROCESS_DEFINITIONS, normalizeForProcess } from './process-registry.js';
+import { quickFlip } from './reflect.js';
 
 const fillColor   = document.getElementById('fill-color');
 const fillHex     = document.getElementById('fill-hex');
@@ -18,8 +19,14 @@ const tY = document.getElementById('t-y');
 const tW = document.getElementById('t-w');
 const tH = document.getElementById('t-h');
 const tR = document.getElementById('t-r');
+const qrBtns = document.querySelectorAll('.qr-btn');
 
 const textPanel = document.getElementById('text-panel');
+const polygonPanel      = document.getElementById('polygon-panel');
+const polygonSidesInput = document.getElementById('polygon-sides');
+const starPanel         = document.getElementById('star-panel');
+const starPointsInput     = document.getElementById('star-points');
+const starInnerRatioInput = document.getElementById('star-inner-ratio');
 
 // Custom process-type dropdown
 const _ptWrapper  = document.getElementById('process-type-wrapper');
@@ -215,6 +222,25 @@ function syncFromState() {
   const isTextTool = s.activeTool === 'text';
   if (textPanel) textPanel.style.display = (isSingleText || isTextTool) ? '' : 'none';
 
+  const isSinglePolygon = sel.length === 1 && sel[0].type === 'polygon';
+  if (polygonPanel) {
+    polygonPanel.style.display = isSinglePolygon ? '' : 'none';
+    if (isSinglePolygon) {
+      polygonSidesInput.value = sel[0].attrs.sides ?? 6;
+    }
+  }
+
+  const isSingleStar = sel.length === 1 && sel[0].type === 'star';
+  if (starPanel) {
+    starPanel.style.display = isSingleStar ? '' : 'none';
+    if (isSingleStar) {
+      starPointsInput.value     = sel[0].attrs.points ?? 5;
+      starInnerRatioInput.value = (sel[0].attrs.innerRatio ?? 0.4).toFixed(2);
+      const valSpan = starInnerRatioInput.closest('.slider-ctrl')?.querySelector('.slider-val');
+      if (valSpan) valSpan.textContent = _sliderValText(starInnerRatioInput);
+    }
+  }
+
   if (!sel.length) {
     // No selection — show activeProcess (default for next shape)
     const ap = s.activeProcess ?? 'free';
@@ -246,11 +272,13 @@ function syncFromState() {
       strokeWidth.value = s.defaults.strokeWidth;
     }
     [tX, tY, tW, tH, tR].forEach(i => { i.value = ''; i.disabled = true; });
+    qrBtns.forEach(b => b.disabled = true);
     syncing = false;
     return;
   }
 
   [tX, tY, tW, tH, tR].forEach(i => i.disabled = false);
+  qrBtns.forEach(b => b.disabled = false);
 
   // Process type across selection (groups don't have processType)
   const nonGroups = sel.filter(sh => sh.type !== 'group');
@@ -504,6 +532,7 @@ function applyBBox(sh, ob, nb) {
       }
       break;
     }
+    case 'image': sh.attrs.x = nb.x; sh.attrs.y = nb.y; sh.attrs.w = nb.w; sh.attrs.h = nb.h; break;
     case 'ellipse': sh.attrs.cx = nb.x + nb.w/2; sh.attrs.cy = nb.y + nb.h/2; sh.attrs.rx = nb.w/2; sh.attrs.ry = nb.h/2; break;
     case 'line': {
       const sx = nb.w / Math.max(0.0001, ob.w), sy = nb.h / Math.max(0.0001, ob.h);
@@ -513,7 +542,8 @@ function applyBBox(sh, ob, nb) {
       sh.attrs.y2 = nb.y + (sh.attrs.y2 - ob.y) * sy;
       break;
     }
-    case 'polygon': sh.attrs.cx = nb.x + nb.w/2; sh.attrs.cy = nb.y + nb.h/2; sh.attrs.r = Math.min(nb.w, nb.h)/2; break;
+    case 'polygon':
+    case 'star': sh.attrs.cx = nb.x + nb.w/2; sh.attrs.cy = nb.y + nb.h/2; sh.attrs.r = Math.min(nb.w, nb.h)/2; break;
     case 'text': {
       const scale = nb.h / Math.max(1, ob.h);
       sh.attrs.size = Math.max(2, sh.attrs.size * scale);
@@ -566,6 +596,94 @@ function scaleD(d, ob, nb) {
 }
 
 [tX, tY, tW, tH, tR].forEach(i => i.addEventListener('change', applyTransform));
+
+qrBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.flip) {
+      const s = store.get();
+      if (s.selection.length === 0) return;
+      quickFlip(btn.dataset.flip);
+      return;
+    }
+    if (!btn.dataset.deg) return;
+    const s = store.get();
+    if (s.selection.length === 0) return;
+    const delta = parseFloat(btn.dataset.deg);
+    tR.value = (parseFloat(tR.value) || 0) + delta;
+    applyTransform();
+  });
+});
+
+
+polygonSidesInput.addEventListener('change', () => {
+  const n = Math.max(3, Math.min(64, parseInt(polygonSidesInput.value) || 6));
+  polygonSidesInput.value = n;
+  store.commit(s => {
+    for (const id of s.selection) {
+      const sh = store.findShape(id);
+      if (sh?.type === 'polygon') sh.attrs.sides = n;
+    }
+  }, 'polygon-sides');
+});
+
+starPointsInput.addEventListener('change', () => {
+  const n = Math.max(3, Math.min(20, parseInt(starPointsInput.value) || 5));
+  starPointsInput.value = n;
+  store.commit(s => {
+    for (const id of s.selection) {
+      const sh = store.findShape(id);
+      if (sh?.type === 'star') sh.attrs.points = n;
+    }
+  }, 'star-points');
+});
+
+starInnerRatioInput.addEventListener('input', () => {
+  const v = Math.max(0.05, Math.min(0.95, parseFloat(starInnerRatioInput.value) || 0.4));
+  const valSpan = starInnerRatioInput.closest('.slider-ctrl')?.querySelector('.slider-val');
+  if (valSpan) valSpan.textContent = _sliderValText(starInnerRatioInput);
+  store.patch(s => {
+    for (const id of s.selection) {
+      const sh = store.findShape(id);
+      if (sh?.type === 'star') sh.attrs.innerRatio = v;
+    }
+  }, 'star-inner-ratio');
+});
+starInnerRatioInput.addEventListener('change', () => {
+  const v = Math.max(0.05, Math.min(0.95, parseFloat(starInnerRatioInput.value) || 0.4));
+  store.commit(s => {
+    for (const id of s.selection) {
+      const sh = store.findShape(id);
+      if (sh?.type === 'star') sh.attrs.innerRatio = v;
+    }
+  }, 'star-inner-ratio');
+});
+
+function _sliderValText(input) {
+  const step = parseFloat(input.step) || 1;
+  const val  = step % 1 === 0 ? input.value : parseFloat(input.value).toFixed(2);
+  const unit = input.dataset.unit || '';
+  return unit ? `${val} ${unit}` : val;
+}
+
+// Wire stepper buttons — works for .stepper and .slider-ctrl containers
+document.querySelectorAll('.stepper, .slider-ctrl').forEach(wrap => {
+  const input   = wrap.querySelector('input');
+  const valSpan = wrap.querySelector('.slider-val');
+  wrap.querySelectorAll('.stepper-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const delta = parseInt(btn.dataset.delta);
+      const min  = input.min !== '' ? parseFloat(input.min) : -Infinity;
+      const max  = input.max !== '' ? parseFloat(input.max) :  Infinity;
+      const step = parseFloat(input.step) || 1;
+      const cur  = parseFloat(input.value) || 0;
+      const next = Math.max(min, Math.min(max, cur + delta * step));
+      input.value = step % 1 === 0 ? next : next.toFixed(2);
+      if (valSpan) valSpan.textContent = _sliderValText(input);
+      input.dispatchEvent(new Event('input'));
+      input.dispatchEvent(new Event('change'));
+    });
+  });
+});
 
 store.subscribe(syncFromState);
 syncFromState();

@@ -4,7 +4,7 @@
 import { store } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
-import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, deepCloneWithNewIds } from './utils.js';
+import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds } from './utils.js';
 import { computeSnap, computePointSnap, renderGuides, clearGuides } from './guides.js';
 import { enterTextEdit } from './shapes.js';
 import { enterIsolation, exitIsolation } from './group.js';
@@ -12,8 +12,8 @@ import { enterIsolation, exitIsolation } from './group.js';
 const HANDLE_SIZE  = 8;     // CSS px
 const ROT_OFFSET   = 22;    // CSS px above bbox
 const ANCHOR_SIZE  = 7;
-const CW_R         = 5;     // corner-widget circle radius, CSS px
-const CW_MIN       = 12;    // corner-widget minimum inset from vertex, CSS px
+const CW_R         = 3.5;   // corner-widget circle radius, CSS px
+const CW_MIN       = 16;    // corner-widget minimum inset from vertex, CSS px
 
 function px(v) { return v / store.get().viewport.zoom; } // convert CSS px -> artboard px
 
@@ -127,6 +127,38 @@ tools.register('select', {
           this._cwCorner = cornerName;
           this._cwStartPt = raw;
           this._cwOrigRx = sh.attrs.corners?.[cornerIdx] ?? 0;
+          this._cwMaxRx = info.maxR;
+          this._cwBisX = info.bisX;
+          this._cwBisY = info.bisY;
+          selectCWActive = cornerName;
+        }
+      } else if (sh?.type === 'polygon') {
+        const vtxIdx = parseInt(cornerName, 10);
+        const info = getPolyCornerInfos(artboard._polyPoints(sh.attrs)).find(c => c.idx === vtxIdx);
+        if (info) {
+          store.beginTransaction();
+          this._mode = 'corner-round';
+          this._cwShapeId = shapeId;
+          this._cwCorner = cornerName;
+          this._cwStartPt = raw;
+          this._cwOrigRx = sh.attrs.cornerRadius ?? 0;
+          this._cwMaxRx = info.maxR;
+          this._cwBisX = info.bisX;
+          this._cwBisY = info.bisY;
+          selectCWActive = cornerName;
+        }
+      } else if (sh?.type === 'star') {
+        const vtxIdx = parseInt(cornerName, 10);
+        const info = getPolyCornerInfos(artboard._starPoints(sh.attrs)).find(c => c.idx === vtxIdx);
+        if (info) {
+          const isOuter = vtxIdx % 2 === 0;
+          store.beginTransaction();
+          this._mode = 'corner-round';
+          this._cwShapeId = shapeId;
+          this._cwCorner = cornerName;
+          this._cwStartPt = raw;
+          this._cwIsOuter = isOuter;
+          this._cwOrigRx = isOuter ? (sh.attrs.outerCornerR ?? 0) : (sh.attrs.innerCornerR ?? 0);
           this._cwMaxRx = info.maxR;
           this._cwBisX = info.bisX;
           this._cwBisY = info.bisY;
@@ -476,6 +508,32 @@ tools.register('select', {
         if (!live.attrs.corners) live.attrs.corners = {};
         live.attrs.corners[cornerIdx] = newR;
       }, 'transform');
+    } else if (sh.type === 'polygon') {
+      const delta = dx * this._cwBisX + dy * this._cwBisY;
+      const newR = Math.max(0, Math.min(this._cwMaxRx, this._cwOrigRx + delta));
+      store.patch(s => {
+        for (const id of s.selection) {
+          const sh2 = s.shapes.find(x => x.id === id);
+          if (sh2?.type === 'polygon') {
+            sh2.attrs.cornerRadius = newR;
+            delete sh2.attrs.cornerRadii;
+          }
+        }
+      }, 'transform');
+    } else if (sh.type === 'star') {
+      const delta = dx * this._cwBisX + dy * this._cwBisY;
+      const newR = Math.max(0, Math.min(this._cwMaxRx, this._cwOrigRx + delta));
+      const isOuter = this._cwIsOuter;
+      store.patch(s => {
+        for (const id of s.selection) {
+          const sh2 = s.shapes.find(x => x.id === id);
+          if (sh2?.type === 'star') {
+            if (isOuter) sh2.attrs.outerCornerR = newR;
+            else sh2.attrs.innerCornerR = newR;
+            delete sh2.attrs.cornerRadii;
+          }
+        }
+      }, 'transform');
     }
   },
 
@@ -494,7 +552,9 @@ tools.register('select', {
     const selId = s.selection[0];
     const sh = store.findShape(selId);
     const supportsCorners = sh?.type === 'rect'
-      || (sh?.type === 'path' && getPathCornerInfos(sh.attrs.d || '').length > 0);
+      || (sh?.type === 'path' && getPathCornerInfos(sh.attrs.d || '').length > 0)
+      || sh?.type === 'polygon'
+      || sh?.type === 'star';
     if (!supportsCorners) {
       if (selectHoveredId !== null) { selectHoveredId = null; changed = true; }
       if (changed) renderOverlay();
@@ -562,6 +622,38 @@ tools.register('direct', {
           this._cwCorner = cornerName;
           this._cwStartPt = raw;
           this._cwOrigR = sh.attrs.corners?.[cornerIdx] ?? 0;
+          this._cwMaxR = info.maxR;
+          this._cwBisX = info.bisX;
+          this._cwBisY = info.bisY;
+          directCWActiveCorner = cornerName;
+          store.beginTransaction();
+        }
+      } else if (sh?.type === 'polygon') {
+        const vtxIdx = parseInt(cornerName, 10);
+        const info = getPolyCornerInfos(artboard._polyPoints(sh.attrs)).find(c => c.idx === vtxIdx);
+        if (info) {
+          this._mode = 'corner-round';
+          this._cwShapeId = shapeId;
+          this._cwCorner = cornerName;
+          this._cwStartPt = raw;
+          this._cwOrigR = sh.attrs.cornerRadii?.[vtxIdx] ?? sh.attrs.cornerRadius ?? 0;
+          this._cwMaxR = info.maxR;
+          this._cwBisX = info.bisX;
+          this._cwBisY = info.bisY;
+          directCWActiveCorner = cornerName;
+          store.beginTransaction();
+        }
+      } else if (sh?.type === 'star') {
+        const vtxIdx = parseInt(cornerName, 10);
+        const info = getPolyCornerInfos(artboard._starPoints(sh.attrs)).find(c => c.idx === vtxIdx);
+        if (info) {
+          const isOuter = vtxIdx % 2 === 0;
+          this._mode = 'corner-round';
+          this._cwShapeId = shapeId;
+          this._cwCorner = cornerName;
+          this._cwStartPt = raw;
+          this._cwIsOuter = isOuter;
+          this._cwOrigR = sh.attrs.cornerRadii?.[vtxIdx] ?? (isOuter ? (sh.attrs.outerCornerR ?? 0) : (sh.attrs.innerCornerR ?? 0));
           this._cwMaxR = info.maxR;
           this._cwBisX = info.bisX;
           this._cwBisY = info.bisY;
@@ -693,6 +785,26 @@ tools.register('direct', {
           if (!live || live.type !== 'path') return;
           if (!live.attrs.corners) live.attrs.corners = {};
           live.attrs.corners[cornerIdx] = newR;
+        }, 'transform');
+      } else if (shLive?.type === 'polygon') {
+        const delta = dx * this._cwBisX + dy * this._cwBisY;
+        const newR = Math.max(0, Math.min(this._cwMaxR, this._cwOrigR + delta));
+        const vtxIdx = parseInt(this._cwCorner, 10);
+        store.patch(() => {
+          const live = store.findShape(this._cwShapeId);
+          if (!live || live.type !== 'polygon') return;
+          if (!live.attrs.cornerRadii) live.attrs.cornerRadii = {};
+          live.attrs.cornerRadii[vtxIdx] = newR;
+        }, 'transform');
+      } else if (shLive?.type === 'star') {
+        const delta = dx * this._cwBisX + dy * this._cwBisY;
+        const newR = Math.max(0, Math.min(this._cwMaxR, this._cwOrigR + delta));
+        const vtxIdx = parseInt(this._cwCorner, 10);
+        store.patch(() => {
+          const live = store.findShape(this._cwShapeId);
+          if (!live || live.type !== 'star') return;
+          if (!live.attrs.cornerRadii) live.attrs.cornerRadii = {};
+          live.attrs.cornerRadii[vtxIdx] = newR;
         }, 'transform');
       }
       return;
@@ -871,6 +983,45 @@ tools.register('direct', {
         }
       }
       if (minDist <= threshold) newCorner = { shapeId: selId, name: bestName };
+    } else if (sh?.type === 'polygon') {
+      const z = s.viewport.zoom;
+      const b = artboard.getShapeBBox(sh);
+      const rot = sh.rotation || 0;
+      const bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+      const threshold = 20 / z;
+      const infos = getPolyCornerInfos(artboard._polyPoints(sh.attrs));
+      let minDist = Infinity, bestName = null;
+      for (const info of infos) {
+        const radius = sh.attrs.cornerRadii?.[info.idx] ?? sh.attrs.cornerRadius ?? 0;
+        const inset = Math.max(CW_MIN / z, radius);
+        const wx = info.x + info.bisX * inset, wy = info.y + info.bisY * inset;
+        for (const pos of [{ x: info.x, y: info.y }, { x: wx, y: wy }]) {
+          const vp = rot ? rotatePoint(pos.x, pos.y, bcx, bcy, rot) : pos;
+          const d = Math.hypot(raw.x - vp.x, raw.y - vp.y);
+          if (d < minDist) { minDist = d; bestName = String(info.idx); }
+        }
+      }
+      if (minDist <= threshold) newCorner = { shapeId: selId, name: bestName };
+    } else if (sh?.type === 'star') {
+      const z = s.viewport.zoom;
+      const b = artboard.getShapeBBox(sh);
+      const rot = sh.rotation || 0;
+      const bcx = b.x + b.w / 2, bcy = b.y + b.h / 2;
+      const threshold = 20 / z;
+      const infos = getPolyCornerInfos(artboard._starPoints(sh.attrs));
+      let minDist = Infinity, bestName = null;
+      for (const info of infos) {
+        const isOuter = info.idx % 2 === 0;
+        const radius = sh.attrs.cornerRadii?.[info.idx] ?? (isOuter ? (sh.attrs.outerCornerR ?? 0) : (sh.attrs.innerCornerR ?? 0));
+        const inset = Math.max(CW_MIN / z, radius);
+        const wx = info.x + info.bisX * inset, wy = info.y + info.bisY * inset;
+        for (const pos of [{ x: info.x, y: info.y }, { x: wx, y: wy }]) {
+          const vp = rot ? rotatePoint(pos.x, pos.y, bcx, bcy, rot) : pos;
+          const d = Math.hypot(raw.x - vp.x, raw.y - vp.y);
+          if (d < minDist) { minDist = d; bestName = String(info.idx); }
+        }
+      }
+      if (minDist <= threshold) newCorner = { shapeId: selId, name: bestName };
     }
     const segChanged = newSeg?.idx1 !== hoveredSegment?.idx1
                     || newSeg?.idx2 !== hoveredSegment?.idx2
@@ -1040,8 +1191,38 @@ function drawSingleSelection(sh, b) {
     } else if (sh.type === 'path' && sh.attrs.d) {
       for (const info of getPathCornerInfos(sh.attrs.d)) {
         const radius = sh.attrs.corners?.[info.idx] ?? 0;
-        const inset = Math.max(CW_MIN / z, radius);
+        const fitInset = info.sinHalf > 0.01 ? CW_R / (z * info.sinHalf) : CW_MIN / z;
+        const inset = Math.max(CW_MIN / z, fitInset, radius);
         // g already has rotation transform applied, so use pre-rotation coords
+        const wcx = info.x + info.bisX * inset;
+        const wcy = info.y + info.bisY * inset;
+        const strIdx = String(info.idx);
+        const isActive = selectCWActive === strIdx;
+        const c = svgNS('circle');
+        setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
+        c.dataset.cornerWidget = `${sh.id}:${info.idx}`;
+        g.appendChild(c);
+      }
+    } else if (sh.type === 'polygon') {
+      for (const info of getPolyCornerInfos(artboard._polyPoints(sh.attrs))) {
+        const radius = sh.attrs.cornerRadii?.[info.idx] ?? sh.attrs.cornerRadius ?? 0;
+        const fitInset = info.sinHalf > 0.01 ? CW_R / (z * info.sinHalf) : CW_MIN / z;
+        const inset = Math.max(CW_MIN / z, fitInset, radius);
+        const wcx = info.x + info.bisX * inset;
+        const wcy = info.y + info.bisY * inset;
+        const strIdx = String(info.idx);
+        const isActive = selectCWActive === strIdx;
+        const c = svgNS('circle');
+        setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
+        c.dataset.cornerWidget = `${sh.id}:${info.idx}`;
+        g.appendChild(c);
+      }
+    } else if (sh.type === 'star') {
+      for (const info of getPolyCornerInfos(artboard._starPoints(sh.attrs))) {
+        const isOuter = info.idx % 2 === 0;
+        const radius = sh.attrs.cornerRadii?.[info.idx] ?? (isOuter ? (sh.attrs.outerCornerR ?? 0) : (sh.attrs.innerCornerR ?? 0));
+        const fitInset = info.sinHalf > 0.01 ? CW_R / (z * info.sinHalf) : CW_MIN / z;
+        const inset = Math.max(CW_MIN / z, fitInset, radius);
         const wcx = info.x + info.bisX * inset;
         const wcy = info.y + info.bisY * inset;
         const strIdx = String(info.idx);
@@ -1182,7 +1363,8 @@ function drawAnchors(id) {
         if (!isSelected && !isHovCorner && !isSegEnd) continue;
       }
       const radius = sh.attrs.corners?.[info.idx] ?? 0;
-      const inset = Math.max(CW_MIN / z, radius);
+      const fitInset = info.sinHalf > 0.01 ? CW_R / (z * info.sinHalf) : CW_MIN / z;
+      const inset = Math.max(CW_MIN / z, fitInset, radius);
       let wcx = info.x + info.bisX * inset;
       let wcy = info.y + info.bisY * inset;
       if (rot) { const rp = rotatePoint(wcx, wcy, cx, cy, rot); wcx = rp.x; wcy = rp.y; }
@@ -1226,6 +1408,63 @@ function drawAnchors(id) {
       const c = svgNS('circle');
       setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
       c.dataset.cornerWidget = `${id}:${w.name}`;
+      overlay.appendChild(c);
+    }
+  }
+
+  // Corner widgets for polygon
+  if (sh.type === 'polygon') {
+    const cwr = CW_R / z;
+    const infos = getPolyCornerInfos(artboard._polyPoints(sh.attrs));
+    for (const info of infos) {
+      const strIdx = String(info.idx);
+      if (directCWActiveCorner !== null) {
+        if (directCWActiveCorner !== strIdx) continue;
+      } else {
+        const isSelected = selectedAnchors.some(a => a.shapeId === id && a.idx === info.idx);
+        const isHovCorner = directHoveredCorner?.shapeId === id && directHoveredCorner.name === strIdx;
+        const isSegEnd = hoveredSegment?.shapeId === id
+          && (hoveredSegment.idx1 === info.idx || hoveredSegment.idx2 === info.idx);
+        if (!isSelected && !isHovCorner && !isSegEnd) continue;
+      }
+      const radius = sh.attrs.cornerRadii?.[info.idx] ?? sh.attrs.cornerRadius ?? 0;
+      const fitInset = info.sinHalf > 0.01 ? CW_R / (z * info.sinHalf) : CW_MIN / z;
+      const inset = Math.max(CW_MIN / z, fitInset, radius);
+      let wcx = info.x + info.bisX * inset, wcy = info.y + info.bisY * inset;
+      if (rot) { const rp = rotatePoint(wcx, wcy, cx, cy, rot); wcx = rp.x; wcy = rp.y; }
+      const isActive = directCWActiveCorner === strIdx;
+      const c = svgNS('circle');
+      setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
+      c.dataset.cornerWidget = `${id}:${info.idx}`;
+      overlay.appendChild(c);
+    }
+  }
+
+  // Corner widgets for star (outer tips and inner valleys independently)
+  if (sh.type === 'star') {
+    const cwr = CW_R / z;
+    const infos = getPolyCornerInfos(artboard._starPoints(sh.attrs));
+    for (const info of infos) {
+      const strIdx = String(info.idx);
+      if (directCWActiveCorner !== null) {
+        if (directCWActiveCorner !== strIdx) continue;
+      } else {
+        const isSelected = selectedAnchors.some(a => a.shapeId === id && a.idx === info.idx);
+        const isHovCorner = directHoveredCorner?.shapeId === id && directHoveredCorner.name === strIdx;
+        const isSegEnd = hoveredSegment?.shapeId === id
+          && (hoveredSegment.idx1 === info.idx || hoveredSegment.idx2 === info.idx);
+        if (!isSelected && !isHovCorner && !isSegEnd) continue;
+      }
+      const isOuter = info.idx % 2 === 0;
+      const radius = sh.attrs.cornerRadii?.[info.idx] ?? (isOuter ? (sh.attrs.outerCornerR ?? 0) : (sh.attrs.innerCornerR ?? 0));
+      const fitInset = info.sinHalf > 0.01 ? CW_R / (z * info.sinHalf) : CW_MIN / z;
+      const inset = Math.max(CW_MIN / z, fitInset, radius);
+      let wcx = info.x + info.bisX * inset, wcy = info.y + info.bisY * inset;
+      if (rot) { const rp = rotatePoint(wcx, wcy, cx, cy, rot); wcx = rp.x; wcy = rp.y; }
+      const isActive = directCWActiveCorner === strIdx;
+      const c = svgNS('circle');
+      setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
+      c.dataset.cornerWidget = `${id}:${info.idx}`;
       overlay.appendChild(c);
     }
   }
@@ -1346,6 +1585,8 @@ function anchorPoints(sh) {
       const { cx, cy, rx, ry } = sh.attrs;
       return [{ x: cx, y: cy - ry }, { x: cx + rx, y: cy }, { x: cx, y: cy + ry }, { x: cx - rx, y: cy }];
     }
+    case 'polygon': return artboard._polyPoints(sh.attrs);
+    case 'star': return artboard._starPoints(sh.attrs);
   }
   return [];
 }
@@ -1737,7 +1978,7 @@ function findNearestSegment(sh, raw) {
     visPts = pts.map(p => rotatePoint(p.x, p.y, cx, cy, rot));
   }
 
-  const closed = sh.type === 'rect' || /z/i.test(sh.attrs.d || '');
+  const closed = sh.type === 'rect' || sh.type === 'polygon' || sh.type === 'star' || /z/i.test(sh.attrs.d || '');
   const n = visPts.length;
   const pairs = [];
   for (let i = 0; i < n - 1; i++) pairs.push([i, i + 1]);
@@ -1827,9 +2068,11 @@ function referencePoint(snap) {
     case 'rect':    return { x: snap.attrs.x, y: snap.attrs.y };
     case 'ellipse': return { x: snap.attrs.cx - snap.attrs.rx, y: snap.attrs.cy - snap.attrs.ry };
     case 'line':    return { x: snap.attrs.x1, y: snap.attrs.y1 };
-    case 'polygon': return { x: snap.attrs.cx, y: snap.attrs.cy };
+    case 'polygon':
+    case 'star':    return { x: snap.attrs.cx, y: snap.attrs.cy };
     case 'path':    return { x: 0, y: 0 };
     case 'text':    return { x: snap.attrs.x, y: snap.attrs.y };
+    case 'image':   return { x: snap.attrs.x, y: snap.attrs.y };
     case 'rawsvg':  return { x: snap._bbox?.x ?? snap.attrs.x, y: snap._bbox?.y ?? snap.attrs.y };
   }
   return { x: 0, y: 0 };
@@ -1850,8 +2093,10 @@ function translateShape(sh, snap, dx, dy) {
       a.x1 = snap.attrs.x1 + dx; a.y1 = snap.attrs.y1 + dy;
       a.x2 = snap.attrs.x2 + dx; a.y2 = snap.attrs.y2 + dy;
       break;
-    case 'polygon': a.cx = snap.attrs.cx + dx; a.cy = snap.attrs.cy + dy; break;
+    case 'polygon':
+    case 'star':    a.cx = snap.attrs.cx + dx; a.cy = snap.attrs.cy + dy; break;
     case 'text':    a.x = snap.attrs.x + dx; a.y = snap.attrs.y + dy; break;
+    case 'image':   a.x = snap.attrs.x + dx; a.y = snap.attrs.y + dy; break;
     case 'path':    a.d = translatePathD(snap.attrs.d, dx, dy); break;
     case 'rawsvg':  a.x = snap.attrs.x + dx; a.y = snap.attrs.y + dy; break;
   }
@@ -1894,8 +2139,10 @@ export function nudgeShape(sh, dx, dy) {
       sh.attrs.x1 += dx; sh.attrs.y1 += dy;
       sh.attrs.x2 += dx; sh.attrs.y2 += dy;
       break;
-    case 'polygon': sh.attrs.cx += dx; sh.attrs.cy += dy; break;
+    case 'polygon':
+    case 'star':    sh.attrs.cx += dx; sh.attrs.cy += dy; break;
     case 'text':    sh.attrs.x += dx; sh.attrs.y += dy; break;
+    case 'image':   sh.attrs.x += dx; sh.attrs.y += dy; break;
     case 'path':    sh.attrs.d = translatePathD(sh.attrs.d, dx, dy); break;
     case 'rawsvg':  sh.attrs.x += dx; sh.attrs.y += dy; break;
   }
@@ -1915,6 +2162,9 @@ function setGeomFromBBox(sh, snap, nb) {
       }
       break;
     }
+    case 'image':
+      sh.attrs.x = nb.x; sh.attrs.y = nb.y; sh.attrs.w = nb.w; sh.attrs.h = nb.h;
+      break;
     case 'ellipse':
       sh.attrs.cx = nb.x + nb.w/2; sh.attrs.cy = nb.y + nb.h/2;
       sh.attrs.rx = nb.w/2; sh.attrs.ry = nb.h/2;
@@ -1931,7 +2181,8 @@ function setGeomFromBBox(sh, snap, nb) {
       sh.attrs.y2 = ob.h > 0 ? nb.y + (snap.attrs.y2 - ob.y) * sy : nb.y + (snap.attrs.y2 - ob.y);
       break;
     }
-    case 'polygon': {
+    case 'polygon':
+    case 'star': {
       sh.attrs.cx = nb.x + nb.w/2; sh.attrs.cy = nb.y + nb.h/2;
       sh.attrs.r = Math.min(nb.w, nb.h) / 2;
       break;

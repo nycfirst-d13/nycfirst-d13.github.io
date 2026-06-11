@@ -2,7 +2,7 @@
 // artboard.js — viewport (zoom/pan/fit/1:1), grid, shape rendering, coord math
 // =============================================================================
 import { store } from './state.js';
-import { svgNS, setAttrs, inToPx, pxToIn, clamp, fmtIn, snap as snapVal, applyPathCorners, rotatedCorners } from './utils.js';
+import { svgNS, setAttrs, inToPx, pxToIn, clamp, fmtIn, snap as snapVal, applyPathCorners, rotatedCorners, roundedPolygonPath } from './utils.js';
 import { resolveAppearance } from './process-registry.js';
 
 const MIN_ZOOM = 0.1;
@@ -301,7 +301,7 @@ class Artboard {
   _cacheBBox(sh, node) {
     if (sh.type === 'text' && sh.attrs.width != null) {
       sh._bbox = { x: sh.attrs.x, y: sh.attrs.y, w: sh.attrs.width, h: sh.attrs.height };
-    } else if (['path', 'polygon', 'text'].includes(sh.type)) {
+    } else if (['path', 'polygon', 'star', 'text'].includes(sh.type)) {
       try {
         const bb = node.children[1].getBBox();
         sh._bbox = { x: bb.x, y: bb.y, w: bb.width, h: bb.height };
@@ -464,10 +464,32 @@ class Artboard {
         styleAttrs.fill = 'none';
         if (!resolved.stroke || resolved.stroke === 'none') styleAttrs.stroke = '#0F1419';
         break;
-      case 'polygon':
-        el = svgNS('polygon');
-        setAttrs(el, { points: this._polyPoints(attrs).map(p => `${p.x},${p.y}`).join(' ') });
+      case 'polygon': {
+        const pts = this._polyPoints(attrs);
+        const radii = pts.map((_, i) => attrs.cornerRadii?.[i] ?? attrs.cornerRadius ?? 0);
+        if (radii.some(r => r > 0)) {
+          el = svgNS('path');
+          setAttrs(el, { d: roundedPolygonPath(pts, radii) });
+        } else {
+          el = svgNS('polygon');
+          setAttrs(el, { points: pts.map(p => `${p.x},${p.y}`).join(' ') });
+        }
         break;
+      }
+      case 'star': {
+        const pts = this._starPoints(attrs);
+        const outerR = attrs.outerCornerR ?? 0;
+        const innerR = attrs.innerCornerR ?? 0;
+        const radii = pts.map((_, i) => attrs.cornerRadii?.[i] ?? (i % 2 === 0 ? outerR : innerR));
+        if (radii.some(r => r > 0)) {
+          el = svgNS('path');
+          setAttrs(el, { d: roundedPolygonPath(pts, radii) });
+        } else {
+          el = svgNS('polygon');
+          setAttrs(el, { points: pts.map(p => `${p.x},${p.y}`).join(' ') });
+        }
+        break;
+      }
       case 'path':
         el = svgNS('path');
         setAttrs(el, {
@@ -475,6 +497,26 @@ class Artboard {
           ...(attrs.fillRule ? { 'fill-rule': attrs.fillRule } : {}),
         });
         break;
+      case 'image': {
+        const w = Math.max(0, attrs.w), h = Math.max(0, attrs.h);
+        const im = svgNS('image');
+        setAttrs(im, { x: attrs.x, y: attrs.y, width: w, height: h, preserveAspectRatio: 'none' });
+        im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', attrs.href);
+        im.setAttribute('href', attrs.href);
+        // Transparent rect catcher gives a full-bounds click zone.
+        const catcher = svgNS('rect');
+        setAttrs(catcher, { x: attrs.x, y: attrs.y, width: w, height: h, fill: 'transparent', stroke: 'none', 'pointer-events': 'all' });
+        // Hover highlight — rect outline (images don't render stroke directly).
+        const highlight = svgNS('rect');
+        setAttrs(highlight, { x: attrs.x, y: attrs.y, width: w, height: h, fill: 'none', stroke: 'white', 'stroke-width': 1, 'vector-effect': 'non-scaling-stroke', 'pointer-events': 'none' });
+        highlight.classList.add('shape-hover-highlight');
+        const g = svgNS('g');
+        g.classList.add('shape-node');
+        g.appendChild(catcher);
+        g.appendChild(im);
+        g.appendChild(highlight);
+        return g;
+      }
       case 'text': {
         if (attrs.width != null) {
           // Frame-based text: foreignObject + div for word-wrap
@@ -595,10 +637,25 @@ class Artboard {
     return pts;
   }
 
+  _starPoints(attrs) {
+    const { cx, cy, r, points, innerRatio } = attrs;
+    const n = Math.max(3, points|0);
+    const ri = r * (innerRatio ?? 0.4);
+    const pts = [];
+    const startAngle = -Math.PI / 2;
+    for (let i = 0; i < n * 2; i++) {
+      const a = startAngle + (i * Math.PI / n);
+      const rad = i % 2 === 0 ? r : ri;
+      pts.push({ x: cx + rad * Math.cos(a), y: cy + rad * Math.sin(a) });
+    }
+    return pts;
+  }
+
   // Geometry bbox without rotation (used when applying rotate around bbox center)
   _geometryBBox(sh) {
     switch (sh.type) {
       case 'rect':    return { x: sh.attrs.x, y: sh.attrs.y, w: sh.attrs.w, h: sh.attrs.h };
+      case 'image':   return { x: sh.attrs.x, y: sh.attrs.y, w: sh.attrs.w, h: sh.attrs.h };
       case 'ellipse': return { x: sh.attrs.cx - sh.attrs.rx, y: sh.attrs.cy - sh.attrs.ry, w: sh.attrs.rx*2, h: sh.attrs.ry*2 };
       case 'line':    return {
         x: Math.min(sh.attrs.x1, sh.attrs.x2),
@@ -608,6 +665,11 @@ class Artboard {
       };
       case 'polygon': {
         const pts = this._polyPoints(sh.attrs);
+        const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+        return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs)-Math.min(...xs), h: Math.max(...ys)-Math.min(...ys) };
+      }
+      case 'star': {
+        const pts = this._starPoints(sh.attrs);
         const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
         return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs)-Math.min(...xs), h: Math.max(...ys)-Math.min(...ys) };
       }

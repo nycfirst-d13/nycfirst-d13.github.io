@@ -105,11 +105,20 @@ Keyboard shortcuts in `keys.js`: V=select, A=direct-select, R=rect, E=ellipse, L
 ### Shape Data Model
 
 Shapes stored in `state.shapes` array. Each shape has:
-- `id`, `type` (rect/ellipse/line/polygon/path/text/group)
+- `id`, `type` (rect/ellipse/line/polygon/path/text/group/rawsvg/image)
 - `x`, `y`, `width`, `height`, `rotation`
 - `fill`, `stroke`, `strokeWidth`
 - `process` — one of `mainCut`/`fold`/`finalCut`/`etch`/`free` (maps to visual style via `process-registry.js`)
 - Type-specific fields (e.g. `points` for polygon, `d` for path, `content`/`font` for text)
+
+### Raster Image Import
+
+Students can drag-and-drop a raster image (PNG/JPG/GIF/WebP/BMP) onto the canvas, or use the **Import Image** topbar button. Handled in `import-svg.js` (same drop infrastructure as SVG import).
+
+- Stored as `type: 'image'`, `attrs: { x, y, w, h, href, naturalW, naturalH }`. `href` is a **base64 data URL** — the pixel data is embedded directly in the shape, so it survives the SVG export round-trip into Illustrator.
+- Placement: 1 image pixel = 1 artboard pixel (96 px/in); scaled down to fit 90% of the artboard if larger. Drop centers on the cursor; button centers on the artboard.
+- Renders as `<svg:image>` (with a transparent rect catcher + rect hover-highlight, since `<image>` ignores `fill`/`stroke`). Resizes like a rect via `setGeomFromBBox`/`applyBBox` (`preserveAspectRatio="none"` — free stretch). Moves/nudges/reflects like `rawsvg` (position + rotation only; raster pixels are not truly mirrored).
+- Export (`export.js`) emits `<image ... xlink:href href ...>`; root `<svg>` declares `xmlns:xlink`. `processType` is always `free` — process colors don't apply to raster, and boolean/offset/shape-builder ops skip `image`.
 
 ### Key Module Roles
 
@@ -126,7 +135,95 @@ Shapes stored in `state.shapes` array. Each shape has:
 | `export.js` | Clean SVG export sized in inches |
 | `guides.js` | Smart snap guides: alignment detection with other shapes |
 | `text-panel.js` | Text tool + font loading (Google Fonts, custom uploads) |
+| `import-svg.js` | SVG import (→ `rawsvg`) and raster image import (→ `image`, base64) via button + drag-drop |
 
 ### Layout
 
 Topbar (56px) | Tool sidebar (56px) | Canvas (flex-fill) | Inspector (280px) | Status bar (30px). CSS variables and design tokens in `styles.css`.
+
+### Inspector Input Classes
+
+Use the right class for each parameter type. Never mix them.
+
+| Class | Element | When to use | Examples |
+|-------|---------|-------------|---------|
+| `.numeric` | `<div>` wrapping `<input type="number">` | Precise dimensional values with unit suffix. User types exact numbers. Spinner arrows hidden. | X, Y, W, H, R (rotation), stroke weight, font size, offset amount |
+| `.stepper` | `<div>` wrapping `[−] <input type="number"> [+]` | Small-range discrete integers where ±1 steps are the natural interaction. No unit label needed. | Polygon sides, star point count |
+| `.slider-ctrl` | `<div>` wrapping `[−] <input type="range"> <span class="slider-val"> [+]` | Continuous ratio/percentage values (0–1 or 0–100%) where feel matters more than exact entry. Always include a `.slider-val` span between the range input and the + button — it shows the live value + unit (uses `data-unit` on the `<input>`). Buttons for fine ±step nudging. Use `input` event for live patch, `change` event for undo-stack commit. | Star inner ratio |
+| `.prop-select` | `<select>` | Enum/named choices, mutually exclusive. | Text weight |
+| `.color-control` | `<div>` wrapping color picker + hex input + ∅ button | Fill or stroke color with none option. | Fill color, stroke color |
+| `.icon-btn-group` / `.seg-group` | `<div>` of `.icon-btn` buttons | Mutually exclusive visual mode toggles. | Text align, fold line style |
+
+**JS wiring rules:**
+- `.numeric` — listen on `change` → `store.commit`
+- `.stepper` — buttons dispatch `change` on the input → same `change` handler
+- `.slider-ctrl` — listen on `input` → `store.patch` (live); `change` → `store.commit` (history). Buttons dispatch both `input` and `change`.
+
+### Inspector Panel Order
+
+Fixed order in `index.html`:
+1. **Transform** — always visible
+2. **Process** — always visible
+3. **Shape/tool-specific panels** (conditional, `display:none` by default) — e.g. Text, Star, Expand SVG
+4. **Pathfinder** — collapsed
+5. **Offset Path** — collapsed
+6. **Layers** — fixed to bottom
+
+Rule: any new shape- or tool-specific inspector panel belongs in slot 3, after Process, never above Transform. Panels show/hide via `syncFromState()` in `properties.js`.
+
+### Select Tool (V) vs Direct Select Tool (A)
+
+These two tools mirror Adobe Illustrator's `V` and `A` tools with the same conceptual model:
+
+**Select tool (V) — object-level operations**
+- Click: select whole objects; click again on already-selected = no change; click empty = deselect
+- Shift+click: add/remove from selection
+- Drag: move selected objects; Alt+drag = duplicate
+- Drag handle: resize (8 handles) or rotate (circle above bbox)
+- Corner widgets appear on hover over a selected shape; dragging ANY widget applies to ALL corners uniformly (like Illustrator's "Live Corners" in the Select tool — all corners move together)
+- Multi-select: compound bbox, uniform scale across all selected shapes
+- Double-click group = enter isolation mode; double-click text = enter text edit
+
+**Direct Select tool (A) — sub-object/anchor-level operations**
+- Click empty area: deselect all; drag empty = anchor marquee (selects anchors, not whole objects)
+- Click object: select it and show its anchor points (hollow squares); does NOT deselect if clicking already-selected shape
+- Click anchor square: select that anchor (highlights it); Shift+click = add to anchor selection
+- Drag selected anchor(s): move those anchors only (rect → free-form path conversion; line endpoints; path anchors)
+- Drag segment: selects both endpoint anchors, moves the segment
+- Double-click segment (path only): toggle straight ↔ bezier curve
+- Drag bezier handle (circle): move a control point for that curve
+- Corner widgets appear only on the selected/hovered anchor of the shape — dragging ONE widget affects ONLY that vertex's corner radius
+- Per-vertex corner rounding stored in `cornerRadii` map (see below); select tool's uniform drag clears `cornerRadii`
+
+**Key behavioral difference (matches Illustrator):**
+- V tool corner drag: all corners move uniformly
+- A tool corner drag: only the vertex whose widget you dragged changes
+
+### Polygon Tool
+
+`type: 'polygon'`, attrs: `{ cx, cy, r, sides, cornerRadius, cornerRadii? }`. Inspector panel shows Sides (3–64). Default 6 sides, 0 corner radius.
+
+### Star Tool
+
+`type: 'star'`, attrs: `{ cx, cy, r, points, innerRatio, outerCornerR, innerCornerR, cornerRadii? }`. Outer radius `r`, inner radius `r * innerRatio`. Inspector panel shows Points (3–20) and Inner Ratio (0.05–0.95). Default 5 points, 0.4 inner ratio, 0 corner radii. Drag-from-center like polygon.
+
+### Corner Rounding — Rule for All Shape Types
+
+**Every closed shape type must expose corner rounding via drag widgets on the canvas.** Never add inspector numeric inputs for corner radius — the widget interaction is the exclusive UI. This matches how rect and path already work.
+
+| Shape | Corner radius fields | Select tool widget | Direct-select widget |
+|-------|---------------------|--------------------|---------------------|
+| `rect` | `rx` (uniform), `r_nw/ne/se/sw` (per-corner) | All 4 corners move uniformly (writes to `rx`, clears per-corner) | Only selected/hovered anchor; writes per-corner `r_*` field |
+| `polygon` | `cornerRadius` (uniform), `cornerRadii` (per-vertex map) | All vertices uniformly (writes `cornerRadius`, deletes `cornerRadii`) | Only selected/hovered vertex; writes `cornerRadii[idx]` |
+| `star` | `outerCornerR`, `innerCornerR` (uniform by parity), `cornerRadii` (per-vertex map) | Even-idx tips → `outerCornerR`; odd-idx valleys → `innerCornerR`; deletes `cornerRadii` | Only selected/hovered vertex; writes `cornerRadii[idx]` |
+| `path` | `corners` (per-vertex map only) | Not shown in select tool | Per-vertex widget for straight-line vertices only |
+
+**`cornerRadii` map (polygon/star):** `{ [vtxIdx]: radius }`. Per-vertex override that takes precedence over the uniform fields. When present, rendering and export iterate vertices and resolve `cornerRadii[i] ?? cornerRadius` (polygon) or `cornerRadii[i] ?? (i%2===0 ? outerCornerR : innerCornerR)` (star). Select tool (uniform drag) deletes `cornerRadii` entirely — direct-select is the only writer.
+
+**Rendering:** `roundedPolygonPath(pts, radii)` in `utils.js` handles polygon and star. Always pass a per-vertex array (resolved from `cornerRadii` + fallback). When any radius > 0, shape renders/exports as `<path>` with arc segments instead of `<polygon>`.
+
+**Corner info computation:** `getPolyCornerInfos(pts)` in `utils.js` computes bisector direction, max radius, and sinHalf for each vertex of a closed polygon — same schema as `getPathCornerInfos`. Used in `select.js` for widget positioning and drag math.
+
+**Star corners rationale:** Outer tips and inner valleys have very different interior angles and natural radius ranges. `outerCornerR`/`innerCornerR` give students the expected "puffy star" vs "spiky star with rounded valleys" controls when using the Select tool. Direct-select gives per-vertex independence when needed.
+
+**Direct-select anchor squares for polygon/star:** `anchorPoints()` in `select.js` returns `artboard._polyPoints` / `artboard._starPoints` so vertex anchor squares render in direct-select mode. Clicking a vertex square sets `selectedAnchors`, making that vertex's corner widget visible. Vertex dragging (moving anchors) is not supported for polygon/star — these shapes store geometry as `{cx, cy, r, sides}` / `{points, innerRatio}`, not as free-form paths. `applyAnchorsDelta` has no polygon/star case by design; only the corner-widget drag (via `[data-corner-widget]` elements) modifies these shapes.

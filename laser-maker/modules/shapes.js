@@ -26,7 +26,7 @@ const SHAPE_DEFAULTS = () => {
 
 const baseName = {
   rect: 'Rectangle', ellipse: 'Ellipse', line: 'Line',
-  polygon: 'Polygon', text: 'Text', path: 'Path',
+  polygon: 'Polygon', star: 'Star', text: 'Text', path: 'Path',
 };
 
 let nameCounter = {};
@@ -71,7 +71,7 @@ function finishCreate(id) {
       return;
     }
   }
-  if (sh.type === 'polygon' && sh.attrs.r < tiny/2) {
+  if ((sh.type === 'polygon' || sh.type === 'star') && sh.attrs.r < tiny/2) {
     store.patch(s => { s.shapes = s.shapes.filter(x => x.id !== id); s.selection = []; }, 'shape-remove');
     return;
   }
@@ -202,7 +202,35 @@ tools.register('polygon', {
     this.start = snap;
     addShape({
       id, type: 'polygon', name: nextName('polygon'),
-      attrs: { cx: snap.x, cy: snap.y, r: 0, sides: this.sides },
+      attrs: { cx: snap.x, cy: snap.y, r: 0, sides: this.sides, cornerRadius: 0 },
+      ...SHAPE_DEFAULTS(),
+    });
+  },
+  onMove({ snap }) {
+    if (!this.startId) return;
+    const dx = snap.x - this.start.x;
+    const dy = snap.y - this.start.y;
+    const r = Math.hypot(dx, dy);
+    updateShape(this.startId, sh => { sh.attrs.r = r; });
+  },
+  onUp() {
+    if (!this.startId) return;
+    finishCreate(this.startId);
+    this.startId = null;
+  },
+});
+
+// -------- Star tool --------
+tools.register('star', {
+  points: 5,
+  innerRatio: 0.4,
+  onDown({ snap }) {
+    const id = uid('s');
+    this.startId = id;
+    this.start = snap;
+    addShape({
+      id, type: 'star', name: nextName('star'),
+      attrs: { cx: snap.x, cy: snap.y, r: 0, points: this.points, innerRatio: this.innerRatio, outerCornerR: 0, innerCornerR: 0 },
       ...SHAPE_DEFAULTS(),
     });
   },

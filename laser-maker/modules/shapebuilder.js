@@ -30,6 +30,18 @@ function _polyPts(a) {
   return pts;
 }
 
+function _starPts(a) {
+  const n = Math.max(3, (a.points)|0);
+  const ri = a.r * (a.innerRatio ?? 0.4);
+  const pts = [], start = -Math.PI / 2;
+  for (let i = 0; i < n * 2; i++) {
+    const ang = start + i * Math.PI / n;
+    const rad = i % 2 === 0 ? a.r : ri;
+    pts.push({ x: a.cx + rad * Math.cos(ang), y: a.cy + rad * Math.sin(ang) });
+  }
+  return pts;
+}
+
 function toPaper(sh) {
   const a = sh.attrs;
   let p;
@@ -38,6 +50,11 @@ function toPaper(sh) {
     case 'ellipse': p = new paper.Path.Ellipse({ center: [a.cx, a.cy], radius: [a.rx, a.ry] }); break;
     case 'polygon': {
       const pts = _polyPts(a);
+      p = new paper.Path({ segments: pts.map(pt => [pt.x, pt.y]), closed: true });
+      break;
+    }
+    case 'star': {
+      const pts = _starPts(a);
       p = new paper.Path({ segments: pts.map(pt => [pt.x, pt.y]), closed: true });
       break;
     }
@@ -78,7 +95,7 @@ function regionAt(x, y) {
   const hits = [];
 
   for (const sh of shapes) {
-    if (sh.visible === false || sh.locked || sh.type === 'line' || sh.type === 'text') continue;
+    if (sh.visible === false || sh.locked || sh.type === 'line' || sh.type === 'text' || sh.type === 'image') continue;
     const pp = toPaper(sh);
     if (!pp) continue;
     let hit;

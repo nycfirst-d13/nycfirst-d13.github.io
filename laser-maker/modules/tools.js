@@ -5,7 +5,7 @@ import { store } from './state.js';
 import { artboard } from './artboard.js';
 import { computeDrawSnap, renderGuides, clearGuides, renderSnapHighlight, clearSnapHighlight } from './guides.js';
 
-const SMART_SNAP_TOOLS = new Set(['rect', 'ellipse', 'line', 'polygon', 'text']);
+const SMART_SNAP_TOOLS = new Set(['rect', 'ellipse', 'line', 'polygon', 'star', 'text']);
 
 const TOOL_LABELS = {
   select:       'Select',
@@ -14,6 +14,7 @@ const TOOL_LABELS = {
   ellipse:      'Ellipse',
   line:         'Line',
   polygon:      'Polygon',
+  star:         'Star',
   pen:          'Pen',
   text:         'Text',
   hand:         'Hand',

@@ -12,10 +12,12 @@ const TYPE_ICON = {
   ellipse: `<svg viewBox="0 0 16 16"><ellipse cx="8" cy="8" rx="5.5" ry="4.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>`,
   line:    `<svg viewBox="0 0 16 16"><path d="M3 13 L13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   polygon: `<svg viewBox="0 0 16 16"><path d="M8 2.5 L13.5 6.5 L11.5 12.5 L4.5 12.5 L2.5 6.5 Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
+  star:    `<svg viewBox="0 0 16 16"><path d="M8 1.5 L9.4 5.9 L14 5.9 L10.3 8.6 L11.7 13 L8 10.3 L4.3 13 L5.7 8.6 L2 5.9 L6.6 5.9 Z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>`,
   path:    `<svg viewBox="0 0 16 16"><path d="M3 12 Q5 4 8 8 T13 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
   text:    `<svg viewBox="0 0 16 16"><path d="M3 5 L3 4 L13 4 L13 5 M8 4 L8 13 M6 13 L10 13" stroke="currentColor" stroke-width="1.4" fill="none"/></svg>`,
   group:   `<svg viewBox="0 0 16 16"><rect x="2" y="2" width="5" height="5" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="2" width="5" height="5" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="2" y="9" width="5" height="5" fill="none" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5" height="5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>`,
   rawsvg:  `<svg viewBox="0 0 16 16"><path d="M5 5 L2 8 L5 11 M11 5 L14 8 L11 11 M9 3 L7 13" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  image:   `<svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="1.3"/><circle cx="5.5" cy="6.5" r="1.1" fill="currentColor"/><path d="M3 12 L6.5 8.5 L9 11 L11 9 L13 11" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
 };
 
 const expandedGroups = new Set();
