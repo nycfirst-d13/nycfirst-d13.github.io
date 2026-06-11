@@ -6,6 +6,7 @@ import { artboard } from './artboard.js';
 import { inToPx, pxToIn, round, rotatedCorners } from './utils.js';
 import { PROCESS_DEFINITIONS, normalizeForProcess } from './process-registry.js';
 import { quickFlip } from './reflect.js';
+import { defaultEtchParams } from './image-filters.js';
 
 const fillColor   = document.getElementById('fill-color');
 const fillHex     = document.getElementById('fill-hex');
@@ -89,6 +90,7 @@ _updateProcessDesc('free');
 const appearanceFree     = document.getElementById('appearance-free');
 const appearanceLocked   = document.getElementById('appearance-locked');
 const appearanceEtch     = document.getElementById('appearance-etch');
+const appearanceImageEtch = document.getElementById('appearance-image-etch');
 const lockedStrokeSwatch = document.getElementById('locked-stroke-swatch');
 const lockedStrokeLabel  = document.getElementById('locked-stroke-label');
 const etchStrokeToggle   = document.getElementById('etch-stroke-toggle');
@@ -209,6 +211,7 @@ function _showAppearanceMode(mode) {
   appearanceFree.style.display   = mode === 'free'   ? '' : 'none';
   appearanceLocked.style.display = mode === 'locked' ? '' : 'none';
   appearanceEtch.style.display   = mode === 'etch'   ? '' : 'none';
+  if (appearanceImageEtch) appearanceImageEtch.style.display = mode === 'imageEtch' ? '' : 'none';
   if (mode !== 'locked') foldDashSection.style.display = 'none';
 }
 
@@ -291,6 +294,14 @@ function syncFromState() {
   processTypeSelect.querySelector('.custom-select-option[data-value="__mixed__"]').hidden = !isMixed;
   processTypeSelect.value = isMixed ? '__mixed__' : (pt ?? 'free');
 
+  // Images only support Free Appearance + Etch — hide the cut/fold options.
+  const onlyImages = sel.length > 0 && sel.every(sh => sh.type === 'image');
+  for (const v of ['mainCut', 'fold', 'finalCut']) {
+    const opt = processTypeSelect.querySelector(`.custom-select-option[data-value="${v}"]`);
+    if (opt) opt.hidden = onlyImages;
+  }
+  if (onlyImages) _ensureImageEtch(sel);
+
   // Show correct appearance section
   if (isMixed || pt === 'free' || pt === null) {
     _showAppearanceMode('free');
@@ -302,6 +313,9 @@ function syncFromState() {
     strokeHex.value   = stroke != null ? hexToRgbStr(stroke) : '—';
     strokeColor.value = ensureColor(stroke);
     strokeWidth.value = sw ?? '';
+  } else if (pt === 'etch' && sel.length === 1 && sel[0].type === 'image') {
+    // Raster etch — dedicated image-processing panel (image-etch-panel.js syncs controls).
+    _showAppearanceMode('imageEtch');
   } else if (pt === 'etch') {
     _showAppearanceMode('etch');
     const stroke = commonValue(nonGroups, sh => sh.stroke);
@@ -372,6 +386,20 @@ function _applyProcessTypeToGroup(group, pt) {
   }
 }
 
+// Ensure each selected Etch image has its `attrs.etch` adjustment params. Actual
+// baking of attrs.etchHref is handled reactively by image-etch-panel.js (which
+// watches the param signature). Defaults patched without history.
+function _ensureImageEtch(sel) {
+  for (const sh of sel) {
+    if (sh.type !== 'image' || sh.processType !== 'etch' || sh.attrs.etch) continue;
+    const id = sh.id;
+    store.patch(() => {
+      const live = store.findShape(id);
+      if (live && live.type === 'image' && !live.attrs.etch) live.attrs.etch = defaultEtchParams();
+    }, 'image-etch-init');
+  }
+}
+
 function setProcessType(pt) {
   if (syncing) return;
   store.commit(s => {
@@ -384,6 +412,9 @@ function setProcessType(pt) {
       } else {
         sh.processType = pt;
         normalizeForProcess(sh, pt);
+        if (sh.type === 'image' && pt === 'etch' && !sh.attrs.etch) {
+          sh.attrs.etch = defaultEtchParams();
+        }
       }
     }
   }, 'process-type');

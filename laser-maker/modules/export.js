@@ -185,9 +185,12 @@ function shapeToSVG(sh, pathMap = new Map()) {
       const fr = a.fillRule ? ` fill-rule="${a.fillRule}"` : '';
       return `<path d="${pd}"${fr}${style}${transform}/>`;
     }
-    case 'image':
+    case 'image': {
       // Embed raster as base64 data URL — survives the round-trip into Illustrator.
-      return `<image x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" width="${a.w.toFixed(3)}" height="${a.h.toFixed(3)}" preserveAspectRatio="none" xlink:href="${a.href}" href="${a.href}"${transform}/>`;
+      // Etch exports the baked grayscale version.
+      const href = (sh.processType === 'etch' && a.etchHref) ? a.etchHref : a.href;
+      return `<image x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" width="${a.w.toFixed(3)}" height="${a.h.toFixed(3)}" preserveAspectRatio="none" xlink:href="${href}" href="${href}"${transform}/>`;
+    }
     case 'text': {
       if (pathMap.has(sh.id)) {
         const d = pathMap.get(sh.id);

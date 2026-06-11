@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/paper@0.12.18/dist/paper-core.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/clipper-lib@6.4.2/clipper.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/imagetracerjs@1.2.6/imagetracer_v1.2.6.js"></script>
 </head>
 <body>
 
@@ -305,6 +306,117 @@
               <input type="number" id="stroke-width-etch" min="0" max="40" step="0.25" value="1" />
               <span class="suffix">pt</span>
             </div>
+          </div>
+        </div>
+
+        <!-- Raster Etch (shown when a single image is set to Etch) -->
+        <div id="appearance-image-etch" style="display:none">
+          <div class="prop-row">
+            <label class="prop-label">Brightness</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-brightness" min="-100" max="100" step="1" value="0" />
+              <span class="slider-val">0</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Contrast</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-contrast" min="-100" max="100" step="1" value="0" />
+              <span class="slider-val">0</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Gamma</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-gamma" min="0.1" max="3" step="0.1" value="1" />
+              <span class="slider-val">1.00</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Depth</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-depth" min="0" max="100" step="1" value="100" data-unit="%" />
+              <span class="slider-val">100 %</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">White clip</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-white" min="0" max="100" step="1" value="100" data-unit="%" />
+              <span class="slider-val">100 %</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Posterize</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-posterize" min="0" max="8" step="1" value="0" />
+              <span class="slider-val">Off</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Invert</label>
+            <button id="ie-invert" class="btn ghost" style="flex:1">Off</button>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Threshold</label>
+            <button id="ie-threshold" class="btn ghost" style="flex:1">Off</button>
+          </div>
+          <div class="prop-row" id="ie-row-level" style="display:none">
+            <label class="prop-label">Level</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-level" min="0" max="100" step="1" value="50" data-unit="%" />
+              <span class="slider-val">50 %</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row" id="ie-row-dither" style="display:none">
+            <label class="prop-label">Dithering</label>
+            <select id="ie-dither" class="prop-select">
+              <option value="none">None</option>
+              <option value="floyd">Floyd–Steinberg</option>
+              <option value="ordered">Ordered</option>
+            </select>
+          </div>
+          <div class="prop-row">
+            <label class="prop-label">Halftone</label>
+            <button id="ie-halftone" class="btn ghost" style="flex:1">Off</button>
+          </div>
+          <div class="prop-row" id="ie-row-htsize" style="display:none">
+            <label class="prop-label">Dot size</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-htsize" min="2" max="16" step="1" value="6" data-unit="px" />
+              <span class="slider-val">6 px</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row" id="ie-row-htangle" style="display:none">
+            <label class="prop-label">Angle</label>
+            <div class="slider-ctrl">
+              <button class="stepper-btn" data-delta="-1">−</button>
+              <input type="range" id="ie-htangle" min="0" max="90" step="1" value="45" data-unit="°" />
+              <span class="slider-val">45 °</span>
+              <button class="stepper-btn" data-delta="1">+</button>
+            </div>
+          </div>
+          <div class="prop-row">
+            <button class="btn ghost" id="ie-reset" style="flex:1">Reset adjustments</button>
+          </div>
+          <div class="prop-row" style="margin-top:6px;border-top:1px solid var(--rule);padding-top:10px">
+            <button class="btn ghost" id="ie-trace" style="flex:1">Trace to vector</button>
           </div>
         </div>
 

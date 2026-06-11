@@ -7,7 +7,7 @@ import { uid } from './utils.js';
 // ---- Matrix math: [a, b, c, d, e, f]
 // Transform: x' = a*x + c*y + e,  y' = b*x + d*y + f
 
-function mulMat(m1, m2) {
+export function mulMat(m1, m2) {
   const [a1, b1, c1, d1, e1, f1] = m1;
   const [a2, b2, c2, d2, e2, f2] = m2;
   return [
@@ -177,7 +177,7 @@ function num(n) {
   return parseFloat(n.toFixed(3)).toString();
 }
 
-function applyMatrixToD(d, m) {
+export function applyMatrixToD(d, m) {
   if (!d) return null;
   const [a, b, c, dd, e, f] = m;
   if (a === 1 && b === 0 && c === 0 && dd === 1 && e === 0 && f === 0) return d;

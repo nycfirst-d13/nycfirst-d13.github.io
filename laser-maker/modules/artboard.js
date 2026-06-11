@@ -499,10 +499,13 @@ class Artboard {
         break;
       case 'image': {
         const w = Math.max(0, attrs.w), h = Math.max(0, attrs.h);
+        // Etch renders the cached grayscale version; falls back to the original
+        // until the async bake lands.
+        const href = (sh.processType === 'etch' && attrs.etchHref) ? attrs.etchHref : attrs.href;
         const im = svgNS('image');
         setAttrs(im, { x: attrs.x, y: attrs.y, width: w, height: h, preserveAspectRatio: 'none' });
-        im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', attrs.href);
-        im.setAttribute('href', attrs.href);
+        im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', href);
+        im.setAttribute('href', href);
         // Transparent rect catcher gives a full-bounds click zone.
         const catcher = svgNS('rect');
         setAttrs(catcher, { x: attrs.x, y: attrs.y, width: w, height: h, fill: 'transparent', stroke: 'none', 'pointer-events': 'all' });
