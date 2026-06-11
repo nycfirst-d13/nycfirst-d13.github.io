@@ -151,7 +151,7 @@ The Raster Etch panel's **Trace to vector** button (`#ie-trace`, handler in `ima
 | `shapes.js` | Drag-to-create tools: rect, ellipse, line, polygon |
 | `properties.js` | Inspector panel: position/size/rotation, fill/stroke, process type |
 | `layers.js` | Layers panel: reorder, lock/hide, group/ungroup |
-| `pathops.js` | Boolean ops (unite/subtract/intersect) via Paper.js |
+| `pathops.js` | Boolean ops (unite/subtract/intersect) via Paper.js; Offset Path via Clipper. Rect/ellipse offset analytically; everything else via `collectPaperPaths` (recursive, world coords) → Clipper. Groups offset as one combined outline around all descendant geometry, so image-traced groups and nested groups work; group rotation applied around group bbox center. Per shape in multi-select. Skips text/line/image. |
 | `export.js` | Clean SVG export sized in inches |
 | `guides.js` | Smart snap guides: alignment detection with other shapes |
 | `text-panel.js` | Text tool + font loading (Google Fonts, custom uploads) |

@@ -185,19 +185,38 @@ function _offsetShape(sh, amount) {
     return { ...base, type: 'ellipse', name: 'Offset Ellipse', attrs: { cx: a.cx, cy: a.cy, rx, ry } };
   }
 
-  // polygon / path — use Clipper for robust offset with round joins
-  const d = _clipperOffset(sh, amount);
+  // group / polygon / path / star — use Clipper for robust offset with round joins.
+  // Groups offset as one combined outline around all descendant geometry.
+  const paperPaths = [];
+  collectPaperPaths(sh, paperPaths);
+  if (!paperPaths.length) { for (const p of paperPaths) p.remove(); return null; }
+  const d = _clipperOffsetFromPaths(paperPaths, amount);
   if (!d) return null;
   return { ...base, type: 'path', name: 'Offset Path', rotation: 0, attrs: { d, fillRule: 'evenodd' } };
 }
 
+// Recursively gather paper paths in world coords. Group children store absolute
+// coords; group rotation is applied on top, around the group's bbox center.
+function collectPaperPaths(sh, out) {
+  if (sh.type === 'group') {
+    const tmp = [];
+    for (const child of sh.children || []) collectPaperPaths(child, tmp);
+    if (sh.rotation) {
+      const b = artboard.getShapeBBox(sh);
+      const center = new paper.Point(b.x + b.w / 2, b.y + b.h / 2);
+      for (const p of tmp) p.rotate(sh.rotation, center);
+    }
+    out.push(...tmp);
+    return;
+  }
+  const p = shapeToPaper(sh); // applies sh.rotation around its own bbox center
+  if (p) out.push(p);
+}
+
 const CLIPPER_SCALE = 1000;
 
-function _clipperOffset(sh, amount) {
-  if (!window.ClipperLib) { toast('Clipper not loaded yet — try again'); return null; }
-
-  const pp = shapeToPaper(sh);
-  if (!pp) return null;
+function _clipperOffsetFromPaths(paperPaths, amount) {
+  if (!window.ClipperLib) { toast('Clipper not loaded yet — try again'); for (const p of paperPaths) p.remove(); return null; }
 
   const clipperPaths = [];
 
@@ -210,12 +229,14 @@ function _clipperOffset(sh, amount) {
     if (pts.length >= 3) clipperPaths.push(pts);
   }
 
-  if (pp.children) {
-    for (const child of pp.children) addPath(child);
-  } else {
-    addPath(pp);
+  for (const pp of paperPaths) {
+    if (pp.children) {
+      for (const child of pp.children) addPath(child);
+    } else {
+      addPath(pp);
+    }
+    pp.remove();
   }
-  pp.remove();
 
   if (!clipperPaths.length) return null;
 
