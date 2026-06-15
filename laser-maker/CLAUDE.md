@@ -96,7 +96,7 @@ Browser-based SVG vector editor for middle-school students designing laser-cut p
 
 `tools.js` is the tool registry. Each tool is an object with optional `pointerdown`, `pointermove`, `pointerup`, `keydown` handlers. Register with `registerTool(name, handler)`. Active tool routes all pointer events.
 
-Keyboard shortcuts in `keys.js`: V=select, A=direct-select, R=rect, E=ellipse, L=line, P=polygon, B=pen, T=text, H=hand.
+Keyboard shortcuts in `keys.js` match Adobe Illustrator exactly — intentional so students transferring to Illustrator already know the keys: V=select, A=direct-select, M=rect, L=ellipse, `\`=line, P=pen, T=text, H=hand, O=reflect, Shift+M=shape-builder. Polygon has no dedicated key (same as Illustrator where it's a sub-tool). Never change tool keys away from their Illustrator equivalents — the goal is to teach Illustrator muscle memory.
 
 ### Coordinate System
 

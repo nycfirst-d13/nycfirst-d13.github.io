@@ -16,7 +16,12 @@
       "Bash(git checkout *)",
       "Bash(git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io diff --stat)",
       "Bash(git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io status)",
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(grep *)",
+      "Bash(pandoc --version)",
+      "Bash(brew install *)",
+      "Bash(pandoc laser-maker-review.md -o laser-maker-review.docx)",
+      "Bash(pandoc stem-stations-review.md -o stem-stations-review.docx)"
     ]
   }
 }

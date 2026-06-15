@@ -56,22 +56,31 @@ The app uses a strict color-mapping system that maps directly to how the Epilog 
 
 ## How to Use
 
+Tool keys match Adobe Illustrator exactly — students switching to Illustrator later already know the shortcuts.
+
 | Action | Shortcut |
 |---|---|
 | Select | `V` |
 | Direct Select (anchors) | `A` |
-| Rectangle | `R` |
-| Ellipse | `E` |
-| Line | `L` |
-| Polygon | `P` |
-| Pen (Bézier) | `B` |
+| Rectangle | `M` |
+| Ellipse | `L` |
+| Line Segment | `\` |
+| Pen (Bézier) | `P` |
 | Text | `T` |
 | Hand / pan | `H` or hold `Space` |
+| Reflect | `O` |
+| Shape Builder | `Shift+M` |
 | Undo / Redo | `⌘Z` / `⇧⌘Z` |
 | Zoom in / out / 1:1 | `⌘+` / `⌘−` / `⌘0` |
 | Fit to view | `F` |
 | Delete | `⌫` |
 | Select all | `⌘A` |
+| Group / Ungroup | `⌘G` / `⇧⌘G` |
+| Copy / Cut / Paste | `⌘C` / `⌘X` / `⌘V` |
+| Paste in Place | `⇧⌘V` |
+| Duplicate | `⌘D` |
+| Bring Forward / Send Back | `⌘]` / `⌘[` |
+| Bring to Front / Send to Back | `⌘}` / `⌘{` |
 
 While dragging:
 
