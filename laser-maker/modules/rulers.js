@@ -27,6 +27,9 @@ class Rulers {
 
   _wire() {
     window.addEventListener('resize', () => { this._resize(); this.draw(); });
+    const ro = new ResizeObserver(() => { this._resize(); this.draw(); });
+    ro.observe(this.h);
+    ro.observe(this.v);
     store.subscribe(() => this.draw());
     document.getElementById('canvas-area').addEventListener('pointermove', e => {
       const p = artboard.screenToArtboard(e.clientX, e.clientY);
