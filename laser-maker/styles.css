@@ -1221,6 +1221,7 @@ input:invalid { color: var(--accent); }
 
 .icon-btn-group { display: flex; gap: 2px; }
 .icon-btn.active { background: var(--blue-soft); color: var(--blue); }
+.icon-btn:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
 
 /* Segmented control — visually grouped toggle buttons for binary/multi options */
 .seg-group {
