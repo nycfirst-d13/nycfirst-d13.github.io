@@ -436,7 +436,7 @@ async function convertTextToPath() {
         if (ch === '\t') {
           if (buf) {
             const run = font.layout(buf);
-            segments.push({ run, relX });
+            segments.push({ run, relX, buf });
             relX += run.positions.reduce((s, p) => s + p.xAdvance, 0) * scale;
             buf = '';
           }
@@ -448,7 +448,7 @@ async function convertTextToPath() {
       }
       if (buf) {
         const run = font.layout(buf);
-        segments.push({ run, relX });
+        segments.push({ run, relX, buf });
         relX += run.positions.reduce((s, p) => s + p.xAdvance, 0) * scale;
       }
       return { segments, lineW: relX };
@@ -471,7 +471,7 @@ async function convertTextToPath() {
       }
     }
 
-    const parts = [];
+    const letterPaths = []; // per-glyph { char, d }
 
     for (let li = 0; li < visualLines.length; li++) {
       const line = visualLines[li];
@@ -503,53 +503,74 @@ async function convertTextToPath() {
           const tx = curX + pos.xOffset * scale;
           const ty = baselineY - pos.yOffset * scale;
 
-        for (const cmd of (glyph.path.commands || [])) {
-          const a = cmd.args;
-          switch (cmd.command) {
-            case 'moveTo':
-              parts.push(`M${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
-              break;
-            case 'lineTo':
-              parts.push(`L${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
-              break;
-            case 'quadraticCurveTo':
-              parts.push(`Q${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)}`);
-              break;
-            case 'bezierCurveTo':
-              parts.push(`C${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)} ${(tx + a[4]*scale).toFixed(2)} ${(ty - a[5]*scale).toFixed(2)}`);
-              break;
-            case 'closePath':
-              parts.push('Z');
-              break;
+          const cmds = [];
+          for (const cmd of (glyph.path.commands || [])) {
+            const a = cmd.args;
+            switch (cmd.command) {
+              case 'moveTo':
+                cmds.push(`M${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
+                break;
+              case 'lineTo':
+                cmds.push(`L${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
+                break;
+              case 'quadraticCurveTo':
+                cmds.push(`Q${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)}`);
+                break;
+              case 'bezierCurveTo':
+                cmds.push(`C${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)} ${(tx + a[4]*scale).toFixed(2)} ${(ty - a[5]*scale).toFixed(2)}`);
+                break;
+              case 'closePath':
+                cmds.push('Z');
+                break;
+            }
           }
-        }
+
+          if (cmds.length) {
+            // Name by source characters — handles ligatures (e.g. "ff") naturally
+            const si = seg.run.stringIndices;
+            const charName = si
+              ? seg.buf.slice(si[i], si[i + 1] ?? seg.buf.length)
+              : (glyph.name || 'glyph');
+            letterPaths.push({ name: charName || glyph.name || 'glyph', d: cmds.join(' ') });
+          }
+
           curX += pos.xAdvance * scale;
         }
       }
     }
 
-    const d = parts.join(' ');
-    if (!d.trim()) { toast('Nothing to convert — try a different font'); return; }
+    if (!letterPaths.length) { toast('Nothing to convert — try a different font'); return; }
 
-    const newId = uid('p');
+    const groupId = uid('g');
+    const children = letterPaths.map(({ name, d }) => ({
+      id: uid('p'),
+      type: 'path',
+      name,
+      attrs: { d, fillRule: 'nonzero' },
+      fill: sh.fill || '#0F1419',
+      stroke: 'none',
+      strokeWidth: 0,
+      visible: true,
+      locked: false,
+      rotation: 0,
+      _bbox: null,
+    }));
 
     store.commit(st => {
       const idx = st.shapes.findIndex(x => x.id === sh.id);
       if (idx === -1) return;
       st.shapes.splice(idx, 1, {
-        id: newId,
-        type: 'path',
+        id: groupId,
+        type: 'group',
+        textOutline: true,
         name: sh.name + ' outline',
-        attrs: { d, fillRule: 'nonzero' },
-        fill: sh.fill || '#0F1419',
-        stroke: 'none',
-        strokeWidth: 0,
+        children,
         visible: sh.visible,
         locked: sh.locked,
         rotation: sh.rotation || 0,
         _bbox: null,
       });
-      st.selection = [newId];
+      st.selection = [groupId];
     }, 'convert-text');
 
     toast('Converted to path');
@@ -677,4 +698,4 @@ async function loadBunnyFontList() {
 store.subscribe(syncFromStore);
 loadBunnyFontList();
 
-export { fetchFontBuffer, fontkit };
+export { fetchFontBuffer, fontkit, convertTextToPath };

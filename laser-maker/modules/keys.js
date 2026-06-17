@@ -7,6 +7,7 @@ import { artboard } from './artboard.js';
 import { deepClone, uid, inToPx } from './utils.js';
 import { nudgeShape } from './select.js';
 import { groupSelected, ungroupSelected } from './group.js';
+import { convertTextToPath } from './text-panel.js';
 
 function _removeIdsFromGroupsKeys(shapes, ids) {
   for (const sh of shapes) {
@@ -120,6 +121,9 @@ window.addEventListener('keydown', (e) => {
   // Group / Ungroup
   if ((e.metaKey || e.ctrlKey) && key === 'g' && !e.shiftKey) { e.preventDefault(); groupSelected(); return; }
   if ((e.metaKey || e.ctrlKey) && key === 'g' && e.shiftKey)  { e.preventDefault(); ungroupSelected(); return; }
+
+  // Convert to Path (Cmd/Ctrl+Shift+O — matches Illustrator "Create Outlines")
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'o') { e.preventDefault(); convertTextToPath(); return; }
 
   // Undo / Redo
   if ((e.metaKey || e.ctrlKey) && key === 'z' && !e.shiftKey) { e.preventDefault(); store.undo(); return; }

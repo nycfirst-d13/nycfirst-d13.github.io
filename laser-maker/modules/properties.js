@@ -73,11 +73,12 @@ const processTypeSelect = {
 };
 const processDescEl = document.getElementById('process-type-desc');
 const PROCESS_DESCS = {
-  mainCut:  { title: 'Main Cut',        body: 'Cuts the primary outline of the part all the way through the material.' },
-  fold:     { title: 'Fold / Score',    body: 'Scores the surface or perforates the material without cutting through. Either a clean line or dashed line.' },
-  finalCut: { title: 'Final Cut',       body: 'Releases the finished piece from the sheet. Runs last so parts stay in place during cutting.' },
-  etch:     { title: 'Etch',            body: 'Burns a design into the surface without cutting through. Used for labels, artwork, or texture.' },
-  free:     { title: 'Free Appearance', body: '</br><span style="color:#cc0000">No laser process assigned.</span></br>Full control over color and appearance.' },
+  mainCut:   { title: 'Main Cut',        body: 'Cuts the primary outline of the part all the way through the material.' },
+  fold:      { title: 'Fold / Score',    body: 'Scores the surface or perforates the material without cutting through. Either a clean line or dashed line.' },
+  finalCut:  { title: 'Final Cut',       body: 'Releases the finished piece from the sheet. Runs last so parts stay in place during cutting.' },
+  etch:      { title: 'Etch',            body: 'Burns a design into the surface without cutting through. Used for labels, artwork, or texture.' },
+  free:      { title: 'Free Appearance', body: '</br><span style="color:#cc0000">No laser process assigned.</span></br>Full control over color and appearance.' },
+  __mixed__: { title: 'Mixed',           body: 'Multiple processes applied within this group. Select a process type to <span style="color:#cc0000">apply to all</span>.' },
 };
 
 function _updateProcessDesc(val) {
@@ -90,6 +91,7 @@ _updateProcessDesc('free');
 const appearanceFree     = document.getElementById('appearance-free');
 const appearanceLocked   = document.getElementById('appearance-locked');
 const appearanceEtch     = document.getElementById('appearance-etch');
+const appearanceMixed    = document.getElementById('appearance-mixed');
 const appearanceImageEtch = document.getElementById('appearance-image-etch');
 const lockedStrokeSwatch = document.getElementById('locked-stroke-swatch');
 const lockedStrokeLabel  = document.getElementById('locked-stroke-label');
@@ -211,8 +213,43 @@ function _showAppearanceMode(mode) {
   appearanceFree.style.display   = mode === 'free'   ? '' : 'none';
   appearanceLocked.style.display = mode === 'locked' ? '' : 'none';
   appearanceEtch.style.display   = mode === 'etch'   ? '' : 'none';
+  if (appearanceMixed) appearanceMixed.style.display = mode === 'mixed' ? '' : 'none';
   if (appearanceImageEtch) appearanceImageEtch.style.display = mode === 'imageEtch' ? '' : 'none';
   if (mode !== 'locked') foldDashSection.style.display = 'none';
+}
+
+const _PROCESS_SWATCH_COLOR = {
+  mainCut: '#0000FF', fold: '#FF0000', finalCut: '#00FF00', etch: '#000000',
+};
+
+function _populateMixedList(leaves) {
+  const list = document.getElementById('mixed-process-list');
+  if (!list) return;
+  const seen = new Set();
+  const unique = [];
+  for (const sh of leaves) {
+    const pt = sh.processType ?? 'free';
+    if (!seen.has(pt)) { seen.add(pt); unique.push(pt); }
+  }
+  list.innerHTML = '';
+  for (const pt of unique) {
+    const def = PROCESS_DEFINITIONS[pt] ?? PROCESS_DEFINITIONS.free;
+    const li = document.createElement('li');
+    li.className = 'mixed-process-item';
+    const swatch = document.createElement('span');
+    swatch.className = 'process-swatch';
+    const color = _PROCESS_SWATCH_COLOR[pt];
+    if (color) {
+      swatch.style.background = color;
+    } else {
+      swatch.style.background = 'transparent';
+    }
+    li.appendChild(swatch);
+    const label = document.createElement('span');
+    label.textContent = def.label ?? pt;
+    li.appendChild(label);
+    list.appendChild(li);
+  }
 }
 
 function syncFromState() {
@@ -283,14 +320,18 @@ function syncFromState() {
   [tX, tY, tW, tH, tR].forEach(i => i.disabled = false);
   qrBtns.forEach(b => b.disabled = false);
 
-  // Process type across selection (groups don't have processType)
+  // Process type across selection — for groups, inspect their leaf children
   const nonGroups = sel.filter(sh => sh.type !== 'group');
-  const pt = nonGroups.length
-    ? commonValue(nonGroups, sh => sh.processType ?? 'free')
+  const groupLeaves = [];
+  sel.filter(sh => sh.type === 'group').forEach(g => _collectLeaves(g, groupLeaves));
+  const allLeaves = [...nonGroups, ...groupLeaves];
+
+  const pt = allLeaves.length
+    ? commonValue(allLeaves, sh => sh.processType ?? 'free')
     : null;
 
   // Update process dropdown
-  const isMixed = nonGroups.length > 0 && pt === null;
+  const isMixed = allLeaves.length > 0 && pt === null;
   processTypeSelect.querySelector('.custom-select-option[data-value="__mixed__"]').hidden = !isMixed;
   processTypeSelect.value = isMixed ? '__mixed__' : (pt ?? 'free');
 
@@ -303,7 +344,10 @@ function syncFromState() {
   if (onlyImages) _ensureImageEtch(sel);
 
   // Show correct appearance section
-  if (isMixed || pt === 'free' || pt === null) {
+  if (isMixed) {
+    _showAppearanceMode('mixed');
+    _populateMixedList(allLeaves);
+  } else if (pt === 'free' || pt === null) {
     _showAppearanceMode('free');
     const fill   = commonValue(sel, sh => sh.fill);
     const stroke = commonValue(sel, sh => sh.stroke);
@@ -376,6 +420,13 @@ function _applyAppearanceToGroup(group, prop, value) {
   for (const child of group.children) {
     if (child.type === 'group') _applyAppearanceToGroup(child, prop, value);
     else child[prop] = value;
+  }
+}
+
+function _collectLeaves(group, out) {
+  for (const child of group.children) {
+    if (child.type === 'group') _collectLeaves(child, out);
+    else out.push(child);
   }
 }
 

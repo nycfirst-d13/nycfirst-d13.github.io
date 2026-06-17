@@ -278,7 +278,7 @@ function collectTextShapes(shapes) {
   return result;
 }
 
-async function download() {
+async function download(filename) {
   const s = store.get();
   const textShapes = collectTextShapes(s.shapes);
   const pathMap = new Map();
@@ -299,9 +299,8 @@ async function download() {
   const blob = new Blob([svg], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const date = new Date().toISOString().slice(0,10);
   a.href = url;
-  a.download = `laser-maker-${date}.svg`;
+  a.download = filename ?? 'laser.svg';
   document.body.appendChild(a);
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
@@ -316,6 +315,65 @@ function toast(msg) {
   toast._t = setTimeout(() => t.classList.remove('show'), 1600);
 }
 
-document.getElementById('export-btn').addEventListener('click', download);
+// ---- Export dialog ----
+const _backdrop    = document.getElementById('export-backdrop');
+const _nameInput   = document.getElementById('export-name');
+const _projectInput = document.getElementById('export-project');
+const _preview     = document.getElementById('export-filename-preview');
+const _confirmBtn  = document.getElementById('export-confirm-btn');
+const _cancelBtn   = document.getElementById('export-cancel-btn');
+
+function _slugify(str) {
+  return str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || null;
+}
+
+function _updatePreview() {
+  const name    = _slugify(_nameInput.value);
+  const project = _slugify(_projectInput.value);
+  if (name && project) {
+    _preview.textContent = `${name}-${project}_laser.svg`;
+  } else if (name) {
+    _preview.textContent = `${name}_laser.svg`;
+  } else if (project) {
+    _preview.textContent = `${project}_laser.svg`;
+  } else {
+    _preview.textContent = 'laser.svg';
+  }
+}
+
+function _openDialog() {
+  _backdrop.hidden = false;
+  _updatePreview();
+  _nameInput.focus();
+}
+
+function _closeDialog() {
+  _backdrop.hidden = true;
+}
+
+_nameInput.addEventListener('input', _updatePreview);
+_projectInput.addEventListener('input', _updatePreview);
+
+_cancelBtn.addEventListener('click', _closeDialog);
+_backdrop.addEventListener('click', e => { if (e.target === _backdrop) _closeDialog(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !_backdrop.hidden) _closeDialog(); });
+
+_confirmBtn.addEventListener('click', async () => {
+  const name    = _slugify(_nameInput.value);
+  const project = _slugify(_projectInput.value);
+  let filename;
+  if (name && project) filename = `${name}-${project}_laser.svg`;
+  else if (name)        filename = `${name}_laser.svg`;
+  else if (project)     filename = `${project}_laser.svg`;
+  else                  filename = 'laser.svg';
+
+  _closeDialog();
+  await download(filename);
+});
+
+_projectInput.addEventListener('keydown', e => { if (e.key === 'Enter') _confirmBtn.click(); });
+_nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') _projectInput.focus(); });
+
+document.getElementById('export-btn').addEventListener('click', _openDialog);
 
 export const exporter = { download, buildSVG };

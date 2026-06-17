@@ -79,7 +79,7 @@ input { font-family: inherit; }
   position: relative;
   z-index: 5;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   padding: 0 16px;
   background: #F4F8FE;
@@ -97,6 +97,12 @@ input { font-family: inherit; }
   font-weight: 600;
   letter-spacing: -0.02em;
   font-size: 13.5px;
+}
+.brand-beta {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--ink-2);
+  letter-spacing: 0.06em;
 }
 .brand-sub {
   font-family: var(--font-mono);
@@ -169,6 +175,7 @@ input { font-family: inherit; }
   background: var(--surface);
   color: var(--ink);
   border-radius: var(--r-sm);
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -1163,6 +1170,23 @@ input:invalid { color: var(--accent); }
   flex-shrink: 0;
 }
 
+.mixed-process-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.mixed-process-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+}
+
 .icon-btn-group { display: flex; gap: 2px; }
 .icon-btn.active { background: var(--blue-soft); color: var(--blue); }
 
@@ -1274,3 +1298,123 @@ input:invalid { color: var(--accent); }
   flex-shrink: 0;
 }
 .font-item.selected .font-item-sample { color: var(--blue); }
+
+/* =========================================================================
+   RESPONSIVE
+   ========================================================================= */
+
+/* Allow topbar grid columns to shrink below content size */
+.brand        { min-width: 0; }
+.topbar-right { min-width: 0; }
+.brand-text   { white-space: nowrap; overflow: hidden; }
+.topbar-right .btn span { white-space: nowrap; }
+
+/* ── 1220px: Icon-only topbar buttons (right content needs ~443px; 1fr < that below ~1220px) */
+@media (max-width: 1220px) {
+  .topbar { padding: 0 10px; gap: 10px; }
+  .ac-label { display: none; }
+  .artboard-control { gap: 6px; }
+  .topbar-right .btn span { display: none; }
+  .topbar-right .btn { padding: 0 8px; min-width: 32px; justify-content: center; }
+}
+
+/* ── 920px: Narrow — stack canvas pill groups ────────────────────────── */
+@media (max-width: 920px) {
+  .topbar { padding: 0 8px; gap: 6px; }
+  .grid-controls { flex-direction: column; align-items: flex-start; gap: 4px; }
+}
+
+/* ── 800px: Very narrow — drop brand subtitle; compact viewport controls ─ */
+@media (max-width: 800px) {
+  .brand-sub { display: none; }
+  .vc-btn { padding: 0 5px; min-width: 24px; font-size: 10.5px; }
+  .vc-level { min-width: 42px; }
+}
+
+/* ── 700px: Ultra narrow — shrink grid control pills ─────────────────── */
+@media (max-width: 700px) {
+  .pill { padding: 5px 8px 5px 6px; font-size: 10px; gap: 4px; }
+  .pill input { width: 10px; height: 10px; }
+}
+
+/* ── Export dialog ──────────────────────────────────────────────────────── */
+.export-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9000;
+}
+.export-backdrop[hidden] { display: none; }
+
+.export-dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg, 10px);
+  box-shadow: var(--sh-4, 0 8px 32px rgba(0,0,0,.22));
+  padding: 24px;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.export-dialog-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.export-dialog-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.export-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.export-field-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.export-field-input {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm, 5px);
+  background: var(--surface-2, var(--surface));
+  color: var(--ink-1);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s;
+}
+.export-field-input:focus {
+  border-color: var(--blue);
+}
+
+.export-filename-preview {
+  margin: 0;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+  word-break: break-all;
+  min-height: 16px;
+}
+
+.export-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

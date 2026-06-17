@@ -319,6 +319,41 @@ class Artboard {
   _buildGroupNode(sh) {
     const g = svgNS('g');
     g.classList.add('shape-node', 'group-node');
+
+    // Text-outline groups: outside isolation, render one combined <path> so adjacent
+    // letter paths share a single paint pass — no anti-aliasing seams between letters.
+    // Inside isolation the children render individually for per-letter editing.
+    const inIsolation = store.get().isolationGroup === sh.id;
+    if (sh.textOutline && !inIsolation) {
+      const visiblePaths = sh.children.filter(c => c.visible !== false && c.type === 'path');
+      if (visiblePaths.length) {
+        const combinedD = visiblePaths.map(c => c.attrs.d || '').join(' ');
+        const firstChild = visiblePaths[0];
+        const resolved = resolveAppearance(firstChild);
+        const visual = svgNS('path');
+        setAttrs(visual, {
+          d: combinedD,
+          fill: resolved.fill ?? firstChild.fill ?? '#0F1419',
+          stroke: 'none',
+          'fill-rule': firstChild.attrs?.fillRule ?? 'nonzero',
+        });
+        g.appendChild(visual);
+
+        // Hidden shape-nodes per child — bbox caching needs them, pointer-events disabled
+        for (const child of sh.children) {
+          if (child.visible === false) continue;
+          const node = this._buildNode(child);
+          if (node) {
+            node.dataset.id = child.id;
+            node.style.visibility = 'hidden';
+            node.setAttribute('pointer-events', 'none');
+            g.appendChild(node);
+          }
+        }
+        return g;
+      }
+    }
+
     for (const child of sh.children) {
       if (child.visible === false) continue;
       const node = this._buildNode(child);

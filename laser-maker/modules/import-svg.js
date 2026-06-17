@@ -127,6 +127,7 @@ function showToast(msg) {
 
 // ---- Button ----
 const fileInput = document.getElementById('import-svg-input');
+document.getElementById('import-svg-btn').addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
