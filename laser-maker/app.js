@@ -20,6 +20,7 @@ import './modules/text-panel.js';
 import './modules/import-svg.js';
 import './modules/expand-svg.js';
 import './modules/image-etch-panel.js';
+import './modules/align.js';
 
 // Collapsible + draggable panels
 (function initPanels() {
