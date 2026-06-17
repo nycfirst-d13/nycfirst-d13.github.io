@@ -1242,7 +1242,7 @@ input:invalid { color: var(--accent); }
 .seg-group .icon-btn:hover { background: var(--paper); color: var(--ink); }
 .seg-group .icon-btn.active { background: var(--blue-soft); color: var(--blue); }
 .align-to-group { flex: 1; }
-.align-to-group .icon-btn { flex: 1; width: auto; gap: 5px; font-size: 11px; padding: 0 8px; }
+.align-to-group .icon-btn { flex: 1; width: auto; height: 28px; gap: 5px; font-size: 11px; padding: 0 8px; white-space: nowrap; }
 
 .font-search-input {
   display: block;
