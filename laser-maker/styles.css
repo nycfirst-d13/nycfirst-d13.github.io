@@ -635,6 +635,7 @@ input { font-family: inherit; }
 .rgb-ch::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .swatch-clear {
   width: 24px; height: 22px;
+  align-self: flex-end;
   border: 0;
   background: transparent;
   border-radius: var(--r-xs);
