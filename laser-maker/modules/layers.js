@@ -165,19 +165,32 @@ document.getElementById('layer-del').onclick = () => deleteSel();
 function moveSel(dir) {
   store.commit(s => {
     if (!s.selection.length) return;
-    // Operate on active level (isolation group children or top-level)
-    const arr = s.isolationGroup
-      ? (store.findShape(s.isolationGroup)?.children ?? s.shapes)
-      : s.shapes;
-    const order = dir > 0
-      ? [...arr].reverse().filter(sh => s.selection.includes(sh.id)).map(sh => sh.id)
-      : arr.filter(sh => s.selection.includes(sh.id)).map(sh => sh.id);
-    for (const id of order) {
-      const i = arr.findIndex(sh => sh.id === id);
-      const j = i + dir;
-      if (j < 0 || j >= arr.length) continue;
-      if (s.selection.includes(arr[j].id)) continue;
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+
+    // Route each selected id to its actual parent array (top-level or group children).
+    // Children selected from the layers panel move within their group regardless of
+    // whether isolation mode is active.
+    const arrToSelIds = new Map();
+    for (const id of s.selection) {
+      const parent = store.findParentGroup(id);
+      if (parent === undefined) continue; // id not found anywhere
+      const arr = parent === null ? s.shapes : parent.children;
+      if (!arrToSelIds.has(arr)) arrToSelIds.set(arr, []);
+      arrToSelIds.get(arr).push(id);
+    }
+
+    for (const [arr, selIds] of arrToSelIds) {
+      const selSet = new Set(selIds);
+      const order = dir > 0
+        ? [...arr].reverse().filter(sh => selSet.has(sh.id)).map(sh => sh.id)
+        : arr.filter(sh => selSet.has(sh.id)).map(sh => sh.id);
+      for (const id of order) {
+        const i = arr.findIndex(sh => sh.id === id);
+        if (i < 0) continue;
+        const j = i + dir;
+        if (j < 0 || j >= arr.length) continue;
+        if (selSet.has(arr[j].id)) continue;
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
     }
   }, 'reorder');
 }

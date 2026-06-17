@@ -77,20 +77,36 @@ const TOOL_KEYS = {
 function zOrder(dir, toExtreme) {
   store.commit(s => {
     if (!s.selection.length) return;
-    if (toExtreme) {
-      const sel = s.shapes.filter(sh => s.selection.includes(sh.id));
-      const rest = s.shapes.filter(sh => !s.selection.includes(sh.id));
-      s.shapes = dir > 0 ? [...rest, ...sel] : [...sel, ...rest];
-    } else {
-      const order = dir > 0
-        ? [...s.shapes].reverse().filter(sh => s.selection.includes(sh.id)).map(sh => sh.id)
-        : s.shapes.filter(sh => s.selection.includes(sh.id)).map(sh => sh.id);
-      for (const id of order) {
-        const i = s.shapes.findIndex(sh => sh.id === id);
-        const j = i + dir;
-        if (j < 0 || j >= s.shapes.length) continue;
-        if (s.selection.includes(s.shapes[j].id)) continue;
-        [s.shapes[i], s.shapes[j]] = [s.shapes[j], s.shapes[i]];
+
+    // Route each selected id to its parent array (top-level or group children).
+    const arrToSelIds = new Map();
+    for (const id of s.selection) {
+      const parent = store.findParentGroup(id);
+      if (parent === undefined) continue;
+      const arr = parent === null ? s.shapes : parent.children;
+      if (!arrToSelIds.has(arr)) arrToSelIds.set(arr, []);
+      arrToSelIds.get(arr).push(id);
+    }
+
+    for (const [arr, selIds] of arrToSelIds) {
+      const selSet = new Set(selIds);
+      if (toExtreme) {
+        const sel = arr.filter(sh => selSet.has(sh.id));
+        const rest = arr.filter(sh => !selSet.has(sh.id));
+        const result = dir > 0 ? [...rest, ...sel] : [...sel, ...rest];
+        arr.splice(0, arr.length, ...result);
+      } else {
+        const order = dir > 0
+          ? [...arr].reverse().filter(sh => selSet.has(sh.id)).map(sh => sh.id)
+          : arr.filter(sh => selSet.has(sh.id)).map(sh => sh.id);
+        for (const id of order) {
+          const i = arr.findIndex(sh => sh.id === id);
+          if (i < 0) continue;
+          const j = i + dir;
+          if (j < 0 || j >= arr.length) continue;
+          if (selSet.has(arr[j].id)) continue;
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
       }
     }
   }, 'reorder');

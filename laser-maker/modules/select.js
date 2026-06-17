@@ -473,6 +473,9 @@ tools.register('select', {
     }
     const sel = event.shiftKey ? [...this._marqueeBaseSel, ...inside.filter(id => !this._marqueeBaseSel.has(id))] : inside;
     store.patch(st => st.selection = sel, 'selection');
+    // store.patch triggers renderOverlay synchronously which calls replaceChildren() —
+    // re-insert the marquee rect so it's visible during the drag.
+    overlay.insertBefore(this._marqueeRect, overlay.firstChild);
   },
   _endMarquee() {
     if (this._marqueeRect) this._marqueeRect.remove();
@@ -903,6 +906,8 @@ tools.register('direct', {
       const base = this._anchorBase.filter(a => !inRect.some(b => b.shapeId === a.shapeId && b.idx === a.idx));
       selectedAnchors = [...base, ...inRect];
       renderOverlay();
+      // renderOverlay calls replaceChildren() — re-insert marquee so it's visible.
+      overlay.insertBefore(this._marqueeRect, overlay.firstChild);
     }
   },
 
