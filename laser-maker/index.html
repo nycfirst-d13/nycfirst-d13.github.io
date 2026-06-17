@@ -27,22 +27,14 @@
         <span class="brand-title">Laser Maker <span class="brand-beta">[BETA]</span></span>
         <span class="brand-sub">Vector Design Studio</span>
       </div>
-    </div>
-
-    <div class="topbar-center">
-      <div class="artboard-control" title="Artboard size">
-        <label class="ac-label">Artboard</label>
-        <div class="ac-inputs">
-          <input id="ab-w" type="number" min="1" max="96" step="0.5" value="36" inputmode="decimal" />
-          <span class="ac-x">×</span>
-          <input id="ab-h" type="number" min="1" max="96" step="0.5" value="24" inputmode="decimal" />
-          <span class="ac-unit">in</span>
-        </div>
-        <div class="ac-presets" role="group" aria-label="Presets">
-          <button data-preset="36x24">Reset</button>
-        </div>
+      <div class="project-identity">
+        <input class="pi-input" type="text" id="header-name" placeholder="Your name" autocomplete="off" />
+        <span class="pi-sep">/</span>
+        <input class="pi-input" type="text" id="header-project" placeholder="Project name" autocomplete="off" />
       </div>
     </div>
+
+    <div class="topbar-center"></div>
 
     <div class="topbar-right">
       <button class="btn ghost" id="undo-btn" title="Undo (⌘Z)">
@@ -586,9 +578,17 @@
       <span class="status-label">Zoom</span>
       <span class="status-value mono" id="status-zoom">100%</span>
     </div>
-    <div class="status-cell">
-      <span class="status-label">Artboard</span>
-      <span class="status-value mono" id="status-ab">36.00 × 24.00 in</span>
+    <div class="status-cell artboard-control" title="Artboard size">
+      <span class="ac-label">Artboard</span>
+      <div class="ac-inputs">
+        <input id="ab-w" type="number" min="1" max="96" step="0.5" value="36" inputmode="decimal" />
+        <span class="ac-x">×</span>
+        <input id="ab-h" type="number" min="1" max="96" step="0.5" value="24" inputmode="decimal" />
+        <span class="ac-unit">in</span>
+      </div>
+      <div class="ac-presets" role="group" aria-label="Presets">
+        <button data-preset="36x24">Reset</button>
+      </div>
     </div>
   </footer>
 

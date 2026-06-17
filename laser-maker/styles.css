@@ -58,7 +58,7 @@ body {
   margin: 0;
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-mono);
   font-size: 13px;
   line-height: 1.5;
   letter-spacing: -0.004em;
@@ -114,51 +114,83 @@ input { font-family: inherit; }
 
 .topbar-center { display: flex; justify-content: center; }
 
+.project-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 6px 12px;
+  margin-left: 16px;
+}
+.pi-input {
+  min-width: 16ch;
+  max-width: 32ch;
+  width: 16ch;
+  border: 1px solid var(--rule-2);
+  border-radius: var(--r-sm);
+  background: #fff;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink-1);
+  outline: none;
+  padding: 4px 8px;
+  transition: border-color .12s, width .1s;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pi-input:focus { border-color: var(--blue); }
+.pi-input::placeholder { color: var(--ink-3); }
+.pi-sep {
+  color: var(--rule);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  align-self: center;
+}
+
 /* Artboard control */
 .artboard-control {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--paper);
-  padding: 4px 6px 4px 12px;
-  border-radius: var(--r-lg);
-  border: 1px solid var(--rule);
+  display: flex; align-items: center; gap: 8px;
 }
 .ac-label {
   font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  color: var(--muted);
 }
-.ac-inputs { display: flex; align-items: center; gap: 4px; }
+.ac-inputs { display: flex; align-items: center; gap: 3px; }
 .ac-inputs input {
-  width: 46px;
+  width: 38px;
   border: 1px solid var(--rule-2);
   background: var(--surface);
   border-radius: var(--r-sm);
-  padding: 4px 6px;
+  padding: 2px 4px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 11px;
   text-align: right;
-  color: var(--ink);
+  color: var(--ink-2);
   outline: none;
   transition: border-color .12s;
 }
 .ac-inputs input:focus { border-color: var(--blue); }
-.ac-x { color: var(--ink-3); font-family: var(--font-mono); }
+.ac-x { color: var(--ink-3); font-family: var(--font-mono); font-size: 11px; }
 .ac-unit {
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-3);
-  padding-right: 4px;
 }
-.ac-presets { display: flex; gap: 2px; padding-left: 8px; border-left: 1px solid var(--rule-2); }
+.ac-presets { display: flex; gap: 2px; padding-left: 6px; border-left: 1px solid var(--rule-2); }
 .ac-presets button {
   background: transparent;
   border: 0;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--ink-3);
-  padding: 5px 8px;
+  padding: 2px 6px;
   border-radius: var(--r-sm);
   cursor: pointer;
   transition: background .12s, color .12s;
@@ -1312,8 +1344,7 @@ input:invalid { color: var(--accent); }
 /* ── 1220px: Icon-only topbar buttons (right content needs ~443px; 1fr < that below ~1220px) */
 @media (max-width: 1220px) {
   .topbar { padding: 0 10px; gap: 10px; }
-  .ac-label { display: none; }
-  .artboard-control { gap: 6px; }
+
   .topbar-right .btn span { display: none; }
   .topbar-right .btn { padding: 0 8px; min-width: 32px; justify-content: center; }
 }
