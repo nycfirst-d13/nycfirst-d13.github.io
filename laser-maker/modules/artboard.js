@@ -61,7 +61,7 @@ class Artboard {
     document.getElementById('midpoints-toggle').onchange = (e) => store.patch(s => s.midpoints.enabled = e.target.checked, 'midpoints');
 
     // Wheel zoom + pan
-    this.canvasArea.addEventListener('wheel', this._onWheel.bind(this), { passive: false });
+    this.canvasArea.addEventListener('wheel', this._onWheel.bind(this), { passive: false, capture: true });
 
     // Spacebar pan
     window.addEventListener('keydown', e => {
@@ -108,9 +108,20 @@ class Artboard {
 
     window.addEventListener('resize', () => this._applyViewport());
 
-    // Initial render
+    // Initial render — defer fit() until canvas-area has real layout dimensions.
+    // On GitHub Pages, CSS can still be loading when modules evaluate, so
+    // getBoundingClientRect() returns 0×0. Poll with RAF until layout is ready.
     this._applyArtboard();
-    this.fit();
+    this._deferredFit();
+  }
+
+  _deferredFit() {
+    const r = this.canvasArea.getBoundingClientRect();
+    if (r.width > 0 && r.height > 0) {
+      this.fit();
+    } else {
+      requestAnimationFrame(() => this._deferredFit());
+    }
   }
 
   // ---------------- Viewport ----------------
@@ -168,7 +179,12 @@ class Artboard {
   _onWheel(e) {
     e.preventDefault();
     if (e.ctrlKey || e.metaKey) {
-      const factor = e.deltaY < 0 ? 1.1 : 1/1.1;
+      // Proportional factor: smooth on trackpad pinch, ~10% per mouse wheel notch.
+      // Safari fires ctrlKey=true over SVG <image> elements for two-finger scroll,
+      // so a fixed 1.1x step would feel choppy — scaling by deltaY magnitude fixes it.
+      const factor = e.deltaMode === 1
+        ? (e.deltaY < 0 ? 1.1 : 1 / 1.1)   // line-mode mouse wheel: discrete steps
+        : Math.exp(-e.deltaY / 100);          // pixel-mode trackpad: continuous
       this.zoomAt(e.clientX, e.clientY, factor);
     } else {
       this.panBy(-e.deltaX, -e.deltaY);

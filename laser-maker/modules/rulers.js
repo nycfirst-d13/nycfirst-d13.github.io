@@ -30,6 +30,9 @@ class Rulers {
     const ro = new ResizeObserver(() => { this._resize(); this.draw(); });
     ro.observe(this.h);
     ro.observe(this.v);
+    // Belt-and-suspenders: if CSS wasn't applied when the constructor ran,
+    // _resize() set a 1×1 buffer. RAF guarantees layout is available.
+    requestAnimationFrame(() => { this._resize(); this.draw(); });
     store.subscribe(() => this.draw());
     document.getElementById('canvas-area').addEventListener('pointermove', e => {
       const p = artboard.screenToArtboard(e.clientX, e.clientY);
