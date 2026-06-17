@@ -539,7 +539,7 @@ class Artboard {
         // until the async bake lands.
         const href = (sh.processType === 'etch' && attrs.etchHref) ? attrs.etchHref : attrs.href;
         const im = svgNS('image');
-        setAttrs(im, { x: attrs.x, y: attrs.y, width: w, height: h, preserveAspectRatio: 'none' });
+        setAttrs(im, { x: attrs.x, y: attrs.y, width: w, height: h, preserveAspectRatio: 'none', 'pointer-events': 'none' });
         im.setAttributeNS('http://www.w3.org/1999/xlink', 'href', href);
         im.setAttribute('href', href);
         // Transparent rect catcher gives a full-bounds click zone.
@@ -551,9 +551,9 @@ class Artboard {
         highlight.classList.add('shape-hover-highlight');
         const g = svgNS('g');
         g.classList.add('shape-node');
-        g.appendChild(catcher);
         g.appendChild(im);
         g.appendChild(highlight);
+        g.appendChild(catcher);
         return g;
       }
       case 'text': {
