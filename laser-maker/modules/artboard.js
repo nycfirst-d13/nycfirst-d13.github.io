@@ -86,13 +86,20 @@ class Artboard {
 
     let _prevIsolation = null;
     store.subscribe((s, reason) => {
+      // Viewport-only changes (zoom/pan/fit): CSS transform handles the visual update.
+      // Skip the expensive shape/grid DOM rebuild — just reposition handles.
+      const isViewport = reason === 'zoom' || reason === 'pan' || reason === 'fit';
+      this._applyViewport();
+      this._updateStatus();
+      if (isViewport) {
+        for (const fn of this._renderListeners) fn();
+        return;
+      }
       wIn.value = s.artboard.w;
       hIn.value = s.artboard.h;
       this._applyArtboard();
-      this._applyViewport();
       this._renderGrid();
       this._renderShapes();
-      this._updateStatus();
       // Isolation mode visual indicator
       this.canvasArea.classList.toggle('isolation-active', !!s.isolationGroup);
       if (s.isolationGroup && !_prevIsolation) {
