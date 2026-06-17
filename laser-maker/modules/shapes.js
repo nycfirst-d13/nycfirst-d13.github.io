@@ -278,7 +278,14 @@ export function enterTextEdit(shapeId) {
   });
 
   ta.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { e.stopPropagation(); exitTextEdit(); }
+    if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) { e.stopPropagation(); exitTextEdit(); return; }
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      const s = ta.selectionStart, end = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + '\t' + ta.value.slice(end);
+      ta.selectionStart = ta.selectionEnd = s + 1;
+      ta.dispatchEvent(new Event('input'));
+    }
   });
 
   canvasArea.appendChild(ta);
