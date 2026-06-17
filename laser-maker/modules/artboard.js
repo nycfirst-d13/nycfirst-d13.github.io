@@ -64,7 +64,7 @@ class Artboard {
 
     // Spacebar pan
     window.addEventListener('keydown', e => {
-      if (e.code === 'Space' && !this._spaceDown && document.activeElement.tagName !== 'INPUT') {
+      if (e.code === 'Space' && !this._spaceDown && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
         this._spaceDown = true;
         this.canvasArea.classList.add('tool-hand');
         e.preventDefault();

@@ -392,57 +392,140 @@ async function convertTextToPath() {
     const weight = sh.attrs.weight || 400;
     const rawBuffer = await fetchFontBuffer(family, weight);
 
-    // fontkit handles woff2/woff/ttf/otf natively — no pre-decoding needed
     const font = fontkit.create(new Uint8Array(rawBuffer));
 
-    const size = sh.attrs.size || 28;
-    const text = sh.attrs.content || '';
-    const scale = size / font.unitsPerEm;
+    const size       = sh.attrs.size       || 28;
+    const text       = sh.attrs.content    || '';
+    const align      = sh.attrs.align      || 'left';
+    const lineHeight = (sh.attrs.lineHeight || 1.2) * size;
+    const frameW     = sh.attrs.width      ?? null;
+    const scale      = size / font.unitsPerEm;
+    // For frame text: measure the exact CSS baseline offset from the container top via DOM.
+    // A zero-height inline-block with vertical-align:baseline sits with its top edge ON the baseline,
+    // so (spanRect.top - divRect.top) = distance from container top to first baseline — no metric guesswork.
+    // For single-point SVG text: dominant-baseline:text-before-edge puts attrs.y at the ascender line,
+    // so baseline = attrs.y + fontkit ascent (no leading).
+    let firstBaselineOffset;
+    if (frameW) {
+      const _d = document.createElement('div');
+      _d.style.cssText = `position:fixed;visibility:hidden;pointer-events:none;left:-9999px;top:0;` +
+        `font-family:"${family}",sans-serif;font-size:${size}px;` +
+        `font-weight:${weight};line-height:${sh.attrs.lineHeight || 1.2};`;
+      _d.innerHTML = '<span style="display:inline-block;height:0;vertical-align:baseline;"></span>';
+      document.body.appendChild(_d);
+      firstBaselineOffset = _d.querySelector('span').getBoundingClientRect().top
+                          - _d.getBoundingClientRect().top;
+      document.body.removeChild(_d);
+    } else {
+      firstBaselineOffset = (font.ascent || font.unitsPerEm * 0.8) * scale;
+    }
+    const ascender = firstBaselineOffset; // kept as `ascender` for use below
 
-    // dominant-baseline:text-before-edge → y is top of em ≈ ascender above baseline
-    const ascender = (font.ascent || font.unitsPerEm * 0.8) * scale;
-    const baselineY = sh.attrs.y + ascender;
+    // CSS tab-size default = 8 × space advance
+    const spaceAdv = (font.layout(' ').positions[0]?.xAdvance ?? font.unitsPerEm * 0.25) * scale;
+    const tabWidth = 8 * spaceAdv;
 
-    // Layout applies GPOS kerning automatically
-    const glyphRun = font.layout(text);
-
-    // Advance width for alignment offset
-    const textWidth = glyphRun.positions.reduce((sum, p) => sum + p.xAdvance, 0) * scale;
-
-    let curX = sh.attrs.x;
-    const align = sh.attrs.align || 'left';
-    if (align === 'center') curX -= textWidth / 2;
-    else if (align === 'right') curX -= textWidth;
-
-    // Build SVG path: font units are Y-up from baseline; SVG is Y-down
-    const parts = [];
-    for (let i = 0; i < glyphRun.glyphs.length; i++) {
-      const glyph = glyphRun.glyphs[i];
-      const pos   = glyphRun.positions[i];
-      const tx = curX + pos.xOffset * scale;
-      const ty = baselineY - pos.yOffset * scale;
-
-      for (const cmd of (glyph.path.commands || [])) {
-        const a = cmd.args;
-        switch (cmd.command) {
-          case 'moveTo':
-            parts.push(`M${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
-            break;
-          case 'lineTo':
-            parts.push(`L${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
-            break;
-          case 'quadraticCurveTo':
-            parts.push(`Q${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)}`);
-            break;
-          case 'bezierCurveTo':
-            parts.push(`C${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)} ${(tx + a[4]*scale).toFixed(2)} ${(ty - a[5]*scale).toFixed(2)}`);
-            break;
-          case 'closePath':
-            parts.push('Z');
-            break;
+    // Layout a single line with CSS-accurate tab stops (measured from relX=0 = frame left).
+    // Splits text at \t boundaries so each plain-text run goes through font.layout separately.
+    // Returns { segments:[{run,relX}], lineW } — relX is offset from frame left.
+    function layoutLine(lineText) {
+      let relX = 0;
+      const segments = [];
+      let buf = '';
+      for (const ch of lineText) {
+        if (ch === '\t') {
+          if (buf) {
+            const run = font.layout(buf);
+            segments.push({ run, relX });
+            relX += run.positions.reduce((s, p) => s + p.xAdvance, 0) * scale;
+            buf = '';
+          }
+          // Jump to next tab stop (never stay in place — add at least 1 unit)
+          relX = Math.ceil((relX + 0.001) / tabWidth) * tabWidth;
+        } else {
+          buf += ch;
         }
       }
-      curX += pos.xAdvance * scale;
+      if (buf) {
+        const run = font.layout(buf);
+        segments.push({ run, relX });
+        relX += run.positions.reduce((s, p) => s + p.xAdvance, 0) * scale;
+      }
+      return { segments, lineW: relX };
+    }
+
+    // Build visual lines: respect \n, word-wrap using tab-aware widths
+    const visualLines = [];
+    for (const para of text.split('\n')) {
+      if (!frameW || para === '') {
+        visualLines.push(para);
+      } else {
+        let cur = '';
+        for (const word of para.split(' ')) {
+          const candidate = cur ? cur + ' ' + word : word;
+          const { lineW: w } = layoutLine(candidate);
+          if (cur && w > frameW) { visualLines.push(cur); cur = word; }
+          else cur = candidate;
+        }
+        visualLines.push(cur);
+      }
+    }
+
+    const parts = [];
+
+    for (let li = 0; li < visualLines.length; li++) {
+      const line = visualLines[li];
+      if (!line) continue; // blank line — li still increments for Y spacing
+
+      const { segments, lineW } = layoutLine(line);
+
+      let alignOffset = 0;
+      if (frameW) {
+        if (align === 'center') alignOffset = (frameW - lineW) / 2;
+        else if (align === 'right') alignOffset = frameW - lineW;
+      } else {
+        if (align === 'center') alignOffset = -lineW / 2;
+        else if (align === 'right') alignOffset = -lineW;
+      }
+
+      const baselineY = sh.attrs.y + ascender + li * lineHeight;
+
+      for (const seg of segments) {
+        let curX = sh.attrs.x + seg.relX + alignOffset;
+
+        for (let i = 0; i < seg.run.glyphs.length; i++) {
+          const glyph = seg.run.glyphs[i];
+          const pos   = seg.run.positions[i];
+
+          // Skip .notdef (missing-glyph box) — advance X but draw nothing
+          if (glyph.id === 0) { curX += pos.xAdvance * scale; continue; }
+
+          const tx = curX + pos.xOffset * scale;
+          const ty = baselineY - pos.yOffset * scale;
+
+        for (const cmd of (glyph.path.commands || [])) {
+          const a = cmd.args;
+          switch (cmd.command) {
+            case 'moveTo':
+              parts.push(`M${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
+              break;
+            case 'lineTo':
+              parts.push(`L${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)}`);
+              break;
+            case 'quadraticCurveTo':
+              parts.push(`Q${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)}`);
+              break;
+            case 'bezierCurveTo':
+              parts.push(`C${(tx + a[0]*scale).toFixed(2)} ${(ty - a[1]*scale).toFixed(2)} ${(tx + a[2]*scale).toFixed(2)} ${(ty - a[3]*scale).toFixed(2)} ${(tx + a[4]*scale).toFixed(2)} ${(ty - a[5]*scale).toFixed(2)}`);
+              break;
+            case 'closePath':
+              parts.push('Z');
+              break;
+          }
+        }
+          curX += pos.xAdvance * scale;
+        }
+      }
     }
 
     const d = parts.join(' ');
