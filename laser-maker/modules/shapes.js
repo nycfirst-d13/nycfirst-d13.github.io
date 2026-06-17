@@ -386,11 +386,16 @@ tools.register('text', {
     const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
     const w = Math.abs(a.x - b.x), h = Math.abs(a.y - b.y);
     this._start = null; this._dragEnd = null;
-    if (w < 5 || h < 5) return;
+    let tx = x, ty = y, tw = w, th = h;
+    if (w < 5 || h < 5) {
+      // Click without drag → default-sized text box at click point
+      tw = 288; th = 200;
+      tx = a.x; ty = a.y;
+    }
     const id = uid('t');
     addShape({
       id, type: 'text', name: nextName('text'),
-      attrs: { x, y, width: w, height: h, content: '', size: 150,
+      attrs: { x: tx, y: ty, width: tw, height: th, content: '', size: 150,
                family: 'Geist, sans-serif', weight: 600, align: 'left', lineHeight: 1.2 },
       ...SHAPE_DEFAULTS(),
       fill: store.get().defaults.fill || '#0F1419',
