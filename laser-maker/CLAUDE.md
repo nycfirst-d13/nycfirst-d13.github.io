@@ -70,6 +70,17 @@ CLAUDE.md and memory serve different purposes:
 
 When the user asks to "write down key takeaways" or "note important aspects" of a feature, add it to CLAUDE.md (not memory) under the relevant architecture section or a new feature-specific subsection.
 
+## Git & Commits
+
+The git repo root is `/Users/avigoldman/Desktop/nycfirst-d13.github.io` — the parent directory that serves the GitHub Pages site. `laser-maker/` is a subdirectory inside it, not a separate repo. **Always run git commands from the parent directory**, even when Claude Code is invoked from within `laser-maker/`:
+
+```bash
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add laser-maker/modules/foo.js
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "..."
+```
+
+Do not ask for permission to run commits from the parent directory — this is always the correct behavior.
+
 ## Running the App
 
 No build step. Pure ES modules — must serve over HTTP (not `file://`) due to CORS:
