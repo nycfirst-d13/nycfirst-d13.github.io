@@ -316,12 +316,23 @@ function toast(msg) {
 }
 
 // ---- Export dialog ----
-const _backdrop    = document.getElementById('export-backdrop');
-const _nameInput   = document.getElementById('export-name');
+const _backdrop     = document.getElementById('export-backdrop');
+const _nameInput    = document.getElementById('export-name');
 const _projectInput = document.getElementById('export-project');
+const _headerName   = document.getElementById('header-name');
+const _headerProject = document.getElementById('header-project');
 const _preview     = document.getElementById('export-filename-preview');
 const _confirmBtn  = document.getElementById('export-confirm-btn');
 const _cancelBtn   = document.getElementById('export-cancel-btn');
+
+function _fitPiInput(input) {
+  const chars = Math.max(input.value.length, input.placeholder.length, 16);
+  input.style.width = chars + 'ch';
+}
+_headerName.addEventListener('input', () => _fitPiInput(_headerName));
+_headerProject.addEventListener('input', () => _fitPiInput(_headerProject));
+_fitPiInput(_headerName);
+_fitPiInput(_headerProject);
 
 function _slugify(str) {
   return str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || null;
@@ -342,6 +353,9 @@ function _updatePreview() {
 }
 
 function _openDialog() {
+  // Pre-fill from header inputs if dialog fields are empty
+  if (!_nameInput.value && _headerName.value) _nameInput.value = _headerName.value;
+  if (!_projectInput.value && _headerProject.value) _projectInput.value = _headerProject.value;
   _backdrop.hidden = false;
   _updatePreview();
   _nameInput.focus();
@@ -366,6 +380,10 @@ _confirmBtn.addEventListener('click', async () => {
   else if (name)        filename = `${name}_laser.svg`;
   else if (project)     filename = `${project}_laser.svg`;
   else                  filename = 'laser.svg';
+
+  // Sync back to header inputs
+  _headerName.value    = _nameInput.value;
+  _headerProject.value = _projectInput.value;
 
   _closeDialog();
   await download(filename);

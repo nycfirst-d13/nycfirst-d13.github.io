@@ -20,7 +20,8 @@ class Artboard {
 
     this.zoomLevelEl = document.getElementById('zoom-level');
     this.statusZoom  = document.getElementById('status-zoom');
-    this.statusAB    = document.getElementById('status-ab');
+    this.abWInput    = document.getElementById('ab-w');
+    this.abHInput    = document.getElementById('ab-h');
     this.statusCursor= document.getElementById('status-cursor');
 
     this._renderListeners = [];
@@ -733,7 +734,8 @@ class Artboard {
   _updateStatus() {
     const s = store.get();
     this.statusZoom.textContent = Math.round(s.viewport.zoom * 100) + '%';
-    this.statusAB.textContent = `${fmtIn(s.artboard.w)} × ${fmtIn(s.artboard.h)} in`;
+    if (document.activeElement !== this.abWInput) this.abWInput.value = s.artboard.w;
+    if (document.activeElement !== this.abHInput) this.abHInput.value = s.artboard.h;
   }
 }
 
