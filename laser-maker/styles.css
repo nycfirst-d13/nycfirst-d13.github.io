@@ -615,6 +615,7 @@ input { font-family: inherit; }
   color: var(--ink-3);
   line-height: 1;
   user-select: none;
+  text-transform: uppercase;
 }
 .rgb-ch {
   width: 34px;
