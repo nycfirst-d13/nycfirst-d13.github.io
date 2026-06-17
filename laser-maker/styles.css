@@ -552,14 +552,20 @@ input { font-family: inherit; }
   border: 1px solid var(--rule-2);
   background: var(--surface);
   border-radius: var(--r-sm);
-  padding: 3px;
-  gap: 4px;
+  padding: 4px;
+  gap: 5px;
   transition: border-color .12s;
 }
 .color-control:focus-within { border-color: var(--blue); }
+.swatch-wrap {
+  position: relative;
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  align-self: center;
+}
 .color-control input[type=color] {
   appearance: none; -webkit-appearance: none;
-  width: 26px; height: 22px;
+  width: 32px; height: 32px;
   border: 0; border-radius: var(--r-xs);
   padding: 0;
   background: transparent;
@@ -567,17 +573,65 @@ input { font-family: inherit; }
 }
 .color-control input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
 .color-control input[type=color]::-webkit-color-swatch { border: 1px solid var(--rule-2); border-radius: var(--r-xs); }
-.hex {
+.swatch-none-marker {
+  display: none;
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-xs);
+  background: #fff;
+  border: 1px solid var(--rule-2);
+  overflow: hidden;
+  pointer-events: none;
+}
+.swatch-none-marker::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 0.75px),
+    #d00 calc(50% - 0.75px),
+    #d00 calc(50% + 0.75px),
+    transparent calc(50% + 0.75px)
+  );
+}
+.swatch-wrap.is-none .swatch-none-marker { display: block; }
+.rgb-inputs {
+  display: flex;
+  align-items: flex-end;
   flex: 1;
-  border: 0;
-  background: transparent;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  text-transform: uppercase;
-  outline: none;
-  color: var(--ink);
+  gap: 3px;
   min-width: 0;
 }
+.rgb-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.rgb-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--ink-3);
+  line-height: 1;
+  user-select: none;
+}
+.rgb-ch {
+  width: 34px;
+  border: 1px solid var(--rule-2);
+  background: var(--surface-2, var(--surface));
+  border-radius: var(--r-xs);
+  padding: 2px 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink);
+  outline: none;
+  text-align: center;
+  -moz-appearance: textfield;
+}
+.rgb-ch:focus { border-color: var(--blue); }
+.rgb-ch::-webkit-outer-spin-button,
+.rgb-ch::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .swatch-clear {
   width: 24px; height: 22px;
   border: 0;

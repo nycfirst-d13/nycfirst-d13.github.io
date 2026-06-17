@@ -8,12 +8,18 @@ import { PROCESS_DEFINITIONS, normalizeForProcess } from './process-registry.js'
 import { quickFlip } from './reflect.js';
 import { defaultEtchParams } from './image-filters.js';
 
-const fillColor   = document.getElementById('fill-color');
-const fillHex     = document.getElementById('fill-hex');
-const fillNone    = document.getElementById('fill-none');
-const strokeColor = document.getElementById('stroke-color');
-const strokeHex   = document.getElementById('stroke-hex');
-const strokeNone  = document.getElementById('stroke-none');
+const fillColor       = document.getElementById('fill-color');
+const fillSwatchWrap  = document.getElementById('fill-swatch-wrap');
+const fillR           = document.getElementById('fill-r');
+const fillG           = document.getElementById('fill-g');
+const fillB           = document.getElementById('fill-b');
+const fillNone        = document.getElementById('fill-none');
+const strokeColor     = document.getElementById('stroke-color');
+const strokeSwatchWrap = document.getElementById('stroke-swatch-wrap');
+const strokeR         = document.getElementById('stroke-r');
+const strokeG         = document.getElementById('stroke-g');
+const strokeB         = document.getElementById('stroke-b');
+const strokeNone      = document.getElementById('stroke-none');
 const strokeWidth = document.getElementById('stroke-width');
 const tX = document.getElementById('t-x');
 const tY = document.getElementById('t-y');
@@ -121,6 +127,22 @@ function hexToRgbStr(hex) {
   const g = parseInt(full.slice(2,4), 16);
   const b = parseInt(full.slice(4,6), 16);
   return `RGB(${r}, ${g}, ${b})`;
+}
+
+function setRgbInputs(rInp, gInp, bInp, hex) {
+  if (!hex || hex === 'none' || hex === '—') {
+    rInp.value = gInp.value = bInp.value = '';
+    return;
+  }
+  const h = hex.startsWith('#') ? hex.slice(1) : hex;
+  const full = h.length === 3 ? h.split('').map(c => c+c).join('') : h;
+  rInp.value = parseInt(full.slice(0,2), 16);
+  gInp.value = parseInt(full.slice(2,4), 16);
+  bInp.value = parseInt(full.slice(4,6), 16);
+}
+
+function setSwatchNone(wrap, isNone) {
+  wrap.classList.toggle('is-none', isNone);
 }
 
 function normalizeHex(v) {
@@ -306,9 +328,11 @@ function syncFromState() {
     } else {
       _showAppearanceMode('free');
       fillColor.value   = ensureColor(s.defaults.fill);
-      fillHex.value     = s.defaults.fillEnabled ? hexToRgbStr(s.defaults.fill) : 'none';
+      setRgbInputs(fillR, fillG, fillB, s.defaults.fillEnabled ? s.defaults.fill : null);
+      setSwatchNone(fillSwatchWrap, !s.defaults.fillEnabled);
       strokeColor.value = ensureColor(s.defaults.stroke);
-      strokeHex.value   = s.defaults.strokeEnabled ? hexToRgbStr(s.defaults.stroke) : 'none';
+      setRgbInputs(strokeR, strokeG, strokeB, s.defaults.strokeEnabled ? s.defaults.stroke : null);
+      setSwatchNone(strokeSwatchWrap, !s.defaults.strokeEnabled);
       strokeWidth.value = s.defaults.strokeWidth;
     }
     [tX, tY, tW, tH, tR].forEach(i => { i.value = ''; i.disabled = true; });
@@ -352,10 +376,12 @@ function syncFromState() {
     const fill   = commonValue(sel, sh => sh.fill);
     const stroke = commonValue(sel, sh => sh.stroke);
     const sw     = commonValue(sel, sh => sh.strokeWidth);
-    fillHex.value     = fill != null ? hexToRgbStr(fill) : '—';
     fillColor.value   = ensureColor(fill);
-    strokeHex.value   = stroke != null ? hexToRgbStr(stroke) : '—';
+    setRgbInputs(fillR, fillG, fillB, fill ?? null);
+    setSwatchNone(fillSwatchWrap, fill === 'none');
     strokeColor.value = ensureColor(stroke);
+    setRgbInputs(strokeR, strokeG, strokeB, stroke ?? null);
+    setSwatchNone(strokeSwatchWrap, stroke === 'none');
     strokeWidth.value = sw ?? '';
   } else if (pt === 'etch' && sel.length === 1 && sel[0].type === 'image') {
     // Raster etch — dedicated image-processing panel (image-etch-panel.js syncs controls).
@@ -501,29 +527,41 @@ function setAppearance(prop, value) {
   }, 'appearance');
 }
 
-function bindColor(colorInput, hexInput, prop, noneBtn) {
+function bindColor(colorInput, swatchWrap, rInp, gInp, bInp, prop, noneBtn) {
+  function rgbToHex() {
+    const r = Math.min(255, Math.max(0, parseInt(rInp.value) || 0));
+    const g = Math.min(255, Math.max(0, parseInt(gInp.value) || 0));
+    const b = Math.min(255, Math.max(0, parseInt(bInp.value) || 0));
+    return '#' + r.toString(16).padStart(2,'0') + g.toString(16).padStart(2,'0') + b.toString(16).padStart(2,'0');
+  }
   let tx = false;
   colorInput.addEventListener('input', () => {
     const v = colorInput.value.toUpperCase();
     if (!tx) { store.beginTransaction(); tx = true; }
-    hexInput.value = hexToRgbStr(v);
+    setRgbInputs(rInp, gInp, bInp, v);
+    setSwatchNone(swatchWrap, false);
     setAppearance(prop, v);
   });
   colorInput.addEventListener('change', () => { if (tx) { store.endTransaction(prop); tx = false; } });
-  hexInput.addEventListener('change', () => {
-    const v = normalizeHex(hexInput.value);
-    if (v === null) { syncFromState(); return; }
-    if (v !== 'none') colorInput.value = v;
-    setAppearance(prop, v);
+  [rInp, gInp, bInp].forEach(inp => {
+    inp.addEventListener('input', () => {
+      if (!tx) { store.beginTransaction(); tx = true; }
+      const v = rgbToHex().toUpperCase();
+      colorInput.value = v;
+      setSwatchNone(swatchWrap, false);
+      setAppearance(prop, v);
+    });
+    inp.addEventListener('change', () => { if (tx) { store.endTransaction(prop); tx = false; } });
   });
   noneBtn.addEventListener('click', () => {
-    hexInput.value = 'none';
+    rInp.value = gInp.value = bInp.value = '';
+    setSwatchNone(swatchWrap, true);
     setAppearance(prop, 'none');
   });
 }
 
-bindColor(fillColor,   fillHex,   'fill',   fillNone);
-bindColor(strokeColor, strokeHex, 'stroke', strokeNone);
+bindColor(fillColor,   fillSwatchWrap,   fillR,   fillG,   fillB,   'fill',   fillNone);
+bindColor(strokeColor, strokeSwatchWrap, strokeR, strokeG, strokeB, 'stroke', strokeNone);
 
 strokeWidth.addEventListener('change', () => {
   const v = Math.max(0, parseFloat(strokeWidth.value) || 0);

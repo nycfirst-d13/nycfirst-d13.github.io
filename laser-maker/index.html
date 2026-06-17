@@ -251,17 +251,55 @@
           <div class="prop-row">
             <label class="prop-label">Fill</label>
             <div class="color-control">
-              <input type="color" id="fill-color" value="#0f1419" />
-              <input type="text" id="fill-hex" class="hex" value="#0F1419" />
-              <button class="swatch-clear" id="fill-none" title="No fill">∅</button>
+              <div class="swatch-wrap" id="fill-swatch-wrap">
+                <input type="color" id="fill-color" value="#0f1419" />
+                <span class="swatch-none-marker"></span>
+              </div>
+              <div class="rgb-inputs">
+                <div class="rgb-col">
+                  <span class="rgb-label">r</span>
+                  <input type="number" id="fill-r" class="rgb-ch" min="0" max="255" />
+                </div>
+                <div class="rgb-col">
+                  <span class="rgb-label">g</span>
+                  <input type="number" id="fill-g" class="rgb-ch" min="0" max="255" />
+                </div>
+                <div class="rgb-col">
+                  <span class="rgb-label">b</span>
+                  <input type="number" id="fill-b" class="rgb-ch" min="0" max="255" />
+                </div>
+              </div>
+              <div class="rgb-col">
+                <span class="rgb-label">clear</span>
+                <button class="swatch-clear" id="fill-none" title="No fill">∅</button>
+              </div>
             </div>
           </div>
           <div class="prop-row">
             <label class="prop-label">Stroke</label>
             <div class="color-control">
-              <input type="color" id="stroke-color" value="#0f1419" />
-              <input type="text" id="stroke-hex" class="hex" value="#0F1419" />
-              <button class="swatch-clear" id="stroke-none" title="No stroke">∅</button>
+              <div class="swatch-wrap" id="stroke-swatch-wrap">
+                <input type="color" id="stroke-color" value="#0f1419" />
+                <span class="swatch-none-marker"></span>
+              </div>
+              <div class="rgb-inputs">
+                <div class="rgb-col">
+                  <span class="rgb-label">r</span>
+                  <input type="number" id="stroke-r" class="rgb-ch" min="0" max="255" />
+                </div>
+                <div class="rgb-col">
+                  <span class="rgb-label">g</span>
+                  <input type="number" id="stroke-g" class="rgb-ch" min="0" max="255" />
+                </div>
+                <div class="rgb-col">
+                  <span class="rgb-label">b</span>
+                  <input type="number" id="stroke-b" class="rgb-ch" min="0" max="255" />
+                </div>
+              </div>
+              <div class="rgb-col">
+                <span class="rgb-label">clear</span>
+                <button class="swatch-clear" id="stroke-none" title="No stroke">∅</button>
+              </div>
             </div>
           </div>
           <div class="prop-row">
