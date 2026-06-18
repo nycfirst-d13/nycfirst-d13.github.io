@@ -309,10 +309,10 @@ function syncFromState() {
     processTypeSelect.value = ap;
     if (ap === 'etch') {
       _showAppearanceMode('etch');
-      etchStrokeToggle.textContent = s.defaults.strokeEnabled ? 'On' : 'Off';
       etchStrokeToggle.classList.toggle('active', s.defaults.strokeEnabled);
-      etchFillToggle.textContent = s.defaults.fillEnabled ? 'On' : 'Off';
+      etchStrokeToggle.setAttribute('aria-pressed', s.defaults.strokeEnabled);
       etchFillToggle.classList.toggle('active', s.defaults.fillEnabled);
+      etchFillToggle.setAttribute('aria-pressed', s.defaults.fillEnabled);
       strokeWidthEtch.value = s.defaults.strokeWidth;
     } else if (ap === 'mainCut' || ap === 'fold' || ap === 'finalCut') {
       _showAppearanceMode('locked');
@@ -391,10 +391,10 @@ function syncFromState() {
     const stroke = commonValue(nonGroups, sh => sh.stroke);
     const fill   = commonValue(nonGroups, sh => sh.fill);
     const sw     = commonValue(nonGroups, sh => sh.strokeWidth);
-    etchStrokeToggle.textContent = stroke === 'none' ? 'Off' : (stroke === null ? '—' : 'On');
     etchStrokeToggle.classList.toggle('active', stroke !== 'none');
-    etchFillToggle.textContent = fill === 'none' ? 'Off' : (fill === null ? '—' : 'On');
+    etchStrokeToggle.setAttribute('aria-pressed', stroke !== 'none');
     etchFillToggle.classList.toggle('active', fill !== 'none');
+    etchFillToggle.setAttribute('aria-pressed', fill !== 'none');
     strokeWidthEtch.value = sw ?? '';
   } else {
     // locked process type (mainCut, fold, finalCut)
