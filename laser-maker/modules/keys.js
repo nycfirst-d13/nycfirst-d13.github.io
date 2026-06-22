@@ -102,6 +102,16 @@ export function doPaste() {
   return true;
 }
 
+export function doPasteInPlace() {
+  if (!clipboard.length) return false;
+  const newShapes = clipboard.map(deepCloneWithNewIds);
+  store.commit(st => {
+    st.shapes.push(...newShapes);
+    st.selection = newShapes.map(s => s.id);
+  }, 'paste');
+  return true;
+}
+
 export function canPaste() { return clipboard.length > 0; }
 
 const TOOL_KEYS = {
@@ -196,14 +206,7 @@ window.addEventListener('keydown', (e) => {
 
   // Paste in place (Cmd/Ctrl+Shift+V — checked before regular paste)
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'v') {
-    if (!clipboard.length) return;
-    e.preventDefault();
-    const newShapes = clipboard.map(deepCloneWithNewIds);
-    store.commit(st => {
-      st.shapes.push(...newShapes);
-      st.selection = newShapes.map(s => s.id);
-    }, 'paste');
-    requestAnimationFrame(() => showToast('Pasted! ✨', selectionBBox()));
+    if (doPasteInPlace()) { e.preventDefault(); requestAnimationFrame(() => showToast('Pasted in place! 📌', selectionBBox())); }
     return;
   }
 
