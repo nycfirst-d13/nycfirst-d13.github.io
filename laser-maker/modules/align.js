@@ -24,6 +24,7 @@ const ALIGN_TYPES = ['left', 'centerH', 'right', 'top', 'centerV', 'bottom'];
 function _syncUI() {
   const sel = store.selectedShapes();
   panel.style.display = sel.length >= 1 ? '' : 'none';
+  if (sel.length >= 2) panel.classList.remove('collapsed');
   const alignDisabled = alignTo === 'selection' && sel.length < 2;
   alignBtns.forEach(b => { b.disabled = alignDisabled; });
   distHBtn.disabled = sel.length < 3;
