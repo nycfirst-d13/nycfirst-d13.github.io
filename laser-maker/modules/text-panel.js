@@ -2,7 +2,7 @@
 // text-panel.js — font picker, text property controls
 // =============================================================================
 import { store } from './state.js';
-import { uid } from './utils.js';
+import { uid, wordWrapLines } from './utils.js';
 import * as fontkit from 'https://esm.sh/fontkit@2.0.4';
 
 let FONTS = [
@@ -454,22 +454,11 @@ async function convertTextToPath() {
       return { segments, lineW: relX };
     }
 
-    // Build visual lines: respect \n, word-wrap using tab-aware widths
-    const visualLines = [];
-    for (const para of text.split('\n')) {
-      if (!frameW || para === '') {
-        visualLines.push(para);
-      } else {
-        let cur = '';
-        for (const word of para.split(' ')) {
-          const candidate = cur ? cur + ' ' + word : word;
-          const { lineW: w } = layoutLine(candidate);
-          if (cur && w > frameW) { visualLines.push(cur); cur = word; }
-          else cur = candidate;
-        }
-        visualLines.push(cur);
-      }
-    }
+    // Use canvas.measureText-based wrap to match CSS rendering exactly.
+    // layoutLine (fontkit) is used only for per-glyph positioning, not for wrapping.
+    const visualLines = frameW
+      ? wordWrapLines(text, frameW, family, size, weight)
+      : text.split('\n');
 
     const letterPaths = []; // per-glyph { char, d }
 
