@@ -4,6 +4,7 @@
 import { doCopy, doCut, doPaste, canPaste } from './keys.js';
 import { hitShape } from './select.js';
 import { store } from './state.js';
+import { artboard } from './artboard.js';
 
 const _menu  = document.getElementById('ctx-menu');
 const _copy  = _menu.querySelector('[data-action=copy]');
@@ -16,12 +17,38 @@ _copy .querySelector('.ctx-shortcut').textContent = mod + 'C';
 _cut  .querySelector('.ctx-shortcut').textContent = mod + 'X';
 _paste.querySelector('.ctx-shortcut').textContent = mod + 'V';
 
-function _toast(msg) {
+// Compute the union screen bbox of current selection using rendered shape nodes
+function _selectionBBox() {
+  const sel = store.get().selection;
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const id of sel) {
+    const el = artboard.getShapeNode(id);
+    if (!el) continue;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) continue;
+    minX = Math.min(minX, r.left);  minY = Math.min(minY, r.top);
+    maxX = Math.max(maxX, r.right); maxY = Math.max(maxY, r.bottom);
+  }
+  return minX === Infinity ? null : { cx: (minX + maxX) / 2, bottom: maxY };
+}
+
+function _toast(msg, bbox) {
   const t = document.getElementById('toast');
   t.textContent = msg;
+
+  if (bbox) {
+    t.style.left = bbox.cx + 'px';
+    t.style.top  = (bbox.bottom + 10) + 'px';
+    t.classList.add('anchored');
+  }
+
   t.classList.add('show');
   clearTimeout(_toast._t);
-  _toast._t = setTimeout(() => t.classList.remove('show'), 1800);
+  _toast._t = setTimeout(() => {
+    t.classList.remove('show', 'anchored');
+    t.style.left = '';
+    t.style.top  = '';
+  }, 1800);
 }
 
 function _onDocDown(e) {
@@ -72,9 +99,19 @@ _menu.addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
   if (!btn || btn.disabled) return;
   const action = btn.dataset.action;
-  if (action === 'copy'  && doCopy())  _toast('Copied! 📋');
-  if (action === 'cut'   && doCut())   _toast('Cut! ✂️');
-  if (action === 'paste' && doPaste()) _toast('Pasted! ✨');
+
+  if (action === 'copy') {
+    const bbox = _selectionBBox();
+    if (doCopy()) _toast('Copied! 📋', bbox);
+  } else if (action === 'cut') {
+    // Capture bbox before shapes are removed from DOM
+    const bbox = _selectionBBox();
+    if (doCut()) _toast('Cut! ✂️', bbox);
+  } else if (action === 'paste') {
+    // Wait one frame for artboard to render new shapes before measuring
+    if (doPaste()) requestAnimationFrame(() => _toast('Pasted! ✨', _selectionBBox()));
+  }
+
   _close();
 });
 

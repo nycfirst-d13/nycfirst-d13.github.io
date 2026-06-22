@@ -1008,6 +1008,10 @@ input { font-family: inherit; }
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
+/* anchored: positioned below a specific shape instead of bottom-center */
+.toast.anchored       { bottom: auto; transform: translate(-50%, -6px); }
+.toast.anchored.show  { transform: translate(-50%, 0); }
+
 /* =========================================================================
    PROGRESS BAR  (reusable — driven by modules/progress.js)
    Floating card, same lane as the toast. Determinate by default; add
