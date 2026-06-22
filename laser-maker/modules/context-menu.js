@@ -2,20 +2,25 @@
 // context-menu.js — right-click copy/cut/paste menu
 // =============================================================================
 import { doCopy, doCut, doPaste, canPaste } from './keys.js';
+import { groupSelected, ungroupSelected } from './group.js';
 import { hitShape } from './select.js';
 import { store } from './state.js';
 import { artboard } from './artboard.js';
 
-const _menu  = document.getElementById('ctx-menu');
-const _copy  = _menu.querySelector('[data-action=copy]');
-const _cut   = _menu.querySelector('[data-action=cut]');
-const _paste = _menu.querySelector('[data-action=paste]');
+const _menu    = document.getElementById('ctx-menu');
+const _copy    = _menu.querySelector('[data-action=copy]');
+const _cut     = _menu.querySelector('[data-action=cut]');
+const _paste   = _menu.querySelector('[data-action=paste]');
+const _group   = _menu.querySelector('[data-action=group]');
+const _ungroup = _menu.querySelector('[data-action=ungroup]');
 
 // Platform shortcut labels
 const mod = /Mac/.test(navigator.userAgent) ? '⌘' : 'Ctrl+';
-_copy .querySelector('.ctx-shortcut').textContent = mod + 'C';
-_cut  .querySelector('.ctx-shortcut').textContent = mod + 'X';
-_paste.querySelector('.ctx-shortcut').textContent = mod + 'V';
+_copy   .querySelector('.ctx-shortcut').textContent = mod + 'C';
+_cut    .querySelector('.ctx-shortcut').textContent = mod + 'X';
+_paste  .querySelector('.ctx-shortcut').textContent = mod + 'V';
+_group  .querySelector('.ctx-shortcut').textContent = mod + 'G';
+_ungroup.querySelector('.ctx-shortcut').textContent = mod + '⇧G';
 
 // Compute the union screen bbox of current selection using rendered shape nodes
 function _selectionBBox() {
@@ -79,10 +84,15 @@ function _open(e) {
     }
   }
 
-  const hasSelection = store.get().selection.length > 0;
-  _copy.disabled  = !hasSelection;
-  _cut.disabled   = !hasSelection;
-  _paste.disabled = !canPaste();
+  const sel    = store.get().selection;
+  const shapes = store.selectedShapes();
+  const hasSelection = sel.length > 0;
+  const hasGroup     = shapes.some(sh => sh?.type === 'group');
+  _copy   .disabled = !hasSelection;
+  _cut    .disabled = !hasSelection;
+  _paste  .disabled = !canPaste();
+  _group  .disabled = sel.length < 2;
+  _ungroup.disabled = !hasGroup;
 
   // Show and measure before positioning (offsetWidth needs display)
   _menu.hidden = false;
@@ -112,12 +122,14 @@ _menu.addEventListener('click', e => {
     const bbox = _selectionBBox();
     if (doCopy()) _toast('Copied! 📋', bbox);
   } else if (action === 'cut') {
-    // Capture bbox before shapes are removed from DOM
     const bbox = _selectionBBox();
     if (doCut()) _toast('Cut! ✂️', bbox);
   } else if (action === 'paste') {
-    // Wait one frame for artboard to render new shapes before measuring
     if (doPaste()) requestAnimationFrame(() => _toast('Pasted! ✨', _selectionBBox()));
+  } else if (action === 'group') {
+    groupSelected();
+  } else if (action === 'ungroup') {
+    ungroupSelected();
   }
 
   _close();
