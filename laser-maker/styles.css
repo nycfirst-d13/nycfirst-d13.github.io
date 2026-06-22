@@ -1011,6 +1011,19 @@ input { font-family: inherit; }
 /* anchored: positioned below a specific shape instead of bottom-center */
 .toast.anchored       { bottom: auto; transform: translate(-50%, -6px); }
 .toast.anchored.show  { transform: translate(-50%, 0); }
+.toast.has-action { pointer-events: auto; }
+.toast-action {
+  background: none;
+  border: none;
+  color: var(--blue-soft);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+  margin-left: 8px;
+}
+.toast-action:hover { background: rgba(255,255,255,0.12); }
 
 /* =========================================================================
    PROGRESS BAR  (reusable — driven by modules/progress.js)

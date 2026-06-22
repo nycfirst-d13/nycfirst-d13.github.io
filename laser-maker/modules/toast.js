@@ -18,19 +18,49 @@ export function selectionBBox() {
   return minX === Infinity ? null : { cx: (minX + maxX) / 2, bottom: maxY };
 }
 
-let _gen = 0; // incremented to kill stale tracking loops
+let _gen = 0;
 
-export function showToast(msg, bbox) {
+function dismissToast() {
   const t = document.getElementById('toast');
-  const gen = ++_gen; // this toast's generation — old loops exit when _gen !== gen
+  ++_gen;
+  clearTimeout(showToast._t);
+  clearTimeout(showToast._cleanup);
+  t.style.transition = 'opacity .18s ease-out, transform .18s ease-out';
+  t.classList.remove('show');
+  showToast._cleanup = setTimeout(() => {
+    t.style.transition = '';
+    t.classList.remove('anchored');
+    t.classList.remove('has-action');
+    t.style.left = '';
+    t.style.top  = '';
+  }, 250);
+}
 
+export function showToast(msg, opts) {
+  const { bbox, action } = opts || {};
+  const t = document.getElementById('toast');
+  const gen = ++_gen;
+
+  // Rebuild content: text + optional action button
   t.textContent = msg;
+  if (action) {
+    const btn = document.createElement('button');
+    btn.className = 'toast-action';
+    btn.textContent = action.label;
+    btn.addEventListener('click', () => {
+      dismissToast();
+      action.onClick();
+    });
+    t.appendChild(btn);
+    t.classList.add('has-action');
+  } else {
+    t.classList.remove('has-action');
+  }
+
   if (bbox) {
     t.style.left = bbox.cx + 'px';
     t.style.top  = (bbox.bottom + 10) + 'px';
     t.classList.add('anchored');
-
-    // Follow the shape every frame while the toast is visible
     const track = () => {
       if (_gen !== gen) return;
       const b = selectionBBox();
@@ -38,21 +68,15 @@ export function showToast(msg, bbox) {
       requestAnimationFrame(track);
     };
     requestAnimationFrame(track);
+  } else {
+    t.classList.remove('anchored');
+    t.style.left = '';
+    t.style.top  = '';
   }
 
   t.style.transition = '';
   t.classList.add('show');
   clearTimeout(showToast._t);
   clearTimeout(showToast._cleanup);
-  showToast._t = setTimeout(() => {
-    ++_gen; // stop tracking loop
-    t.style.transition = 'opacity .18s ease-out, transform .18s ease-out';
-    t.classList.remove('show');
-    showToast._cleanup = setTimeout(() => {
-      t.style.transition = '';
-      t.classList.remove('anchored');
-      t.style.left = '';
-      t.style.top  = '';
-    }, 250);
-  }, 1800);
+  showToast._t = setTimeout(dismissToast, 1800);
 }

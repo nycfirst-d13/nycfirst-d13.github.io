@@ -173,13 +173,13 @@ window.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && key === 'g' && !e.shiftKey) {
     e.preventDefault();
     groupSelected();
-    requestAnimationFrame(() => showToast('Grouped! 🫂', selectionBBox()));
+    requestAnimationFrame(() => showToast('Grouped! 🫂', { bbox: selectionBBox() }));
     return;
   }
   if ((e.metaKey || e.ctrlKey) && key === 'g' && e.shiftKey) {
     e.preventDefault();
     ungroupSelected();
-    requestAnimationFrame(() => showToast('Ungrouped! 💨', selectionBBox()));
+    requestAnimationFrame(() => showToast('Ungrouped! 💨', { bbox: selectionBBox() }));
     return;
   }
 
@@ -193,26 +193,26 @@ window.addEventListener('keydown', (e) => {
   // Copy
   if ((e.metaKey || e.ctrlKey) && key === 'c') {
     const bbox = selectionBBox();
-    if (doCopy()) { e.preventDefault(); showToast('Copied! 📋', bbox); }
+    if (doCopy()) { e.preventDefault(); showToast('Copied! 📋', { bbox }); }
     return;
   }
 
   // Cut
   if ((e.metaKey || e.ctrlKey) && key === 'x') {
     const bbox = selectionBBox();
-    if (doCut()) { e.preventDefault(); showToast('Cut! ✂️', bbox); }
+    if (doCut()) { e.preventDefault(); showToast('Cut! ✂️', { bbox }); }
     return;
   }
 
   // Paste in place (Cmd/Ctrl+Shift+V — checked before regular paste)
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'v') {
-    if (doPasteInPlace()) { e.preventDefault(); requestAnimationFrame(() => showToast('Pasted in place! 📌', selectionBBox())); }
+    if (doPasteInPlace()) { e.preventDefault(); requestAnimationFrame(() => showToast('Pasted in place! 📌', { bbox: selectionBBox() })); }
     return;
   }
 
   // Paste
   if ((e.metaKey || e.ctrlKey) && key === 'v') {
-    if (doPaste()) { e.preventDefault(); requestAnimationFrame(() => showToast('Pasted! ✨', selectionBBox())); }
+    if (doPaste()) { e.preventDefault(); requestAnimationFrame(() => showToast('Pasted! ✨', { bbox: selectionBBox() })); }
     return;
   }
 

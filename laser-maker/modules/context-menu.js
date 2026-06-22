@@ -77,20 +77,20 @@ _menu.addEventListener('click', e => {
 
   if (action === 'copy') {
     const bbox = selectionBBox();
-    if (doCopy()) showToast('Copied! 📋', bbox);
+    if (doCopy()) showToast('Copied! 📋', { bbox });
   } else if (action === 'cut') {
     const bbox = selectionBBox();
-    if (doCut()) showToast('Cut! ✂️', bbox);
+    if (doCut()) showToast('Cut! ✂️', { bbox });
   } else if (action === 'paste') {
-    if (doPaste()) requestAnimationFrame(() => showToast('Pasted! ✨', selectionBBox()));
+    if (doPaste()) requestAnimationFrame(() => showToast('Pasted! ✨', { bbox: selectionBBox() }));
   } else if (action === 'paste-in-place') {
-    if (doPasteInPlace()) requestAnimationFrame(() => showToast('Pasted in place! 📌', selectionBBox()));
+    if (doPasteInPlace()) requestAnimationFrame(() => showToast('Pasted in place! 📌', { bbox: selectionBBox() }));
   } else if (action === 'group') {
     groupSelected();
-    requestAnimationFrame(() => showToast('Grouped! 🫂', selectionBBox()));
+    requestAnimationFrame(() => showToast('Grouped! 🫂', { bbox: selectionBBox() }));
   } else if (action === 'ungroup') {
     ungroupSelected();
-    requestAnimationFrame(() => showToast('Ungrouped! 💨', selectionBBox()));
+    requestAnimationFrame(() => showToast('Ungrouped! 💨', { bbox: selectionBBox() }));
   }
 
   _close();
