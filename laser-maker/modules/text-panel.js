@@ -3,6 +3,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { uid } from './utils.js';
+import { artboard } from './artboard.js';
 import * as fontkit from 'https://esm.sh/fontkit@2.0.4';
 
 let FONTS = [
@@ -375,49 +376,68 @@ async function fetchFontBuffer(family, weight) {
   return buffer;
 }
 
-// Determine visual line breaks using the browser's own layout engine.
-// Binary-searches for line-start offsets via Range.getBoundingClientRect().
-// Handles tabs, pre-wrap, word-break:break-word, and leading whitespace exactly
-// as the foreignObject div does — O(n log n) range queries per paragraph.
-async function _domVisualLines(content, frameW, family, size, weight, lineHeightVal) {
-  const div = document.createElement('div');
-  div.style.cssText =
-    `position:fixed;visibility:hidden;pointer-events:none;left:-9999px;top:0;` +
-    `font-family:"${family}",sans-serif;font-size:${size}px;font-weight:${weight};` +
-    `line-height:${lineHeightVal};width:${frameW}px;box-sizing:border-box;` +
-    `white-space:pre-wrap;word-break:break-word;`;
-  document.body.appendChild(div);
-
-  const result = [];
+// Find visual line breaks using the already-rendered foreignObject div when
+// available (perfect match), or a synthetic hidden div as fallback.
+// Binary-searches paragraph chars via Range.getBoundingClientRect() — only
+// `top` is compared, so SVG zoom doesn't matter. O(n log n) per paragraph.
+function _splitParaLines(div, para) {
+  div.textContent = para;
+  const textNode = div.firstChild;
   const range = document.createRange();
+  const lines = [];
+  let lineStart = 0;
+
+  while (lineStart < para.length) {
+    range.setStart(textNode, lineStart);
+    range.setEnd(textNode, lineStart + 1);
+    const startTop = range.getBoundingClientRect().top;
+
+    let lo = lineStart, hi = para.length;
+    while (lo < hi - 1) {
+      const mid = (lo + hi) >> 1;
+      range.setStart(textNode, mid);
+      range.setEnd(textNode, mid + 1);
+      if (range.getBoundingClientRect().top > startTop + 1) hi = mid;
+      else lo = mid;
+    }
+    lines.push(para.slice(lineStart, hi));
+    lineStart = hi;
+  }
+  return lines;
+}
+
+async function _domVisualLines(shapeId, content, frameW, family, size, weight, lineHeightVal) {
+  // Prefer the live foreignObject div — already laid out with the exact font/CSS.
+  const liveDiv = artboard.getShapeNode(shapeId)?.querySelector('foreignObject div');
+
+  let syntheticDiv = null;
+  let origContent = null;
+  if (!liveDiv) {
+    syntheticDiv = document.createElement('div');
+    syntheticDiv.style.cssText =
+      `position:fixed;visibility:hidden;pointer-events:none;left:-9999px;top:0;` +
+      `font-family:"${family}",sans-serif;font-size:${size}px;font-weight:${weight};` +
+      `line-height:${lineHeightVal};width:${frameW}px;box-sizing:border-box;` +
+      `white-space:pre-wrap;word-break:break-word;`;
+    document.body.appendChild(syntheticDiv);
+  } else {
+    origContent = liveDiv.textContent;
+  }
+
+  const div = liveDiv || syntheticDiv;
+  const result = [];
 
   for (const para of content.split('\n')) {
     if (!para) { result.push(''); continue; }
-    div.textContent = para;
-    const textNode = div.firstChild;
-
-    let lineStart = 0;
-    while (lineStart < para.length) {
-      range.setStart(textNode, lineStart);
-      range.setEnd(textNode, lineStart + 1);
-      const startTop = range.getBoundingClientRect().top;
-
-      // Binary search: last char index still on the same top baseline
-      let lo = lineStart, hi = para.length;
-      while (lo < hi - 1) {
-        const mid = (lo + hi) >> 1;
-        range.setStart(textNode, mid);
-        range.setEnd(textNode, mid + 1);
-        if (range.getBoundingClientRect().top > startTop + 1) hi = mid;
-        else lo = mid;
-      }
-
-      result.push(para.slice(lineStart, hi));
-      lineStart = hi;
-    }
+    result.push(..._splitParaLines(div, para));
   }
 
-  document.body.removeChild(div);
+  if (syntheticDiv) {
+    document.body.removeChild(syntheticDiv);
+  } else {
+    liveDiv.textContent = origContent;
+  }
+
   return result.length ? result : [''];
 }
 
@@ -504,7 +524,7 @@ async function convertTextToPath() {
     // rendering exactly (same browser engine, same CSS, handles tabs/pre-wrap/
     // word-break:break-word, preserves leading whitespace).
     const visualLines = frameW
-      ? await _domVisualLines(text, frameW, family, size, weight, sh.attrs.lineHeight || 1.2)
+      ? await _domVisualLines(sh.id, text, frameW, family, size, weight, sh.attrs.lineHeight || 1.2)
       : text.split('\n');
 
     const letterPaths = []; // per-glyph { char, d }
