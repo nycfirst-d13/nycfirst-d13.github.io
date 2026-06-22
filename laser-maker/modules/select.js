@@ -6,7 +6,7 @@ import { tools } from './tools.js';
 import { artboard } from './artboard.js';
 import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds } from './utils.js';
 import { computeSnap, computePointSnap, renderGuides, clearGuides } from './guides.js';
-import { enterTextEdit } from './shapes.js';
+import { enterTextEdit } from './type.js';
 import { enterIsolation, exitIsolation } from './group.js';
 
 const HANDLE_SIZE  = 8;     // CSS px

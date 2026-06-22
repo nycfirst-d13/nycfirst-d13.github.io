@@ -8,6 +8,7 @@ import { tools }    from './modules/tools.js';
 import './modules/group.js';
 import './modules/reflect.js';
 import './modules/shapes.js';
+import './modules/type.js';
 import './modules/select.js';
 import './modules/pen.js';
 import './modules/pathops.js';

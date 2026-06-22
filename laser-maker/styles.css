@@ -662,6 +662,7 @@ input { font-family: inherit; }
   outline: none;
   text-align: center;
   -moz-appearance: textfield;
+  appearance: textfield;
 }
 .rgb-ch:focus { border-color: var(--blue); }
 .rgb-ch::-webkit-outer-spin-button,
