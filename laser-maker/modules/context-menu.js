@@ -128,8 +128,10 @@ _menu.addEventListener('click', e => {
     if (doPaste()) requestAnimationFrame(() => _toast('Pasted! ✨', _selectionBBox()));
   } else if (action === 'group') {
     groupSelected();
+    requestAnimationFrame(() => _toast('Grouped! 🫂', _selectionBBox()));
   } else if (action === 'ungroup') {
     ungroupSelected();
+    requestAnimationFrame(() => _toast('Ungrouped! 💨', _selectionBBox()));
   }
 
   _close();
