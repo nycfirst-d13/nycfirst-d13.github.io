@@ -202,6 +202,16 @@ function parseArcArgs(str) {
 
 // ---- Apply affine matrix to path d string ----
 
+// Proper SVG number tokenizer: handles implicit separators (8.2.4 → [8.2, 0.4],
+// -6.5-2.2 → [-6.5, -2.2]) that naive split(/[\s,]+/) cannot.
+function parseNums(str) {
+  const nums = [];
+  const re = /[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g;
+  let m;
+  while ((m = re.exec(str)) !== null) nums.push(+m[0]);
+  return nums;
+}
+
 function num(n) {
   return parseFloat(n.toFixed(3)).toString();
 }
@@ -226,8 +236,7 @@ export function applyMatrixToD(d, m) {
     const cmd = match[1];
     const C = cmd.toUpperCase();
     const rel = cmd !== C;
-    const ns = C === 'A' ? parseArcArgs(match[2])
-      : match[2].trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    const ns = C === 'A' ? parseArcArgs(match[2]) : parseNums(match[2]);
 
     switch (C) {
       case 'M': {
