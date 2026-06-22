@@ -8,6 +8,7 @@ import { deepClone, uid, inToPx } from './utils.js';
 import { nudgeShape } from './select.js';
 import { groupSelected, ungroupSelected } from './group.js';
 import { convertTextToPath } from './text-panel.js';
+import { showToast, selectionBBox } from './toast.js';
 
 function _removeIdsFromGroupsKeys(shapes, ids) {
   for (const sh of shapes) {
@@ -159,8 +160,18 @@ window.addEventListener('keydown', (e) => {
   const key = e.key.toLowerCase();
 
   // Group / Ungroup
-  if ((e.metaKey || e.ctrlKey) && key === 'g' && !e.shiftKey) { e.preventDefault(); groupSelected(); return; }
-  if ((e.metaKey || e.ctrlKey) && key === 'g' && e.shiftKey)  { e.preventDefault(); ungroupSelected(); return; }
+  if ((e.metaKey || e.ctrlKey) && key === 'g' && !e.shiftKey) {
+    e.preventDefault();
+    groupSelected();
+    requestAnimationFrame(() => showToast('Grouped! 🫂', selectionBBox()));
+    return;
+  }
+  if ((e.metaKey || e.ctrlKey) && key === 'g' && e.shiftKey) {
+    e.preventDefault();
+    ungroupSelected();
+    requestAnimationFrame(() => showToast('Ungrouped! 💨', selectionBBox()));
+    return;
+  }
 
   // Convert to Path (Cmd/Ctrl+Shift+O — matches Illustrator "Create Outlines")
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'o') { e.preventDefault(); convertTextToPath(); return; }
@@ -170,10 +181,18 @@ window.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && (key === 'y' || (key === 'z' && e.shiftKey))) { e.preventDefault(); store.redo(); return; }
 
   // Copy
-  if ((e.metaKey || e.ctrlKey) && key === 'c') { if (doCopy()) e.preventDefault(); return; }
+  if ((e.metaKey || e.ctrlKey) && key === 'c') {
+    const bbox = selectionBBox();
+    if (doCopy()) { e.preventDefault(); showToast('Copied! 📋', bbox); }
+    return;
+  }
 
   // Cut
-  if ((e.metaKey || e.ctrlKey) && key === 'x') { if (doCut()) e.preventDefault(); return; }
+  if ((e.metaKey || e.ctrlKey) && key === 'x') {
+    const bbox = selectionBBox();
+    if (doCut()) { e.preventDefault(); showToast('Cut! ✂️', bbox); }
+    return;
+  }
 
   // Paste in place (Cmd/Ctrl+Shift+V — checked before regular paste)
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'v') {
@@ -184,11 +203,15 @@ window.addEventListener('keydown', (e) => {
       st.shapes.push(...newShapes);
       st.selection = newShapes.map(s => s.id);
     }, 'paste');
+    requestAnimationFrame(() => showToast('Pasted! ✨', selectionBBox()));
     return;
   }
 
   // Paste
-  if ((e.metaKey || e.ctrlKey) && key === 'v') { if (doPaste()) e.preventDefault(); return; }
+  if ((e.metaKey || e.ctrlKey) && key === 'v') {
+    if (doPaste()) { e.preventDefault(); requestAnimationFrame(() => showToast('Pasted! ✨', selectionBBox())); }
+    return;
+  }
 
   // Duplicate
   if ((e.metaKey || e.ctrlKey) && key === 'd') {
