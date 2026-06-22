@@ -1002,15 +1002,11 @@ input { font-family: inherit; }
   font-weight: 500;
   pointer-events: none;
   opacity: 0;
-  transition: opacity .16s ease-out, transform .16s ease-out;
+  transition: opacity .22s ease-out, transform .22s ease-out;
   z-index: 20;
   box-shadow: var(--sh-3);
 }
-.toast.show {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  transition: opacity .22s ease-out, transform .22s ease-out;
-}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* anchored: positioned below a specific shape instead of bottom-center */
 .toast.anchored       { bottom: auto; transform: translate(-50%, -6px); }

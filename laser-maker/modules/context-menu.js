@@ -42,17 +42,20 @@ function _toast(msg, bbox) {
     t.classList.add('anchored');
   }
 
+  t.style.transition = ''; // clear any exit override so enter transition from CSS applies
   t.classList.add('show');
   clearTimeout(_toast._t);
   clearTimeout(_toast._cleanup);
   _toast._t = setTimeout(() => {
+    // Set exit transition explicitly — CSS destination-state trick is unreliable
+    t.style.transition = 'opacity .18s ease-out, transform .18s ease-out';
     t.classList.remove('show');
-    // Clean up position only after fade completes — prevents position jump mid-fade
     _toast._cleanup = setTimeout(() => {
+      t.style.transition = '';
       t.classList.remove('anchored');
       t.style.left = '';
       t.style.top  = '';
-    }, 200);
+    }, 250);
   }, 1800);
 }
 
