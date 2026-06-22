@@ -63,6 +63,46 @@ function _snapNudgeDelta(val, stepPx, dir) {
     : Math.floor(val / stepPx) * stepPx - val;
 }
 
+export function doCopy() {
+  const sel = store.selectedShapes();
+  if (!sel.length) return false;
+  clipboard = deepClone(sel);
+  pasteCount = 0;
+  return true;
+}
+
+export function doCut() {
+  const sel = store.selectedShapes();
+  if (!sel.length) return false;
+  clipboard = sel.map(deepCloneWithNewIds);
+  pasteCount = 0;
+  store.commit(st => {
+    const ids = new Set(st.selection);
+    st.shapes = st.shapes.filter(s => !ids.has(s.id));
+    _removeIdsFromGroupsKeys(st.shapes, ids);
+    st.selection = [];
+  }, 'cut');
+  return true;
+}
+
+export function doPaste() {
+  if (!clipboard.length) return false;
+  pasteCount++;
+  const offset = PASTE_OFFSET * pasteCount;
+  const newShapes = clipboard.map(sh => {
+    const clone = deepCloneWithNewIds(sh);
+    nudgeShape(clone, offset, offset);
+    return clone;
+  });
+  store.commit(st => {
+    st.shapes.push(...newShapes);
+    st.selection = newShapes.map(s => s.id);
+  }, 'paste');
+  return true;
+}
+
+export function canPaste() { return clipboard.length > 0; }
+
 const TOOL_KEYS = {
   v: 'select',
   a: 'direct',
@@ -130,30 +170,10 @@ window.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && (key === 'y' || (key === 'z' && e.shiftKey))) { e.preventDefault(); store.redo(); return; }
 
   // Copy
-  if ((e.metaKey || e.ctrlKey) && key === 'c') {
-    const sel = store.selectedShapes();
-    if (!sel.length) return;
-    e.preventDefault();
-    clipboard = deepClone(sel);
-    pasteCount = 0;
-    return;
-  }
+  if ((e.metaKey || e.ctrlKey) && key === 'c') { if (doCopy()) e.preventDefault(); return; }
 
   // Cut
-  if ((e.metaKey || e.ctrlKey) && key === 'x') {
-    const sel = store.selectedShapes();
-    if (!sel.length) return;
-    e.preventDefault();
-    clipboard = sel.map(deepCloneWithNewIds);
-    pasteCount = 0;
-    store.commit(st => {
-      const ids = new Set(st.selection);
-      st.shapes = st.shapes.filter(s => !ids.has(s.id));
-      _removeIdsFromGroupsKeys(st.shapes, ids);
-      st.selection = [];
-    }, 'cut');
-    return;
-  }
+  if ((e.metaKey || e.ctrlKey) && key === 'x') { if (doCut()) e.preventDefault(); return; }
 
   // Paste in place (Cmd/Ctrl+Shift+V — checked before regular paste)
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && key === 'v') {
@@ -168,22 +188,7 @@ window.addEventListener('keydown', (e) => {
   }
 
   // Paste
-  if ((e.metaKey || e.ctrlKey) && key === 'v') {
-    if (!clipboard.length) return;
-    e.preventDefault();
-    pasteCount++;
-    const offset = PASTE_OFFSET * pasteCount;
-    const newShapes = clipboard.map(sh => {
-      const clone = deepCloneWithNewIds(sh);
-      nudgeShape(clone, offset, offset);
-      return clone;
-    });
-    store.commit(st => {
-      st.shapes.push(...newShapes);
-      st.selection = newShapes.map(s => s.id);
-    }, 'paste');
-    return;
-  }
+  if ((e.metaKey || e.ctrlKey) && key === 'v') { if (doPaste()) e.preventDefault(); return; }
 
   // Duplicate
   if ((e.metaKey || e.ctrlKey) && key === 'd') {
