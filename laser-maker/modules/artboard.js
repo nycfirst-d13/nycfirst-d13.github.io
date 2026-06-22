@@ -595,7 +595,7 @@ class Artboard {
           const div = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
           div.style.cssText = `font-family:${ff};font-size:${sz}px;font-weight:${fw};` +
             `line-height:${lh};text-align:${al};color:${fill};` +
-            `white-space:pre-wrap;word-break:break-word;overflow:visible;` +
+            `white-space:pre-wrap;word-break:break-word;overflow:hidden;` +
             `width:100%;height:100%;box-sizing:border-box;pointer-events:none;`;
           div.textContent = attrs.content || '';
           fo.appendChild(div);
@@ -618,6 +618,31 @@ class Artboard {
             g.setAttribute('opacity', '0');
             g.setAttribute('pointer-events', 'none');
           }
+
+          // Overflow badge: red "+" at bottom-right corner when text exceeds frame.
+          // Badge is screen-fixed (16px) by dividing by current zoom.
+          requestAnimationFrame(() => {
+            if (!g.isConnected) return;
+            if (div.scrollHeight > div.clientHeight + 1) {
+              const zoom = store.get().viewport.zoom;
+              const sz = 16 / zoom;
+              const bx = attrs.x + attrs.width - sz / 2;
+              const by = attrs.y + attrs.height - sz / 2;
+              const badge = svgNS('g');
+              badge.classList.add('text-overflow-badge');
+              badge.setAttribute('pointer-events', 'none');
+              const bg = svgNS('rect');
+              setAttrs(bg, { x: bx, y: by, width: sz, height: sz, fill: '#D93025', rx: sz * 0.15 });
+              const t = svgNS('text');
+              setAttrs(t, { x: bx + sz / 2, y: by + sz * 0.78, 'text-anchor': 'middle',
+                'font-size': sz * 0.75, 'font-weight': 700, 'font-family': 'system-ui,sans-serif', fill: 'white' });
+              t.textContent = '+';
+              badge.appendChild(bg);
+              badge.appendChild(t);
+              g.appendChild(badge);
+            }
+          });
+
           return g; // early return — skip generic catcher/highlight/styleAttrs
         }
 

@@ -489,6 +489,7 @@ async function convertTextToPath() {
       }
 
       const baselineY = sh.attrs.y + ascender + li * lineHeight;
+      if (frameW && sh.attrs.height != null && li * lineHeight >= sh.attrs.height) break;
 
       for (const seg of segments) {
         let curX = sh.attrs.x + seg.relX + alignOffset;
