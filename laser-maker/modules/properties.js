@@ -388,9 +388,9 @@ function syncFromState() {
     _showAppearanceMode('imageEtch');
   } else if (pt === 'etch') {
     _showAppearanceMode('etch');
-    const stroke = commonValue(nonGroups, sh => sh.stroke);
-    const fill   = commonValue(nonGroups, sh => sh.fill);
-    const sw     = commonValue(nonGroups, sh => sh.strokeWidth);
+    const stroke = commonValue(allLeaves, sh => sh.stroke);
+    const fill   = commonValue(allLeaves, sh => sh.fill);
+    const sw     = commonValue(allLeaves, sh => sh.strokeWidth);
     etchStrokeToggle.classList.toggle('active', stroke !== 'none');
     etchStrokeToggle.setAttribute('aria-pressed', stroke !== 'none');
     etchFillToggle.classList.toggle('active', fill !== 'none');
@@ -580,18 +580,21 @@ processTypeSelect.addEventListener('change', () => {
 });
 
 // Etch toggle buttons
+function _etchLeaves() {
+  const sel = store.get().selection.map(id => store.findShape(id)).filter(Boolean);
+  const leaves = [];
+  for (const sh of sel) {
+    if (sh.type === 'group') _collectLeaves(sh, leaves);
+    else leaves.push(sh);
+  }
+  return leaves;
+}
 etchStrokeToggle.addEventListener('click', () => {
-  const s = store.get();
-  const sel = s.selection.map(id => store.findShape(id)).filter(Boolean)
-    .filter(sh => sh.type !== 'group');
-  const cur = commonValue(sel, sh => sh.stroke);
+  const cur = commonValue(_etchLeaves(), sh => sh.stroke);
   setAppearance('stroke', cur !== 'none' ? 'none' : '#000000');
 });
 etchFillToggle.addEventListener('click', () => {
-  const s = store.get();
-  const sel = s.selection.map(id => store.findShape(id)).filter(Boolean)
-    .filter(sh => sh.type !== 'group');
-  const cur = commonValue(sel, sh => sh.fill);
+  const cur = commonValue(_etchLeaves(), sh => sh.fill);
   setAppearance('fill', cur !== 'none' ? 'none' : '#000000');
 });
 strokeWidthEtch.addEventListener('change', () => {
