@@ -84,7 +84,7 @@ const { shapes, hadUnsupported } = parseSVGToShapes(root, initMat);
 if (!shapes.length) → fall back to rawsvg silently
 ```
 
-Commit: single shape → commit as-is. Multiple shapes → wrap in `group`. All shapes get `processType: 'free'`. Original `fill`/`stroke` colors preserved.
+Commit: single shape → commit as-is with `name` = filename (without extension). Multiple shapes → wrap in `group` with `name = 'Group IMPORT ' + filename` (e.g. `'Group IMPORT logo.svg'`). All shapes get `processType: 'free'`. Original `fill`/`stroke` colors preserved. Filename is sourced from the `File` object at the call site and threaded into `importSVG(svgText, filename)`.
 
 **Step 5 — Toast:**
 - No unsupported elements: `showToast('SVG imported')`
