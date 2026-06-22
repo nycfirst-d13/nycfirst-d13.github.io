@@ -188,7 +188,7 @@ function playPop() {
 
 function commit(closed) {
   if (nodes.length < 2) { reset(); return; }
-  playPop();
+  if (closed) playPop();
   const d = buildD(nodes, closed, null);
   const id = uid('pa');
   const def = store.get().defaults;
