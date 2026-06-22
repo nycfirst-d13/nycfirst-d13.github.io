@@ -44,10 +44,15 @@ function _toast(msg, bbox) {
 
   t.classList.add('show');
   clearTimeout(_toast._t);
+  clearTimeout(_toast._cleanup);
   _toast._t = setTimeout(() => {
-    t.classList.remove('show', 'anchored');
-    t.style.left = '';
-    t.style.top  = '';
+    t.classList.remove('show');
+    // Clean up position only after fade completes — prevents position jump mid-fade
+    _toast._cleanup = setTimeout(() => {
+      t.classList.remove('anchored');
+      t.style.left = '';
+      t.style.top  = '';
+    }, 200);
   }, 1800);
 }
 

@@ -1002,7 +1002,7 @@ input { font-family: inherit; }
   font-weight: 500;
   pointer-events: none;
   opacity: 0;
-  transition: opacity .1s ease-out, transform .1s ease-out;
+  transition: opacity .16s ease-out, transform .16s ease-out;
   z-index: 20;
   box-shadow: var(--sh-3);
 }
