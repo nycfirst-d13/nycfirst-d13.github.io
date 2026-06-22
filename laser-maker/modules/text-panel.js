@@ -2,7 +2,7 @@
 // text-panel.js — font picker, text property controls
 // =============================================================================
 import { store } from './state.js';
-import { uid, wordWrapLines } from './utils.js';
+import { uid } from './utils.js';
 import * as fontkit from 'https://esm.sh/fontkit@2.0.4';
 
 let FONTS = [
@@ -375,6 +375,52 @@ async function fetchFontBuffer(family, weight) {
   return buffer;
 }
 
+// Determine visual line breaks using the browser's own layout engine.
+// Binary-searches for line-start offsets via Range.getBoundingClientRect().
+// Handles tabs, pre-wrap, word-break:break-word, and leading whitespace exactly
+// as the foreignObject div does — O(n log n) range queries per paragraph.
+async function _domVisualLines(content, frameW, family, size, weight, lineHeightVal) {
+  const div = document.createElement('div');
+  div.style.cssText =
+    `position:fixed;visibility:hidden;pointer-events:none;left:-9999px;top:0;` +
+    `font-family:"${family}",sans-serif;font-size:${size}px;font-weight:${weight};` +
+    `line-height:${lineHeightVal};width:${frameW}px;box-sizing:border-box;` +
+    `white-space:pre-wrap;word-break:break-word;`;
+  document.body.appendChild(div);
+
+  const result = [];
+  const range = document.createRange();
+
+  for (const para of content.split('\n')) {
+    if (!para) { result.push(''); continue; }
+    div.textContent = para;
+    const textNode = div.firstChild;
+
+    let lineStart = 0;
+    while (lineStart < para.length) {
+      range.setStart(textNode, lineStart);
+      range.setEnd(textNode, lineStart + 1);
+      const startTop = range.getBoundingClientRect().top;
+
+      // Binary search: last char index still on the same top baseline
+      let lo = lineStart, hi = para.length;
+      while (lo < hi - 1) {
+        const mid = (lo + hi) >> 1;
+        range.setStart(textNode, mid);
+        range.setEnd(textNode, mid + 1);
+        if (range.getBoundingClientRect().top > startTop + 1) hi = mid;
+        else lo = mid;
+      }
+
+      result.push(para.slice(lineStart, hi));
+      lineStart = hi;
+    }
+  }
+
+  document.body.removeChild(div);
+  return result.length ? result : [''];
+}
+
 async function convertTextToPath() {
   if (!fontkit) { toast('Font engine not loaded yet — try again'); return; }
 
@@ -454,10 +500,11 @@ async function convertTextToPath() {
       return { segments, lineW: relX };
     }
 
-    // Use canvas.measureText-based wrap to match CSS rendering exactly.
-    // layoutLine (fontkit) is used only for per-glyph positioning, not for wrapping.
+    // Use DOM Range API to find visual line breaks — matches the foreignObject
+    // rendering exactly (same browser engine, same CSS, handles tabs/pre-wrap/
+    // word-break:break-word, preserves leading whitespace).
     const visualLines = frameW
-      ? wordWrapLines(text, frameW, family, size, weight)
+      ? await _domVisualLines(text, frameW, family, size, weight, sh.attrs.lineHeight || 1.2)
       : text.split('\n');
 
     const letterPaths = []; // per-glyph { char, d }
