@@ -5,8 +5,19 @@ import { store } from './state.js';
 import { uid, inToPx } from './utils.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
+import { showToast } from './toast.js';
+import { parseSVGToShapes } from './expand-svg.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const DIM_TO_PX = { px: 1, pt: 96 / 72, mm: 96 / 25.4, cm: 96 / 2.54, in: 96 };
+
+function parseSVGDim(val) {
+  if (!val) return null;
+  const m = String(val).trim().match(/^([\d.]+)(px|pt|mm|cm|in)?$/);
+  if (!m) return null;
+  return parseFloat(m[1]) * (DIM_TO_PX[m[2] || 'px'] || 1);
+}
 
 function extractMarkup(svgText) {
   const parser = new DOMParser();
@@ -24,26 +35,15 @@ function extractMarkup(svgText) {
   return markup.trim();
 }
 
-
-function importSVG(svgText) {
-  const markup = extractMarkup(svgText);
-  if (!markup) {
-    showToast('Invalid SVG file');
-    return;
-  }
-
+function _commitRawSVG(markup, filename) {
   const id = uid('svg');
-
-  store.commit(s => {
-    s.shapes.push({
+  const name = filename ? filename.replace(/\.svg$/i, '') : 'Imported SVG';
+  store.commit(st => {
+    st.shapes.push({
       id,
       type: 'rawsvg',
-      name: 'Imported SVG',
-      attrs: {
-        markup,
-        x: 0,
-        y: 0,
-      },
+      name,
+      attrs: { markup, x: 0, y: 0 },
       processType: 'free',
       rotation: 0,
       visible: true,
@@ -52,11 +52,94 @@ function importSVG(svgText) {
       stroke: 'none',
       strokeWidth: 1,
     });
-    s.selection = [id];
+    st.selection = [id];
+  }, 'shape-create');
+  tools.setActive('select');
+}
+
+function importSVG(svgText, filename, dropPt) {
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  if (doc.querySelector('parsererror')) {
+    showToast('Invalid SVG file');
+    return;
+  }
+  const root = doc.documentElement;
+  if (root.tagName.toLowerCase() !== 'svg') {
+    showToast('Invalid SVG file');
+    return;
+  }
+
+  // Natural size: width/height attrs → px, fallback to viewBox, fallback to 96
+  const vbParts = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+  const natW = parseSVGDim(root.getAttribute('width'))  || vbParts[2] || 96;
+  const natH = parseSVGDim(root.getAttribute('height')) || vbParts[3] || 96;
+
+  // initMat: shrink to fit 90% artboard (never upscale), center on artboard or drop point
+  const st = store.get();
+  const abW = inToPx(st.artboard.w), abH = inToPx(st.artboard.h);
+  const k = Math.min(abW * 0.9 / natW, abH * 0.9 / natH, 1);
+  const cx = dropPt ? dropPt.x : abW / 2;
+  const cy = dropPt ? dropPt.y : abH / 2;
+  const initMat = [k, 0, 0, k, cx - natW * k / 2, cy - natH * k / 2];
+
+  const { shapes: extracted, hadUnsupported } = parseSVGToShapes(root, initMat);
+
+  if (!extracted.length) {
+    // No parseable shapes — fall back to rawsvg silently
+    const markup = extractMarkup(svgText);
+    if (markup) _commitRawSVG(markup, filename);
+    else showToast('Invalid SVG file');
+    return;
+  }
+
+  const id = uid('svg');
+  const baseName = filename ? filename.replace(/\.svg$/i, '') : 'Imported SVG';
+  const groupName = `Group IMPORT ${filename || 'imported.svg'}`;
+
+  store.commit(st => {
+    let pathCount = 0, textCount = 0;
+    const newShapes = extracted.map(p => {
+      const base = {
+        fill: p.fill, stroke: p.stroke, strokeWidth: p.strokeWidth,
+        processType: 'free', visible: true, locked: false, rotation: 0,
+      };
+      if (p._shapeType === 'text') {
+        return { id: uid('xt'), type: 'text', name: `Text ${++textCount}`, attrs: p.attrs, ...base };
+      }
+      return { id: uid('xp'), type: 'path', name: `Path ${++pathCount}`, attrs: { d: p.d }, ...base };
+    });
+
+    const shape = newShapes.length === 1
+      ? { ...newShapes[0], id, name: baseName }
+      : {
+          id, type: 'group', name: groupName,
+          children: newShapes,
+          processType: 'free', visible: true, locked: false, rotation: 0,
+        };
+
+    st.shapes.push(shape);
+    st.selection = [id];
   }, 'shape-create');
 
   tools.setActive('select');
-  showToast('SVG imported');
+
+  if (hadUnsupported) {
+    const markup = extractMarkup(svgText);
+    showToast('SVG imported. Some elements skipped.', {
+      action: {
+        label: 'Import raw',
+        onClick: () => {
+          store.undo();
+          if (markup) {
+            _commitRawSVG(markup, filename);
+            showToast('Imported as raw SVG');
+          }
+        },
+      },
+    });
+  } else {
+    showToast('SVG imported');
+  }
 }
 
 // ---- Raster image import (png/jpg/gif/webp/bmp) ----
@@ -117,14 +200,6 @@ function loadImageFile(file, dropPt) {
   reader.readAsDataURL(file);
 }
 
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(showToast._t);
-  showToast._t = setTimeout(() => t.classList.remove('show'), 1800);
-}
-
 // ---- Button ----
 const fileInput = document.getElementById('import-svg-input');
 document.getElementById('import-svg-btn').addEventListener('click', () => fileInput.click());
@@ -132,7 +207,7 @@ fileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = ev => importSVG(ev.target.result);
+  reader.onload = ev => importSVG(ev.target.result, file.name);
   reader.readAsText(file);
   fileInput.value = '';
 });
@@ -183,8 +258,9 @@ canvasArea.addEventListener('drop', e => {
     f => f.type === 'image/svg+xml' || f.name.toLowerCase().endsWith('.svg')
   );
   if (svgFile) {
+    const dropPt = artboard.screenToArtboard(e.clientX, e.clientY);
     const reader = new FileReader();
-    reader.onload = ev => importSVG(ev.target.result);
+    reader.onload = ev => importSVG(ev.target.result, svgFile.name, dropPt);
     reader.readAsText(svgFile);
     return;
   }
