@@ -3,6 +3,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { uid } from './utils.js';
+import { showToast } from './toast.js';
 
 // ---- Matrix math: [a, b, c, d, e, f]
 // Transform: x' = a*x + c*y + e,  y' = b*x + d*y + f
@@ -379,11 +380,17 @@ const SKIP_TAGS = new Set([
 const CONTAINER_TAGS = new Set(['g', 'svg', 'a', 'switch']);
 const SHAPE_TAGS     = new Set(['path', 'rect', 'circle', 'ellipse', 'line', 'polyline', 'polygon']);
 
-function walk(nodes, m, inh, results) {
+function walk(nodes, m, inh, results, skipped) {
   for (const el of nodes) {
     if (el.nodeType !== 1) continue;
     const tag = (el.tagName || '').toLowerCase().replace(/[a-z]+:/, '');
-    if (SKIP_TAGS.has(tag)) continue;
+    if (SKIP_TAGS.has(tag)) {
+      // Track if this skip tag has meaningful child content
+      if (skipped && Array.from(el.childNodes).some(n => n.nodeType === 1)) {
+        skipped.push(tag);
+      }
+      continue;
+    }
     if (tag === 'tspan') continue; // handled inside parseTextElement
     if (getAttr(el, 'display') === 'none') continue;
     if (getAttr(el, 'visibility') === 'hidden') continue;
@@ -406,7 +413,7 @@ function walk(nodes, m, inh, results) {
         const vbMat = viewBoxTransform(el);
         if (vbMat) childMat = mulMat(curMat, vbMat);
       }
-      walk(el.childNodes, childMat, childInh, results);
+      walk(el.childNodes, childMat, childInh, results, skipped);
     } else if (tag === 'text') {
       const textShape = parseTextElement(el, curMat, childInh);
       if (textShape) results.push(textShape);
@@ -426,13 +433,23 @@ function walk(nodes, m, inh, results) {
   }
 }
 
+// ---- Public API: parse SVG element to shape specs ----
+
+export function parseSVGToShapes(rootSvgEl, initMat) {
+  const vbMat = viewBoxTransform(rootSvgEl);
+  const startMat = vbMat ? mulMat(initMat, vbMat) : initMat;
+  const skipped = [];
+  const extracted = [];
+  walk(rootSvgEl.childNodes, startMat, { fill: 'black', stroke: 'none', sw: 1 }, extracted, skipped);
+  return { shapes: extracted, hadUnsupported: skipped.length > 0 };
+}
+
 // ---- Main export ----
 
 export function expandSVG(id) {
   const sh = store.findShape(id);
   if (!sh || sh.type !== 'rawsvg') return;
 
-  // Build initial matrix: position (+ rotation if rotated by user)
   let initMat = [1, 0, 0, 1, sh.attrs.x || 0, sh.attrs.y || 0];
   if (sh.rotation && sh._bbox) {
     const { x: bx, y: by, w: bw, h: bh } = sh._bbox;
@@ -448,14 +465,13 @@ export function expandSVG(id) {
     'image/svg+xml',
   );
   if (doc.querySelector('parsererror')) {
-    _toast('Invalid SVG markup'); return;
+    showToast('Invalid SVG markup'); return;
   }
 
-  const extracted = [];
-  walk(doc.documentElement.childNodes, initMat, { fill: 'black', stroke: 'none', sw: 1 }, extracted);
+  const { shapes: extracted } = parseSVGToShapes(doc.documentElement, initMat);
 
   if (!extracted.length) {
-    _toast('No paths found in SVG'); return;
+    showToast('No paths found in SVG'); return;
   }
 
   store.commit(st => {
@@ -490,7 +506,7 @@ export function expandSVG(id) {
     st.selection = [replacement.id];
   }, 'expand-svg');
 
-  _toast(`Expanded to ${extracted.length} shape${extracted.length > 1 ? 's' : ''}`);
+  showToast(`Expanded to ${extracted.length} shape${extracted.length > 1 ? 's' : ''}`);
 }
 
 // ---- UI panel ----
@@ -509,10 +525,3 @@ _btn.addEventListener('click', () => {
   if (id) expandSVG(id);
 });
 
-function _toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(_toast._t);
-  _toast._t = setTimeout(() => t.classList.remove('show'), 1800);
-}
