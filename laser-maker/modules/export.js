@@ -92,7 +92,7 @@ async function textShapeToPathD(sh) {
   return allParts.join(' ') || null;
 }
 
-function shapeToSVG(sh, pathMap = new Map()) {
+function shapeToSVG(sh, pathMap = new Map(), defs = []) {
   if (sh.visible === false) return '';
 
   if (sh.type === 'rawsvg') {
@@ -103,14 +103,21 @@ function shapeToSVG(sh, pathMap = new Map()) {
   }
 
   if (sh.type === 'group') {
-    const children = (sh.children || []).map(c => shapeToSVG(c, pathMap)).filter(Boolean).join('\n    ');
+    const children = (sh.children || []).map(c => shapeToSVG(c, pathMap, defs)).filter(Boolean).join('\n    ');
     if (!children) return '';
     let transform = '';
     if (sh.rotation) {
       const b = artboard.getShapeBBox(sh);
       transform = ` transform="rotate(${sh.rotation} ${(b.x+b.w/2).toFixed(3)} ${(b.y+b.h/2).toFixed(3)})"`;
     }
-    return `<g${transform}>\n    ${children}\n  </g>`;
+    let clipAttr = '';
+    if (sh.clipRect) {
+      const clipId = `clip-${sh.id}`;
+      const r = sh.clipRect;
+      defs.push(`<clipPath id="${clipId}"><rect x="${r.x.toFixed(3)}" y="${r.y.toFixed(3)}" width="${r.w.toFixed(3)}" height="${r.h.toFixed(3)}"/></clipPath>`);
+      clipAttr = ` clip-path="url(#${clipId})"`;
+    }
+    return `<g${transform}${clipAttr}>\n    ${children}\n  </g>`;
   }
 
   const a = sh.attrs;
@@ -255,14 +262,16 @@ function buildSVG(pathMap = new Map()) {
   const s = store.get();
   const wPx = inToPx(s.artboard.w);
   const hPx = inToPx(s.artboard.h);
-  const body = s.shapes.map(sh => shapeToSVG(sh, pathMap)).filter(Boolean).join('\n  ');
+  const defs = [];
+  const body = s.shapes.map(sh => shapeToSVG(sh, pathMap, defs)).filter(Boolean).join('\n  ');
+  const defsBlock = defs.length ? `<defs>\n  ${defs.join('\n  ')}\n</defs>\n  ` : '';
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
      width="${s.artboard.w}in" height="${s.artboard.h}in"
      viewBox="0 0 ${wPx} ${hPx}">
   <title>Laser Maker Export</title>
   <desc>${s.artboard.w} × ${s.artboard.h} inches</desc>
-  ${body}
+  ${defsBlock}${body}
 </svg>
 `;
 }

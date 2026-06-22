@@ -560,7 +560,7 @@ async function convertTextToPath() {
     store.commit(st => {
       const idx = st.shapes.findIndex(x => x.id === sh.id);
       if (idx === -1) return;
-      st.shapes.splice(idx, 1, {
+      const group = {
         id: groupId,
         type: 'group',
         textOutline: true,
@@ -570,7 +570,11 @@ async function convertTextToPath() {
         locked: sh.locked,
         rotation: sh.rotation || 0,
         _bbox: null,
-      });
+      };
+      if (frameW && sh.attrs.height != null) {
+        group.clipRect = { x: sh.attrs.x, y: sh.attrs.y, w: frameW, h: sh.attrs.height };
+      }
+      st.shapes.splice(idx, 1, group);
       st.selection = [groupId];
     }, 'convert-text');
 

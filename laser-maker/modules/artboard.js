@@ -344,6 +344,19 @@ class Artboard {
     const g = svgNS('g');
     g.classList.add('shape-node', 'group-node');
 
+    if (sh.clipRect) {
+      const clipId = `clip-${sh.id}`;
+      let defs = this.svg.querySelector('defs');
+      if (!defs) { defs = svgNS('defs'); this.svg.insertBefore(defs, this.svg.firstChild); }
+      if (!defs.querySelector(`#${CSS.escape(clipId)}`)) {
+        const cp = svgNS('clipPath'); cp.id = clipId;
+        const r = svgNS('rect');
+        setAttrs(r, { x: sh.clipRect.x, y: sh.clipRect.y, width: sh.clipRect.w, height: sh.clipRect.h });
+        cp.appendChild(r); defs.appendChild(cp);
+      }
+      g.setAttribute('clip-path', `url(#${clipId})`);
+    }
+
     // Text-outline groups: outside isolation, render one combined <path> so adjacent
     // letter paths share a single paint pass — no anti-aliasing seams between letters.
     // Inside isolation the children render individually for per-letter editing.
@@ -615,7 +628,6 @@ class Artboard {
           g.appendChild(fo);
 
           if (store.get().textEditId === sh.id) {
-            g.setAttribute('opacity', '0');
             g.setAttribute('pointer-events', 'none');
           }
 

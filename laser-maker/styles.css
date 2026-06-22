@@ -944,7 +944,7 @@ input { font-family: inherit; }
 .text-edit-overlay {
   position: absolute;
   box-sizing: border-box;
-  background: rgba(255, 255, 255, 0.92);
+  background: transparent;
   border: 2px solid var(--blue);
   border-radius: 2px;
   outline: none;
@@ -953,7 +953,7 @@ input { font-family: inherit; }
   padding: 0;
   margin: 0;
   z-index: 10;
-  color: var(--ink);
+  color: transparent;
   caret-color: var(--blue);
   white-space: pre-wrap;
   word-break: break-word;
