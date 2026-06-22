@@ -302,5 +302,5 @@ tools.register('pen', {
 window.addEventListener('keydown', e => {
   if (store.get().activeTool !== 'pen') return;
   if (e.key === 'Enter')   { e.preventDefault(); commit(false); }
-  if (e.key === 'Escape')  { e.preventDefault(); reset(); tools.setActive('select'); }
+  if (e.key === 'Escape')  { e.preventDefault(); if (nodes.length >= 2) commit(false); else { reset(); tools.setActive('select'); } }
 });
