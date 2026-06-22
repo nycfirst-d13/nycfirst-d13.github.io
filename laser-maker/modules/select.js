@@ -19,7 +19,7 @@ function px(v) { return v / store.get().viewport.zoom; } // convert CSS px -> ar
 
 // =============== Marquee + hit testing ==============================
 
-function hitShape(clientX, clientY) {
+export function hitShape(clientX, clientY) {
   const overlayEl = document.getElementById('overlay');
   const nodes = document.elementsFromPoint(clientX, clientY);
   for (const node of nodes) {
@@ -35,7 +35,7 @@ function hitShape(clientX, clientY) {
 }
 
 // Walk up parent groups to find the effective selection target, respecting isolation mode.
-function resolveHitId(id) {
+export function resolveHitId(id) {
   const s = store.get();
   let currentId = id;
   for (;;) {
