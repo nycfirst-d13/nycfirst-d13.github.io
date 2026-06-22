@@ -19,15 +19,17 @@ export function selectionBBox() {
 }
 
 let _gen = 0;
+let _timer = null;
+let _cleanup = null;
 
 function dismissToast() {
   const t = document.getElementById('toast');
   ++_gen;
-  clearTimeout(showToast._t);
-  clearTimeout(showToast._cleanup);
+  clearTimeout(_timer);
+  clearTimeout(_cleanup);
   t.style.transition = 'opacity .18s ease-out, transform .18s ease-out';
   t.classList.remove('show');
-  showToast._cleanup = setTimeout(() => {
+  _cleanup = setTimeout(() => {
     t.style.transition = '';
     t.classList.remove('anchored');
     t.classList.remove('has-action');
@@ -76,7 +78,7 @@ export function showToast(msg, opts) {
 
   t.style.transition = '';
   t.classList.add('show');
-  clearTimeout(showToast._t);
-  clearTimeout(showToast._cleanup);
-  showToast._t = setTimeout(dismissToast, 1800);
+  clearTimeout(_timer);
+  clearTimeout(_cleanup);
+  _timer = setTimeout(dismissToast, 1800);
 }

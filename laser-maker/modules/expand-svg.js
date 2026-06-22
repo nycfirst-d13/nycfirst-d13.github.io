@@ -468,6 +468,8 @@ export function expandSVG(id) {
     showToast('Invalid SVG markup'); return;
   }
 
+  // hadUnsupported is intentionally unused here — Expand to Paths has no
+  // unsupported-element toast by design; see importSVG for the import path behavior
   const { shapes: extracted } = parseSVGToShapes(doc.documentElement, initMat);
 
   if (!extracted.length) {
