@@ -82,11 +82,39 @@ function resolveColor(v) {
   return 'none';
 }
 
-// Get property from style="" attribute or direct attribute
+// Per-parse CSS class map — set by parseSVGToShapes, cleared after walk
+let _sheet = null;
+
+// Parse simple class rules from <style> blocks: .classname { prop: val; ... }
+function parseStyleSheet(svgRoot) {
+  const sheet = {};
+  for (const s of svgRoot.querySelectorAll('style')) {
+    const re = /\.([\w-]+)\s*\{([^}]*)\}/g;
+    let m;
+    while ((m = re.exec(s.textContent || '')) !== null) {
+      const cls = m[1];
+      sheet[cls] = sheet[cls] || {};
+      const declRe = /([\w-]+)\s*:\s*([^;]+)/g;
+      let dm;
+      while ((dm = declRe.exec(m[2])) !== null) {
+        sheet[cls][dm[1].trim()] = dm[2].trim();
+      }
+    }
+  }
+  return sheet;
+}
+
+// Get property: inline style > CSS class > presentation attribute
 function getAttr(el, prop) {
   const style = el.getAttribute('style') || '';
   const m = style.match(new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, 'i'));
   if (m) return m[1].trim();
+  if (_sheet) {
+    const classes = (el.getAttribute('class') || '').trim().split(/\s+/).filter(Boolean);
+    for (const cls of classes) {
+      if (_sheet[cls]?.[prop] != null) return _sheet[cls][prop];
+    }
+  }
   return el.getAttribute(prop);
 }
 
@@ -436,11 +464,13 @@ function walk(nodes, m, inh, results, skipped) {
 // ---- Public API: parse SVG element to shape specs ----
 
 export function parseSVGToShapes(rootSvgEl, initMat) {
+  _sheet = parseStyleSheet(rootSvgEl);
   const vbMat = viewBoxTransform(rootSvgEl);
   const startMat = vbMat ? mulMat(initMat, vbMat) : initMat;
   const skipped = [];
   const extracted = [];
   walk(rootSvgEl.childNodes, startMat, { fill: 'black', stroke: 'none', sw: 1 }, extracted, skipped);
+  _sheet = null;
   return { shapes: extracted, hadUnsupported: skipped.length > 0 };
 }
 
