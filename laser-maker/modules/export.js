@@ -1,6 +1,7 @@
 // =============================================================================
 // export.js — clean SVG export sized in inches
 // =============================================================================
+import { uploadToDrive } from './drive-upload.js';
 import { store } from './state.js';
 import { artboard } from './artboard.js';
 import { inToPx, applyPathCorners, wordWrapLines, roundedPolygonPath } from './utils.js';
@@ -314,6 +315,7 @@ async function download(filename) {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
   toast('SVG exported');
+  return svg;
 }
 
 function toast(msg) {
@@ -411,7 +413,8 @@ _confirmBtn.addEventListener('click', async () => {
   _headerProject.value = _projectInput.value;
 
   _closeDialog();
-  await download(filename);
+  const svg = await download(filename);
+  uploadToDrive(svg, filename);
 });
 
 _projectInput.addEventListener('keydown', e => { if (e.key === 'Enter') _confirmBtn.click(); });
