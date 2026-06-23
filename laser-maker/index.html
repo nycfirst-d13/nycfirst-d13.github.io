@@ -725,7 +725,12 @@
       <p class="export-filename-preview" id="export-filename-preview"></p>
       <div class="export-dialog-actions">
         <button class="btn ghost" id="export-cancel-btn">Cancel</button>
-        <button class="btn primary" id="export-confirm-btn">Export</button>
+        <button class="btn ghost" id="export-download-btn">Download</button>
+        <button class="btn primary" id="export-confirm-btn">Save to D13 Cloud</button>
+      </div>
+      <div id="export-drive-error" class="export-drive-error" hidden>
+        <span>Drive save failed — </span><button class="export-drive-download-link" id="export-drive-download-btn">Download instead?</button>
+        <button class="export-drive-error-close" id="export-drive-error-close" aria-label="Dismiss">✕</button>
       </div>
     </div>
   </div>

@@ -288,7 +288,7 @@ function collectTextShapes(shapes) {
   return result;
 }
 
-async function download(filename) {
+async function _makeSVG() {
   const s = store.get();
   const textShapes = collectTextShapes(s.shapes);
   const pathMap = new Map();
@@ -300,12 +300,14 @@ async function download(filename) {
         if (d) pathMap.set(sh.id, d);
       } catch (err) {
         console.warn('text-to-path failed for', sh.id, err);
-        // falls back to <text> element
       }
     }));
   }
 
-  const svg = buildSVG(pathMap);
+  return buildSVG(pathMap);
+}
+
+function _saveLocally(svg, filename) {
   const blob = new Blob([svg], { type: 'image/svg+xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -315,6 +317,11 @@ async function download(filename) {
   a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 100);
   toast('SVG exported');
+}
+
+async function download(filename) {
+  const svg = await _makeSVG();
+  _saveLocally(svg, filename);
   return svg;
 }
 
@@ -334,8 +341,12 @@ const _headerName   = document.getElementById('header-name');
 const _headerProject = document.getElementById('header-project');
 const _preview     = document.getElementById('export-filename-preview');
 const _errorMsg    = document.getElementById('export-error-msg');
-const _confirmBtn  = document.getElementById('export-confirm-btn');
-const _cancelBtn   = document.getElementById('export-cancel-btn');
+const _confirmBtn      = document.getElementById('export-confirm-btn');
+const _cancelBtn       = document.getElementById('export-cancel-btn');
+const _downloadBtn     = document.getElementById('export-download-btn');
+const _driveError      = document.getElementById('export-drive-error');
+const _driveDownloadBtn = document.getElementById('export-drive-download-btn');
+const _driveErrorClose = document.getElementById('export-drive-error-close');
 
 function _fitPiInput(input) {
   const chars = Math.max(input.value.length, input.placeholder.length, 16);
@@ -392,10 +403,9 @@ _cancelBtn.addEventListener('click', _closeDialog);
 _backdrop.addEventListener('click', e => { if (e.target === _backdrop) _closeDialog(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !_backdrop.hidden) _closeDialog(); });
 
-_confirmBtn.addEventListener('click', async () => {
+function _validateFields() {
   const name    = _slugify(_nameInput.value);
   const project = _slugify(_projectInput.value);
-
   if (!name || !project) {
     const missing = [];
     if (!name)    { _nameInput.classList.remove('export-field-input--error'); void _nameInput.offsetWidth; _nameInput.classList.add('export-field-input--error'); missing.push('name'); }
@@ -403,18 +413,56 @@ _confirmBtn.addEventListener('click', async () => {
     _errorMsg.textContent = missing.length === 2 ? 'Name and project are required.' : `${missing[0] === 'name' ? 'Your name' : 'Project'} is required.`;
     _errorMsg.hidden = false;
     (name ? _projectInput : _nameInput).focus();
-    return;
+    return null;
   }
+  return `${name}-${project}_laser.svg`;
+}
 
-  const filename = `${name}-${project}_laser.svg`;
-
-  // Sync back to header inputs
+function _syncHeader() {
   _headerName.value    = _nameInput.value;
   _headerProject.value = _projectInput.value;
+}
 
+// Download button — local only
+_downloadBtn.addEventListener('click', async () => {
+  const filename = _validateFields();
+  if (!filename) return;
+  _syncHeader();
   _closeDialog();
-  const svg = await download(filename);
-  uploadToDrive(svg, filename);
+  await download(filename);
+});
+
+// Save to D13 Cloud button
+_confirmBtn.addEventListener('click', async () => {
+  const filename = _validateFields();
+  if (!filename) return;
+  _syncHeader();
+
+  _driveError.hidden = true;
+  _confirmBtn.disabled = true;
+  _confirmBtn.textContent = 'Saving…';
+
+  const svg = await _makeSVG();
+  const result = await uploadToDrive(svg, filename);
+
+  _confirmBtn.disabled = false;
+  _confirmBtn.textContent = 'Save to D13 Cloud';
+
+  if (result === true) {
+    _closeDialog();
+    const t = document.getElementById('toast');
+    t.textContent = 'Saved to Drive';
+    t.classList.add('show');
+    clearTimeout(t._t);
+    t._t = setTimeout(() => t.classList.remove('show'), 1600);
+  } else if (result === false) {
+    _driveError.hidden = false;
+    // wire one-time download handlers
+    const _doDownload = () => { _saveLocally(svg, filename); _closeDialog(); };
+    _driveDownloadBtn.onclick = _doDownload;
+    _driveErrorClose.onclick  = _doDownload;
+  }
+  // result === null means user skipped PIN — stay in dialog, no error
 });
 
 _projectInput.addEventListener('keydown', e => { if (e.key === 'Enter') _confirmBtn.click(); });
