@@ -12,6 +12,9 @@ The shapes land exactly where they were drawn. A box at 2 inches from the top-le
 **If the SVG has a different size, or no defined size:**
 The shapes are placed with their top-left corner at the canvas origin (0, 0). Nothing is scaled.
 
+**Illustrator SVGs without explicit dimensions:**
+Illustrator sometimes exports SVGs with no `width`/`height` attributes — only a `viewBox`. Illustrator's internal unit is the point (72 pt = 1 inch), so a 36 × 24 inch artboard produces `viewBox="0 0 2592 1728"`. Laser Maker detects this and treats the viewBox numbers as points, converting them correctly to inches. A 36 × 24 artboard still matches the canvas and shapes still land at their designed coordinates.
+
 **Drag-and-drop SVG:**
 - Matching canvas size → same as button import; drop point is ignored, natural coordinates are preserved.
 - Non-matching size → top-left of the SVG lands at your drop cursor.
