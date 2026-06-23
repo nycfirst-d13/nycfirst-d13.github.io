@@ -88,9 +88,9 @@ function toastError(msg) {
 // ---- Drive upload ----
 
 async function _postToDrive(pin, svg, filename) {
+  // No Content-Type header — avoids CORS preflight that Apps Script can't handle
   const resp = await fetch(DRIVE_UPLOAD_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ pin, svg, filename }),
   });
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
