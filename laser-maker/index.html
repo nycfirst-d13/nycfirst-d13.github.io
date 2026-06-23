@@ -19,6 +19,15 @@
 
   <!-- ============== TOP BAR ============== -->
   <header class="topbar" role="banner">
+    <div class="reset-section">
+      <button class="btn reset-btn" id="reset-btn" title="Clear canvas">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+          <path d="M18 6l-12 12" class="x-line-1"/>
+          <path d="M6 6l12 12" class="x-line-2"/>
+        </svg>
+      </button>
+    </div>
     <div class="brand">
       <div class="brand-mark" aria-hidden="true">
         <img src="./assets/horizontal-logo.svg" width="100" height="50" />
@@ -43,17 +52,6 @@
       <button class="btn ghost" id="redo-btn" title="Redo (⇧⌘Z)">
         <svg viewBox="0 0 20 20" width="16" height="16"><path d="M13 5 L17 9 L13 13 M17 9 H7 a4 4 0 0 0 0 8 H10" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <div class="divider"></div>
-      <div class="reset-section">
-        <button class="btn reset-btn" id="reset-btn" title="Clear canvas">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-            <path d="M18 6l-12 12" class="x-line-1"/>
-            <path d="M6 6l12 12" class="x-line-2"/>
-          </svg>
-          <span>Reset</span>
-        </button>
-      </div>
       <div class="divider"></div>
       <label class="btn" id="import-image-btn" for="import-image-input" style="cursor:pointer">
         <svg viewBox="0 0 20 20" width="14" height="14"><rect x="3" y="4" width="14" height="12" rx="1.5" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="7.5" cy="8" r="1.3" fill="currentColor"/><path d="M4 14 L8 10 L11 13 L13.5 10.5 L16 13" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>

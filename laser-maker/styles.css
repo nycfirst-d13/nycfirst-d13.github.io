@@ -231,16 +231,15 @@ input { font-family: inherit; }
 .reset-section {
   display: flex;
   align-items: center;
-  border: 1.5px solid #fca5a5;
-  border-radius: 8px;
-  padding: 2px;
-  background: #fff5f5;
+  flex-shrink: 0;
 }
 .reset-btn {
   border-color: transparent;
   background: transparent;
   color: #dc2626;
-  gap: 5px;
+  padding: 0;
+  width: 32px;
+  justify-content: center;
 }
 .reset-btn:hover {
   background: #fee2e2 !important;
