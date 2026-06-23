@@ -107,7 +107,7 @@ store.patch(() => {}, 'boot');
 // Friendly first-run welcome toast
 (function welcome() {
   const t = document.getElementById('toast');
-  t.textContent = 'Press R / E / L / P / B / T to draw · V to select';
+  t.textContent = "Let's design! Hint: press 'V' to select.";
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3200);
 })();
