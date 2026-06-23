@@ -228,24 +228,18 @@ input { font-family: inherit; }
 .btn.danger:hover { background: #b91c1c; box-shadow: var(--sh-2); }
 .divider { width: 1px; height: 18px; background: var(--rule); margin: 0 4px; }
 
-.reset-section {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-}
 .reset-btn {
-  border-color: transparent;
+  width: 38px; height: 38px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
   background: transparent;
+  display: grid; place-items: center;
+  cursor: pointer;
   color: #dc2626;
-  padding: 0;
-  width: 32px;
-  justify-content: center;
+  flex-shrink: 0;
+  transition: background .12s, color .12s;
 }
-.reset-btn:hover {
-  background: #fee2e2 !important;
-  box-shadow: none !important;
-  color: #b91c1c;
-}
+.reset-btn:hover { background: #fee2e2; color: #b91c1c; }
 .reset-btn:hover .x-line-1 { transform-origin: 50% 50%; animation: x-wiggle-1 .25s ease-out forwards; }
 .reset-btn:hover .x-line-2 { transform-origin: 50% 50%; animation: x-wiggle-2 .25s ease-out forwards; }
 @keyframes x-wiggle-1 { 0% { transform: rotate(0) scale(1); } 60% { transform: rotate(15deg) scale(1.15); } 100% { transform: rotate(12deg) scale(1.1); } }
