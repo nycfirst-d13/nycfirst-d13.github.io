@@ -1591,6 +1591,13 @@ input:invalid { color: var(--accent); }
   justify-content: center;
   height: 38px;
 }
+.export-dialog-actions .btn.ghost {
+  background: var(--paper);
+  border-color: var(--rule-2);
+}
+.export-dialog-actions .btn.ghost:hover {
+  background: var(--paper-2);
+}
 
 /* ── context menu ────────────────────────────────────────────────────── */
 .ctx-menu {
