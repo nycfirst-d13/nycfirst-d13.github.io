@@ -331,6 +331,7 @@ const _projectInput = document.getElementById('export-project');
 const _headerName   = document.getElementById('header-name');
 const _headerProject = document.getElementById('header-project');
 const _preview     = document.getElementById('export-filename-preview');
+const _errorMsg    = document.getElementById('export-error-msg');
 const _confirmBtn  = document.getElementById('export-confirm-btn');
 const _cancelBtn   = document.getElementById('export-cancel-btn');
 
@@ -372,10 +373,18 @@ function _openDialog() {
 
 function _closeDialog() {
   _backdrop.hidden = true;
+  _nameInput.classList.remove('export-field-input--error');
+  _projectInput.classList.remove('export-field-input--error');
+  _errorMsg.hidden = true;
 }
 
-_nameInput.addEventListener('input', _updatePreview);
-_projectInput.addEventListener('input', _updatePreview);
+function _clearError(input) {
+  input.classList.remove('export-field-input--error');
+  _errorMsg.hidden = true;
+}
+
+_nameInput.addEventListener('input', () => { _updatePreview(); _clearError(_nameInput); });
+_projectInput.addEventListener('input', () => { _updatePreview(); _clearError(_projectInput); });
 
 _cancelBtn.addEventListener('click', _closeDialog);
 _backdrop.addEventListener('click', e => { if (e.target === _backdrop) _closeDialog(); });
@@ -384,11 +393,18 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !_backdrop
 _confirmBtn.addEventListener('click', async () => {
   const name    = _slugify(_nameInput.value);
   const project = _slugify(_projectInput.value);
-  let filename;
-  if (name && project) filename = `${name}-${project}_laser.svg`;
-  else if (name)        filename = `${name}_laser.svg`;
-  else if (project)     filename = `${project}_laser.svg`;
-  else                  filename = 'laser.svg';
+
+  if (!name || !project) {
+    const missing = [];
+    if (!name)    { _nameInput.classList.remove('export-field-input--error'); void _nameInput.offsetWidth; _nameInput.classList.add('export-field-input--error'); missing.push('name'); }
+    if (!project) { _projectInput.classList.remove('export-field-input--error'); void _projectInput.offsetWidth; _projectInput.classList.add('export-field-input--error'); missing.push('project'); }
+    _errorMsg.textContent = missing.length === 2 ? 'Name and project are required.' : `${missing[0] === 'name' ? 'Your name' : 'Project'} is required.`;
+    _errorMsg.hidden = false;
+    (name ? _projectInput : _nameInput).focus();
+    return;
+  }
+
+  const filename = `${name}-${project}_laser.svg`;
 
   // Sync back to header inputs
   _headerName.value    = _nameInput.value;

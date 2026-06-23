@@ -1573,6 +1573,26 @@ input:invalid { color: var(--accent); }
   border-color: var(--blue);
 }
 
+@keyframes export-field-pulse {
+  0%   { border-color: #dc2626; box-shadow: 0 0 0 0px rgba(220,38,38,.35); }
+  40%  { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.25); }
+  100% { border-color: #dc2626; box-shadow: 0 0 0 0px rgba(220,38,38,.0); }
+}
+
+.export-field-input--error {
+  border-color: #dc2626 !important;
+  animation: export-field-pulse 0.45s ease-out;
+}
+
+.export-error-msg {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: #dc2626;
+  min-height: 16px;
+}
+.export-error-msg[hidden] { display: none; }
+
 .export-filename-preview {
   margin: 0;
   font-size: 11px;
