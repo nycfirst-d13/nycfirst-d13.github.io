@@ -5,7 +5,7 @@ SVGs import as editable groups of `path`/`text` shapes (`processType: 'free'`, o
 ## Pipeline (`import-svg.js`)
 
 1. `DOMParser` → `parseSVGDim()` reads `width`/`height` attrs; unit conversions in `DIM_TO_PX` (`px`=1, `pt`=96/72, `mm`=96/25.4, `cm`=96/2.54, `in`=96); falls back to `viewBox` `vw×vh`, then `96×96`
-2. `initMat = [k, 0, 0, k, tx, ty]` where `k = min(abW×0.9/natW, abH×0.9/natH, 1)` — shrink-to-fit, never upscale; `tx/ty` center on artboard (button) or drop cursor
+2. `initMat = [1, 0, 0, 1, tx, ty]` — identity scale, preserves SVG coords. `tx/ty` are non-zero only for drag-drop on a non-matching SVG (top-left at cursor). Artboard-matching SVGs and button imports always use `[1,0,0,1,0,0]`. See [`docs/import-placement.md`](import-placement.md) for full rules.
 3. `parseSVGToShapes(root, initMat)` → `{ shapes, hadUnsupported }`
 4. Single shape → commit with `name = filename`; multiple shapes → wrap in `group` with `name = 'Group IMPORT filename.svg'`
 5. `hadUnsupported` → `showToast('SVG imported. Some elements skipped.', { action: { label: 'Import raw', onClick } })`
