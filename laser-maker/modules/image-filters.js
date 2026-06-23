@@ -13,7 +13,7 @@
 // ---- Default param set (neutral = plain grayscale) ----
 export const DEFAULT_ETCH = {
   brightness: 0,     // -100..100  (add)
-  contrast: 0,       // -100..100  (scale around mid-gray)
+  contrast: 100,     // -100..100  (scale around mid-gray)
   gamma: 1,          // 0.1..3     (midtone curve)
   invert: false,     // engrave negative
   depth: 100,        // 0..100 %   black-point clamp — <100 lightens darkest (shallower burn)
