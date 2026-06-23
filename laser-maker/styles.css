@@ -236,7 +236,7 @@ input { font-family: inherit; }
   width: 38px; height: 38px;
   border: 1px solid transparent;
   border-radius: var(--r-sm);
-  background: #d1d5db;
+  background: var(--paper);
   display: grid; place-items: center;
   cursor: pointer;
   color: #dc2626;
