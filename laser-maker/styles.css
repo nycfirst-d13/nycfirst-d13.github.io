@@ -1584,8 +1584,12 @@ input:invalid { color: var(--accent); }
 
 .export-dialog-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+}
+.export-dialog-actions .btn {
+  flex: 1;
+  justify-content: center;
+  height: 38px;
 }
 
 /* ── context menu ────────────────────────────────────────────────────── */
