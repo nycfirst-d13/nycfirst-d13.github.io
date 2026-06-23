@@ -63,9 +63,18 @@ store.subscribe((s) => {
   });
 });
 
-// ---- Reset button ----
+// ---- Reset dialog ----
+const _backdrop   = document.getElementById('reset-backdrop');
+const _cancelBtn  = document.getElementById('reset-cancel-btn');
+const _confirmBtn = document.getElementById('reset-confirm-btn');
+
 document.getElementById('reset-btn').addEventListener('click', () => {
-  if (!confirm('Clear the canvas? This will erase all shapes and cannot be undone.')) return;
+  _backdrop.hidden = false;
+});
+_cancelBtn.addEventListener('click', () => { _backdrop.hidden = true; });
+_backdrop.addEventListener('click', e => { if (e.target === _backdrop) _backdrop.hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !_backdrop.hidden) _backdrop.hidden = true; });
+_confirmBtn.addEventListener('click', () => {
   localStorage.removeItem(KEY);
   location.reload();
 });

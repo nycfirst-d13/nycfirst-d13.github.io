@@ -698,6 +698,18 @@
     <div class="progress-detail" id="progress-detail"></div>
   </div>
 
+  <!-- Reset dialog -->
+  <div id="reset-backdrop" class="export-backdrop" hidden>
+    <div class="export-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-dialog-title">
+      <h3 class="export-dialog-title" id="reset-dialog-title">Clear Canvas?</h3>
+      <p style="margin:0;font-size:13px;color:var(--ink-2)">This will erase all shapes and cannot be undone.</p>
+      <div class="export-dialog-actions">
+        <button class="btn ghost" id="reset-cancel-btn">Cancel</button>
+        <button class="btn danger" id="reset-confirm-btn">Clear</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Export dialog -->
   <div id="export-backdrop" class="export-backdrop" hidden>
     <div class="export-dialog" role="dialog" aria-modal="true" aria-labelledby="export-dialog-title">

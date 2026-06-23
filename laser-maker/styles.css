@@ -224,6 +224,8 @@ input { font-family: inherit; }
   font-weight: 500;
 }
 .btn.primary:hover { background: #1a52d4; box-shadow: var(--sh-2); }
+.btn.danger { background: #dc2626; color: #fff; border-color: #dc2626; font-weight: 500; }
+.btn.danger:hover { background: #b91c1c; box-shadow: var(--sh-2); }
 .divider { width: 1px; height: 18px; background: var(--rule); margin: 0 4px; }
 
 .reset-section {
