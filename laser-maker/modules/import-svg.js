@@ -149,19 +149,18 @@ function isRasterFile(file) {
 function importImage(dataURL, dropPt) {
   const img = new Image();
   img.onload = () => {
-    const s = store.get();
-    const abW = inToPx(s.artboard.w), abH = inToPx(s.artboard.h);
-    // 1 image pixel = 1 artboard pixel (96 px/in). Scale down to fit 90% of the
-    // artboard if the image is larger, preserving aspect ratio.
+    // 1 image pixel = 1 artboard pixel (96 px/in). Scale down to fit 4 inches
+    // on longest side, preserving aspect ratio. Button import lands at (0,0);
+    // drag-drop centers on cursor.
     let w = img.naturalWidth || 1, h = img.naturalHeight || 1;
-    const maxW = abW * 0.9, maxH = abH * 0.9;
-    if (w > maxW || h > maxH) {
-      const k = Math.min(maxW / w, maxH / h);
+    const MAX_PX = 4 * 96; // 384 px = 4 in
+    const longest = Math.max(w, h);
+    if (longest > MAX_PX) {
+      const k = MAX_PX / longest;
       w *= k; h *= k;
     }
-    const cx = dropPt ? dropPt.x : abW / 2;
-    const cy = dropPt ? dropPt.y : abH / 2;
-    const x = cx - w / 2, y = cy - h / 2;
+    const x = dropPt ? dropPt.x - w / 2 : 0;
+    const y = dropPt ? dropPt.y - h / 2 : 0;
     const id = uid('img');
     store.commit(st => {
       st.shapes.push({
