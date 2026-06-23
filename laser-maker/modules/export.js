@@ -441,6 +441,7 @@ _confirmBtn.addEventListener('click', async () => {
   _driveError.hidden = true;
   _confirmBtn.disabled = true;
   _confirmBtn.textContent = 'Saving…';
+  _backdrop.hidden = true; // hide export dialog so PIN dialog appears alone
 
   const svg = await _makeSVG();
   const result = await uploadToDrive(svg, filename);
@@ -449,20 +450,21 @@ _confirmBtn.addEventListener('click', async () => {
   _confirmBtn.textContent = 'Save to Cloud';
 
   if (result === true) {
-    _closeDialog();
     const t = document.getElementById('toast');
     t.textContent = 'Saved to Drive';
     t.classList.add('show');
     clearTimeout(t._t);
     t._t = setTimeout(() => t.classList.remove('show'), 1600);
-  } else if (result === false) {
-    _driveError.hidden = false;
-    // wire one-time download handlers
-    const _doDownload = () => { _saveLocally(svg, filename); _closeDialog(); };
-    _driveDownloadBtn.onclick = _doDownload;
-    _driveErrorClose.onclick  = _doDownload;
+  } else {
+    _backdrop.hidden = false; // restore export dialog
+    if (result === false) {
+      _driveError.hidden = false;
+      const _doDownload = () => { _saveLocally(svg, filename); _closeDialog(); };
+      _driveDownloadBtn.onclick = _doDownload;
+      _driveErrorClose.onclick  = _doDownload;
+    }
+    // result === null means user skipped PIN — dialog reopens, no error
   }
-  // result === null means user skipped PIN — stay in dialog, no error
 });
 
 _projectInput.addEventListener('keydown', e => { if (e.key === 'Enter') _confirmBtn.click(); });
