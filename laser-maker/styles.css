@@ -450,14 +450,19 @@ input { font-family: inherit; }
 }
 .pill-group {
   display: flex;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 4px;
+  box-shadow: var(--sh-2);
 }
 .pill-group .pill {
-  border-radius: 0;
+  border-radius: var(--r-sm);
   box-shadow: none;
-  border-right-width: 0;
+  border: none;
+  background: transparent;
 }
-.pill-group .pill:first-child { border-radius: var(--r-pill) 0 0 var(--r-pill); }
-.pill-group .pill:last-child  { border-radius: 0 var(--r-pill) var(--r-pill) 0; border-right-width: 1px; }
+.pill-group .pill:hover { box-shadow: none; }
 .pill {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--surface);
