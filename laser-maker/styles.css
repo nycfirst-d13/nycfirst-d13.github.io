@@ -244,7 +244,7 @@ input { font-family: inherit; }
   transition: background .12s, color .12s, box-shadow .12s;
   z-index: 1;
 }
-.reset-btn:hover { background: rgba(0,0,0,.12); box-shadow: inset 0 1px 4px rgba(0,0,0,.22); color: #b91c1c; }
+.reset-btn:hover { background: rgba(0,0,0,.12); box-shadow: inset 0 1px 4px rgba(0,0,0,.22); }
 .reset-btn:hover .x-line-1 { transform-origin: 50% 50%; animation: x-wiggle-1 .25s ease-out forwards; }
 .reset-btn:hover .x-line-2 { transform-origin: 50% 50%; animation: x-wiggle-2 .25s ease-out forwards; }
 @keyframes x-wiggle-1 { 0% { transform: rotate(0) scale(1); } 60% { transform: rotate(15deg) scale(1.15); } 100% { transform: rotate(12deg) scale(1.1); } }
