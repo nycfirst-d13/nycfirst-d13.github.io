@@ -679,7 +679,7 @@ class Artboard {
     }
     // Visually thicken stroke for screen display — export reads from shape data, not DOM
     if (styleAttrs.stroke && styleAttrs.stroke !== 'none') {
-      styleAttrs['stroke-width'] = Math.max(3, sh.strokeWidth ?? 1);
+      styleAttrs['stroke-width'] = Math.max(1.5, sh.strokeWidth ?? 1);
       styleAttrs['vector-effect'] = 'non-scaling-stroke';
     }
     if (resolved.strokeDasharray) {
