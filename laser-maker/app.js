@@ -23,6 +23,7 @@ import './modules/expand-svg.js';
 import './modules/image-etch-panel.js';
 import './modules/align.js';
 import './modules/context-menu.js';
+import './modules/canvas-cache.js';
 
 // Collapsible + draggable panels
 (function initPanels() {
