@@ -6,18 +6,9 @@ import { uid, inToPx } from './utils.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
 import { showToast } from './toast.js';
-import { parseSVGToShapes } from './expand-svg.js';
+import { parseSVGToShapes, parseSVGDim } from './expand-svg.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-
-const DIM_TO_PX = { px: 1, pt: 96 / 72, mm: 96 / 25.4, cm: 96 / 2.54, in: 96 };
-
-function parseSVGDim(val) {
-  if (!val) return null;
-  const m = String(val).trim().match(/^([\d.]+)(px|pt|mm|cm|in)?$/);
-  if (!m) return null;
-  return parseFloat(m[1]) * (DIM_TO_PX[m[2] || 'px'] || 1);
-}
 
 function extractMarkup(svgText) {
   const parser = new DOMParser();
@@ -74,13 +65,14 @@ function importSVG(svgText, filename, dropPt) {
   const natW = parseSVGDim(root.getAttribute('width'))  || vbParts[2] || 96;
   const natH = parseSVGDim(root.getAttribute('height')) || vbParts[3] || 96;
 
-  // initMat: shrink to fit 90% artboard (never upscale), center on artboard or drop point
+  // initMat: identity — preserve SVG coordinates exactly.
+  // For drag-drop on non-matching SVGs, offset so top-left lands at cursor.
   const st = store.get();
   const abW = inToPx(st.artboard.w), abH = inToPx(st.artboard.h);
-  const k = Math.min(abW * 0.9 / natW, abH * 0.9 / natH, 1);
-  const cx = dropPt ? dropPt.x : abW / 2;
-  const cy = dropPt ? dropPt.y : abH / 2;
-  const initMat = [k, 0, 0, k, cx - natW * k / 2, cy - natH * k / 2];
+  const matchesArtboard = Math.abs(natW - abW) < 1 && Math.abs(natH - abH) < 1;
+  const tx = (dropPt && !matchesArtboard) ? dropPt.x : 0;
+  const ty = (dropPt && !matchesArtboard) ? dropPt.y : 0;
+  const initMat = [1, 0, 0, 1, tx, ty];
 
   const { shapes: extracted, hadUnsupported } = parseSVGToShapes(root, initMat);
 
