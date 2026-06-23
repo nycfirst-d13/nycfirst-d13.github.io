@@ -1629,8 +1629,8 @@ input:invalid { color: var(--accent); }
 .export-drive-error {
   background: #c62828;
   color: #fff;
-  border-radius: var(--r-pill);
-  padding: 8px 14px;
+  border-radius: var(--r-md);
+  padding: 10px 14px;
   font-size: 12px;
   font-weight: 500;
   display: flex;
