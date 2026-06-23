@@ -2,6 +2,7 @@
 // export.js — clean SVG export sized in inches
 // =============================================================================
 import { uploadToDrive } from './drive-upload.js';
+import { showToast } from './toast.js';
 import { store } from './state.js';
 import { artboard } from './artboard.js';
 import { inToPx, applyPathCorners, wordWrapLines, roundedPolygonPath } from './utils.js';
@@ -450,11 +451,7 @@ _confirmBtn.addEventListener('click', async () => {
   _confirmBtn.textContent = 'Save to Cloud';
 
   if (result === true) {
-    const t = document.getElementById('toast');
-    t.textContent = 'Saved to Drive';
-    t.classList.add('show');
-    clearTimeout(t._t);
-    t._t = setTimeout(() => t.classList.remove('show'), 1600);
+    showToast(`Saved to Drive · ${filename}`, { success: true });
   } else {
     _backdrop.hidden = false; // restore export dialog
     if (result === false) {

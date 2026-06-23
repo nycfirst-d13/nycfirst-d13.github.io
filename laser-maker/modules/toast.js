@@ -33,17 +33,19 @@ function dismissToast() {
     t.style.transition = '';
     t.classList.remove('anchored');
     t.classList.remove('has-action');
+    t.classList.remove('toast--success');
     t.style.left = '';
     t.style.top  = '';
   }, 250);
 }
 
 export function showToast(msg, opts) {
-  const { bbox, action } = opts || {};
+  const { bbox, action, success } = opts || {};
   const t = document.getElementById('toast');
   const gen = ++_gen;
 
   // Rebuild content: text + optional action button
+  t.classList.toggle('toast--success', !!success);
   t.textContent = msg;
   if (action) {
     const btn = document.createElement('button');
