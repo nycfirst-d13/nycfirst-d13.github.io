@@ -446,7 +446,7 @@ _confirmBtn.addEventListener('click', async () => {
   const result = await uploadToDrive(svg, filename);
 
   _confirmBtn.disabled = false;
-  _confirmBtn.textContent = 'Save to D13 Cloud';
+  _confirmBtn.textContent = 'Save to Cloud';
 
   if (result === true) {
     _closeDialog();
