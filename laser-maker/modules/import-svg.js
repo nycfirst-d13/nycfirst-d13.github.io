@@ -62,8 +62,8 @@ function importSVG(svgText, filename, dropPt) {
 
   // Natural size: width/height attrs → px, fallback to viewBox, fallback to 96
   const vbParts = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
-  const natW = parseSVGDim(root.getAttribute('width'))  || vbParts[2] || 96;
-  const natH = parseSVGDim(root.getAttribute('height')) || vbParts[3] || 96;
+  const natW = parseSVGDim(root.getAttribute('width'))  || vbParts[2] * (96 / 72) || 96;
+  const natH = parseSVGDim(root.getAttribute('height')) || vbParts[3] * (96 / 72) || 96;
 
   // initMat: identity — preserve SVG coordinates exactly.
   // For drag-drop on non-matching SVGs, offset so top-left lands at cursor.

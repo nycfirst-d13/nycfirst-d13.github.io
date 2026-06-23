@@ -359,8 +359,9 @@ function viewBoxTransform(el) {
   if (parts.length < 4) return null;
   const [vx, vy, vw, vh] = parts;
   if (!vw || !vh) return null;
-  const pw = parseSVGDim(el.getAttribute('width')) ?? vw;
-  const ph = parseSVGDim(el.getAttribute('height')) ?? vh;
+  // ponytail: no width/height = Illustrator pt units (72/in); multiply by 96/72 to get px
+  const pw = parseSVGDim(el.getAttribute('width')) ?? vw * (96 / 72);
+  const ph = parseSVGDim(el.getAttribute('height')) ?? vh * (96 / 72);
   if (!pw || !ph) return null;
   const sx = pw / vw, sy = ph / vh;
   return [sx, 0, 0, sy, -vx * sx, -vy * sy];
