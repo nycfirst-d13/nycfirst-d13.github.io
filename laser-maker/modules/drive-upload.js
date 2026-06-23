@@ -135,6 +135,7 @@ export async function uploadToDrive(svgString, filename) {
     const t = document.getElementById('toast');
     t.textContent = 'Saved to Drive';
     t.classList.add('show');
+    clearTimeout(t._t);
     clearTimeout(t._driveT);
     t._driveT = setTimeout(() => t.classList.remove('show'), 1600);
     return;
