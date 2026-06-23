@@ -115,19 +115,20 @@ class Artboard {
 
     window.addEventListener('resize', () => this._applyViewport());
 
-    // Initial render — defer fit() until canvas-area has real layout dimensions.
+    // Initial render — defer until canvas-area has real layout dimensions.
     // On GitHub Pages, CSS can still be loading when modules evaluate, so
     // getBoundingClientRect() returns 0×0. Poll with RAF until layout is ready.
     this._applyArtboard();
-    this._deferredFit();
+    this._deferredInit();
   }
 
-  _deferredFit() {
+  _deferredInit() {
     const r = this.canvasArea.getBoundingClientRect();
     if (r.width > 0 && r.height > 0) {
-      this.fit();
+      const margin = inToPx(0.25);
+      store.patch(st => { st.viewport.zoom = 1; st.viewport.panX = margin; st.viewport.panY = margin; }, 'init');
     } else {
-      requestAnimationFrame(() => this._deferredFit());
+      requestAnimationFrame(() => this._deferredInit());
     }
   }
 
