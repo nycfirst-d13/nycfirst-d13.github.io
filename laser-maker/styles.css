@@ -1611,9 +1611,9 @@ input:invalid { color: var(--accent); }
 .export-dialog-actions {
   display: flex;
   gap: 8px;
-  justify-content: flex-end;
 }
 .export-dialog-actions .btn {
+  flex: 1;
   white-space: nowrap;
   justify-content: center;
   height: 38px;
