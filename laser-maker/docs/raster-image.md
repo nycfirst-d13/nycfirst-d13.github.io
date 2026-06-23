@@ -5,7 +5,7 @@
 Students can drag-and-drop a raster image (PNG/JPG/GIF/WebP/BMP) onto the canvas, or use the **Import Image** topbar button. Handled in `import-svg.js` (same drop infrastructure as SVG import).
 
 - Stored as `type: 'image'`, `attrs: { x, y, w, h, href, naturalW, naturalH }`. `href` is a **base64 data URL** — the pixel data is embedded directly in the shape, so it survives the SVG export round-trip into Illustrator.
-- Placement: 1 image pixel = 1 artboard pixel (96 px/in); scaled down to fit 90% of the artboard if larger. Drop centers on the cursor; button centers on the artboard.
+- Placement: 1 image pixel = 1 artboard pixel (96 px/in); scaled down if longer side exceeds 4 inches (384 px), preserving aspect ratio. Button import places top-left at canvas origin (0, 0); drag-drop centers on the cursor.
 - Renders as `<svg:image>` (with a transparent rect catcher + rect hover-highlight, since `<image>` ignores `fill`/`stroke`). Resizes like a rect via `setGeomFromBBox`/`applyBBox` (`preserveAspectRatio="none"` — free stretch). Moves/nudges/reflects like `rawsvg` (position + rotation only; raster pixels are not truly mirrored).
 - Export (`export.js`) emits `<image ... xlink:href href ...>`; root `<svg>` declares `xmlns:xlink`. Boolean/offset/shape-builder ops skip `image`.
 - **Process restriction:** when the selection is all images, the process dropdown hides Main Cut / Fold / Final Cut — only **Free Appearance** and **Etch** are offered (`onlyImages` check in `syncFromState`).

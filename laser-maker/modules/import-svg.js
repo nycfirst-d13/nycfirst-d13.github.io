@@ -145,7 +145,7 @@ function isRasterFile(file) {
 }
 
 // dropPt — optional artboard-space point to center the image on. Omitted for
-// button import → centers on the artboard.
+// button import → top-left placed at canvas origin (0, 0).
 function importImage(dataURL, dropPt) {
   const img = new Image();
   img.onload = () => {
