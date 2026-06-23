@@ -53,6 +53,17 @@ function parseTfm(str) {
   return m;
 }
 
+// ---- SVG dimension → px ----
+
+const _DIM_TO_PX = { px: 1, pt: 96 / 72, mm: 96 / 25.4, cm: 96 / 2.54, in: 96 };
+
+export function parseSVGDim(val) {
+  if (!val) return null;
+  const m = String(val).trim().match(/^([\d.]+)(px|pt|mm|cm|in)?$/);
+  if (!m) return null;
+  return parseFloat(m[1]) * (_DIM_TO_PX[m[2] || 'px'] || 1);
+}
+
 // ---- Color resolution via canvas ----
 
 const _cc = document.createElement('canvas');
@@ -348,8 +359,8 @@ function viewBoxTransform(el) {
   if (parts.length < 4) return null;
   const [vx, vy, vw, vh] = parts;
   if (!vw || !vh) return null;
-  const pw = el.getAttribute('width') ? parseFloat(el.getAttribute('width')) : vw;
-  const ph = el.getAttribute('height') ? parseFloat(el.getAttribute('height')) : vh;
+  const pw = parseSVGDim(el.getAttribute('width')) ?? vw;
+  const ph = parseSVGDim(el.getAttribute('height')) ?? vh;
   if (!pw || !ph) return null;
   const sx = pw / vw, sy = ph / vh;
   return [sx, 0, 0, sy, -vx * sx, -vy * sy];
