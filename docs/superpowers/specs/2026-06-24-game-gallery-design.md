@@ -2,7 +2,7 @@
 **Date:** 2026-06-24
 **Status:** Approved
 
-> **v2 changes:** Resolved the static-export vs. live-update contradiction (runtime client lookup via `?id=`). Added an explicit 8bitcn component map. Added loading / error / empty states. Defined the thumbnail strategy. Made the iframe aspect-ratio responsive. Added "Intern" role. Expanded arcade flavor (marquee, XP bar, CRT toggle).
+> **v2 changes:** Resolved the static-export vs. live-update contradiction (runtime client lookup via `?id=`). Added an explicit 8bitcn component map. Added loading / error / empty states. Defined the thumbnail strategy. Made the iframe aspect-ratio responsive. Added "Intern" role. Expanded arcade flavor (marquee, XP bar, CRT toggle). Body font → VT323 (≥18px). Added pixelated NYC FIRST logo + MakeCode attribution + Logos & Branding section.
 
 ---
 
@@ -117,7 +117,7 @@ Two preservation layers:
 
 - **Framework:** Next.js with `output: 'export'` (fully static)
 - **Components:** 8bitcn.com (shadcn-based pixel art components), copy-pasted and owned
-- **Fonts:** Press Start 2P (**headings only** — hard to read at body size), Geist (body/labels — readable for grades 3–8)
+- **Fonts:** Press Start 2P (**headings only** — hard to read at body size), VT323 (body/labels — CRT-terminal retro; set at **≥18px** so grades 3–8 can read it, pairs with the CRT toggle)
 - **Deployment:** GitHub Actions → `gh-pages` branch → `/game-gallery/`
 
 ### 8bitcn Component Map
@@ -163,9 +163,16 @@ Live iframes on the grid are **not** used — N simulators would overwhelm a cla
 
 > **Implementation check:** confirm the `/api/{shareId}/thumb` URL resolves against a real D13 share URL before relying on it. The `onError` placeholder makes a miss non-fatal regardless.
 
+### Logos & Branding
+
+- **NYC FIRST logo:** auto-pixelated from the existing flat-color `logo.svg` (master FIRST mark — blue/red/black, no gradients, pixelates cleanly). One-time build step: render `logo.svg` → downscale to ~64px nearest-neighbor → save `public/nycfirst-pixel.png`, display with `image-rendering: pixelated`. Used in the marquee header. (Upgrade path if ever wanted: SVG `<rect>` pixel-grid for crisp/themeable scaling.)
+- **MakeCode:** no asset in repo and it is Microsoft's trademark — **not** pixelated. Shown as text attribution "Made with MakeCode Arcade" (footer + game page), optionally linking to MakeCode Arcade.
+- **micro:bit / other logos:** out of scope (Arcade ≠ micro:bit).
+- **Trademark note:** the FIRST mark belongs to *FIRST*; pixelating it for this internal educational gallery is low-risk but acknowledged. Leave the MakeCode mark unmodified.
+
 ### `/game-gallery/` — Main Grid Page
 
-- Full-width 8-bit **animated marquee** header: D13 logo + "GAME GALLERY" in Press Start 2P, red on dark (marquee shimmer/scroll effect).
+- Full-width 8-bit **animated marquee** header: pixelated NYC FIRST logo + "GAME GALLERY" in Press Start 2P, red on dark (marquee shimmer effect).
 - Responsive grid: 3 cols desktop / 2 tablet / 1 mobile.
 - Each card: thumbnail (see above) + game title + submitter name + grade/role **Badge**; pixel borders, chunky box-shadow; hover = red glow + shadow shift ("press" feel). Min 44px tap targets.
 - **Footer XP Bar:** "N games published" using the count of approved rows.
@@ -190,7 +197,7 @@ Live iframes on the grid are **not** used — N simulators would overwhelm a cla
 
 ### Accessibility
 
-- Press Start 2P restricted to headings; Geist for all body/label text.
+- Press Start 2P restricted to headings; VT323 for body/label text at **≥18px** (terminal-pixel but legible at that size).
 - Minimum 44px interactive tap targets (grade-3 friendly, mobile).
 - `alt` text on all thumbnails; visible focus states on cards/buttons.
 

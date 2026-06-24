@@ -13,7 +13,7 @@
 - **Static only:** `output: 'export'`, `basePath: '/game-gallery'`, `trailingSlash: true`. No server, no API routes, no `generateStaticParams`.
 - **No build-time dependence on game data:** game list/identity resolved at runtime in the browser. Never fetch the CSV at build time.
 - **Commits:** repo root is the parent dir. Always `git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add game-gallery/<path>` then commit from there. No nested git repo.
-- **Fonts:** Press Start 2P for headings ONLY; Geist for all body/label text.
+- **Fonts:** Press Start 2P for headings ONLY; VT323 for all body/label text, base size **≥18px** (readability floor for grades 3–8). Both via `next/font/google`.
 - **Roles/grades (exact, ordered):** `3, 4, 5, 6, 7, 8, Intern, Instructor`.
 - **Palette (CSS vars, exact):** `--bg:#0A0E1A; --surface:#141929; --border:#1E2D4A; --accent:#E0241B; --accent-hi:#FF3B30; --blue:#2563EB; --ink:#F0F4FF; --ink-2:#9DA8C4;`
 - **No live iframes on the grid** (thumbnails only). Single iframe on the detail page, preserving MakeCode 160:120 aspect ratio.
@@ -60,8 +60,7 @@
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "papaparse": "^5.4.1",
-    "geist": "^1.3.1"
+    "papaparse": "^5.4.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
@@ -72,7 +71,8 @@
     "tailwindcss": "^3.4.17",
     "postcss": "^8.4.49",
     "autoprefixer": "^10.4.20",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "sharp": "^0.33.5"
   }
 }
 ```
@@ -144,7 +144,7 @@ const config: Config = {
       },
       fontFamily: {
         pixel: ['var(--font-press-start)', 'monospace'],
-        body: ['var(--font-geist)', 'system-ui', 'sans-serif'],
+        body: ['var(--font-vt323)', 'ui-monospace', 'monospace'],
       },
     },
   },
@@ -199,7 +199,8 @@ NEXT_PUBLIC_GAMES_CSV_URL=https://docs.google.com/spreadsheets/d/REPLACE_ME/pub?
 }
 
 html, body { background: var(--bg); color: var(--ink); }
-body { font-family: var(--font-geist), system-ui, sans-serif; }
+/* VT323 runs small per em — 18px floor keeps body text legible for grades 3–8 */
+body { font-family: var(--font-vt323), ui-monospace, monospace; font-size: 18px; line-height: 1.5; }
 
 /* CRT / scanline overlay — toggled by adding `.crt` to <html> */
 .crt::before {
@@ -215,11 +216,11 @@ body { font-family: var(--font-geist), system-ui, sans-serif; }
 
 ```tsx
 import type { Metadata } from 'next'
-import { GeistSans } from 'geist/font/sans'
-import { Press_Start_2P } from 'next/font/google'
+import { Press_Start_2P, VT323 } from 'next/font/google'
 import './globals.css'
 
 const pressStart = Press_Start_2P({ weight: '400', subsets: ['latin'], variable: '--font-press-start' })
+const vt323 = VT323({ weight: '400', subsets: ['latin'], variable: '--font-vt323' })
 
 export const metadata: Metadata = {
   title: 'D13 Game Gallery',
@@ -228,7 +229,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${GeistSans.variable} ${pressStart.variable}`} style={{ ['--font-geist' as any]: GeistSans.style.fontFamily }}>
+    <html lang="en" className={`${vt323.variable} ${pressStart.variable}`}>
       <body>{children}</body>
     </html>
   )
@@ -606,6 +607,13 @@ export function XpFooter({ count }: { count: number }) {
     <footer className="p-6 border-t-4 border-border mt-8">
       <p className="font-pixel text-xs text-ink-2 mb-2">{count} GAMES PUBLISHED</p>
       <XpBar value={Math.min(count, 100)} max={100} />
+      {/* MakeCode is a Microsoft trademark — plain text attribution, not a pixelated logo */}
+      <p className="text-ink-2 mt-4 text-base">
+        Made with{' '}
+        <a href="https://arcade.makecode.com" target="_blank" rel="noreferrer" className="text-blue underline">
+          MakeCode Arcade
+        </a>
+      </p>
     </footer>
   )
 }
@@ -815,13 +823,36 @@ git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(game-gal
 ### Task 7: Arcade chrome — marquee header + CRT toggle
 
 **Files:**
+- Create: `game-gallery/scripts/gen-logo.mjs` (one-time pixel-logo generator)
+- Create: `game-gallery/public/nycfirst-pixel.png` (generated artifact, committed)
 - Create: `game-gallery/components/MarqueeHeader.tsx`
 - Create: `game-gallery/components/CrtToggle.tsx`
 - Modify: `game-gallery/app/layout.tsx` (mount header + toggle around `{children}`)
 
 **Interfaces:**
-- Consumes: `RetroModeSwitcher` from `@/components/ui/retro-mode-switcher`.
-- Produces: `<MarqueeHeader />` (animated title bar) and `<CrtToggle />` (adds/removes `.crt` on `<html>`, persisted in `localStorage`).
+- Consumes: `RetroModeSwitcher` from `@/components/ui/retro-mode-switcher`; the generated `public/nycfirst-pixel.png`.
+- Produces: `<MarqueeHeader />` (animated title bar with pixel NYC FIRST logo) and `<CrtToggle />` (adds/removes `.crt` on `<html>`, persisted in `localStorage`).
+
+- [ ] **Step 0: Generate the pixelated NYC FIRST logo**
+
+Create `game-gallery/scripts/gen-logo.mjs`:
+```js
+// One-time: render the flat-color NYC FIRST master logo down to 64px nearest-neighbor.
+// Source lives at the repo root (../logo.svg). Output is committed; rerun only if the logo changes.
+import sharp from 'sharp'
+
+await sharp('../logo.svg', { density: 384 })
+  .resize(64, 64, { fit: 'contain', kernel: 'nearest', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .png()
+  .toFile('public/nycfirst-pixel.png')
+
+console.log('wrote public/nycfirst-pixel.png')
+```
+Run:
+```bash
+cd /Users/avigoldman/Desktop/nycfirst-d13.github.io/game-gallery && node scripts/gen-logo.mjs
+```
+Expected: prints `wrote public/nycfirst-pixel.png`; a 64×64 PNG exists. Open it to confirm the FIRST mark is recognizable; if the 64px grid is too coarse/fine, adjust the `resize` width (48–96) and rerun. The logo contains black/white elements — it will sit on a light plate in the header (next step), so transparent background is correct here.
 
 - [ ] **Step 1: Add the marquee animation to `globals.css`**
 
@@ -871,8 +902,18 @@ import { CrtToggle } from './CrtToggle'
 export function MarqueeHeader() {
   return (
     <header className="flex items-center justify-between gap-4 px-4 py-5 border-b-4 border-accent bg-surface">
-      <Link href="/game-gallery/" className="font-pixel text-sm sm:text-lg text-accent marquee-title">
-        ▶ D13 GAME GALLERY
+      <Link href="/game-gallery/" className="flex items-center gap-3">
+        {/* logo.svg has black/white elements — light plate keeps it readable on the navy bg */}
+        <span className="inline-flex p-1 bg-white rounded-sm">
+          <img
+            src="/game-gallery/nycfirst-pixel.png"
+            alt="NYC FIRST District 13"
+            width={40}
+            height={40}
+            style={{ imageRendering: 'pixelated' }}
+          />
+        </span>
+        <span className="font-pixel text-sm sm:text-lg text-accent marquee-title">D13 GAME GALLERY</span>
       </Link>
       <CrtToggle />
     </header>
@@ -900,8 +941,8 @@ Expected: build succeeds. Then `npm run dev`, confirm: animated title shows; CRT
 - [ ] **Step 6: Commit**
 
 ```bash
-git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add game-gallery/components/MarqueeHeader.tsx game-gallery/components/CrtToggle.tsx game-gallery/app/layout.tsx game-gallery/app/globals.css
-git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(game-gallery): marquee header + CRT toggle chrome"
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add game-gallery/scripts/gen-logo.mjs game-gallery/public/nycfirst-pixel.png game-gallery/components/MarqueeHeader.tsx game-gallery/components/CrtToggle.tsx game-gallery/app/layout.tsx game-gallery/app/globals.css
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(game-gallery): pixel NYC FIRST logo + marquee header + CRT toggle"
 ```
 
 ---
