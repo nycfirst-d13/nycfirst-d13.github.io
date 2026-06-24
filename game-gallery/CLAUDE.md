@@ -31,8 +31,10 @@ Sheet columns (Approved tab): `id`, `game_title`, `student_name`, `grade`, `stud
 
 ## Routes
 
-- `/game-gallery/` — game grid
-- `/game-gallery/games/[id]` — individual game page with iframe
+Both are plain static pages — no `generateStaticParams`. Game identity comes from the runtime `?id=` query, not the route, so new approved games go live without a rebuild.
+
+- `/game-gallery/` — game grid (client-fetches Approved CSV)
+- `/game-gallery/games/?id=<slug>` — single game page; reads `?id=`, fetches CSV, iframes `d13_url`
 
 ## Brand Palette
 
