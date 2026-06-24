@@ -688,15 +688,18 @@ class Artboard {
     }
     setAttrs(el, styleAttrs);
 
-    // Transparent click-catcher — gives every shape a wide click zone (10px screen-space)
-    // so stroke-only shapes are easy to select regardless of zoom level.
+    // Transparent click-catcher — gives every shape a wide click zone (10px screen-space).
+    // ponytail: stroke-only shapes use pointer-events:stroke so their interior passes through
+    // to nested shapes underneath; filled shapes keep pointer-events:all for interior clicks.
+    const hasFill = styleAttrs.fill && styleAttrs.fill !== 'none';
     const catcher = el.cloneNode(false);
     setAttrs(catcher, {
-      fill: 'transparent',
+      fill: hasFill ? 'transparent' : 'none',
       stroke: 'transparent',
       'stroke-width': 10,
       'vector-effect': 'non-scaling-stroke',
-      'pointer-events': 'all',
+      'pointer-events': hasFill ? 'all' : 'stroke',
+      cursor: 'grab',
     });
 
     // Hover highlight — thin 1pt difference-blended line reveals precise cut line
