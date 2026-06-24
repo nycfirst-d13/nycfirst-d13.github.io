@@ -5,7 +5,7 @@ import { uploadToDrive } from './drive-upload.js';
 import { showToast } from './toast.js';
 import { store } from './state.js';
 import { artboard } from './artboard.js';
-import { inToPx, applyPathCorners, wordWrapLines, roundedPolygonPath } from './utils.js';
+import { inToPx, pxToIn, applyPathCorners, wordWrapLines, roundedPolygonPath } from './utils.js';
 import { fetchFontBuffer, fontkit } from './text-panel.js';
 import { resolveAppearance } from './process-registry.js';
 
@@ -260,19 +260,31 @@ function starPoints(a) {
   return pts;
 }
 
-function buildSVG(pathMap = new Map()) {
+function buildSVG(pathMap = new Map(), tight = false) {
   const s = store.get();
-  const wPx = inToPx(s.artboard.w);
-  const hPx = inToPx(s.artboard.h);
   const defs = [];
   const body = s.shapes.map(sh => shapeToSVG(sh, pathMap, defs)).filter(Boolean).join('\n  ');
   const defsBlock = defs.length ? `<defs>\n  ${defs.join('\n  ')}\n</defs>\n  ` : '';
+
+  let vx = 0, vy = 0, wPx, hPx;
+  if (tight) {
+    const bbox = _contentBBox();
+    if (bbox) {
+      vx = bbox.x; vy = bbox.y; wPx = bbox.w; hPx = bbox.h;
+    } else {
+      wPx = inToPx(s.artboard.w); hPx = inToPx(s.artboard.h);
+    }
+  } else {
+    wPx = inToPx(s.artboard.w); hPx = inToPx(s.artboard.h);
+  }
+  const wIn = pxToIn(wPx), hIn = pxToIn(hPx);
+
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1"
-     width="${s.artboard.w}in" height="${s.artboard.h}in"
-     viewBox="0 0 ${wPx} ${hPx}">
+     width="${wIn.toFixed(4)}in" height="${hIn.toFixed(4)}in"
+     viewBox="${vx.toFixed(3)} ${vy.toFixed(3)} ${wPx.toFixed(3)} ${hPx.toFixed(3)}">
   <title>Laser Maker Export</title>
-  <desc>${s.artboard.w} × ${s.artboard.h} inches</desc>
+  <desc>${wIn.toFixed(3)} × ${hIn.toFixed(3)} inches</desc>
   ${defsBlock}${body}
 </svg>
 `;
@@ -289,7 +301,57 @@ function collectTextShapes(shapes) {
   return result;
 }
 
-async function _makeSVG() {
+function _contentBBox() {
+  const s = store.get();
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+  function rotateCorner(px, py, cx, cy, deg) {
+    const r = deg * Math.PI / 180;
+    const cos = Math.cos(r), sin = Math.sin(r);
+    const dx = px - cx, dy = py - cy;
+    return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+  }
+
+  function expandPoint(x, y) {
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+
+  function processShape(sh) {
+    if (sh.visible === false) return;
+    if (sh.type === 'group') {
+      (sh.children || []).forEach(processShape);
+      return;
+    }
+    const b = artboard.getShapeBBox(sh);
+    if (!b || (b.w === 0 && b.h === 0)) return;
+    const resolved = resolveAppearance(sh);
+    const half = (resolved.strokeWidth ?? 0) / 2;
+    const x1 = b.x - half, y1 = b.y - half;
+    const x2 = b.x + b.w + half, y2 = b.y + b.h + half;
+    const corners = [
+      { x: x1, y: y1 }, { x: x2, y: y1 },
+      { x: x2, y: y2 }, { x: x1, y: y2 },
+    ];
+    if (sh.rotation) {
+      const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+      corners.forEach(p => {
+        const rot = rotateCorner(p.x, p.y, cx, cy, sh.rotation);
+        expandPoint(rot.x, rot.y);
+      });
+    } else {
+      corners.forEach(p => expandPoint(p.x, p.y));
+    }
+  }
+
+  s.shapes.forEach(processShape);
+  if (minX === Infinity) return null;
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+async function _makeSVG(tight = false) {
   const s = store.get();
   const textShapes = collectTextShapes(s.shapes);
   const pathMap = new Map();
@@ -305,7 +367,7 @@ async function _makeSVG() {
     }));
   }
 
-  return buildSVG(pathMap);
+  return buildSVG(pathMap, tight);
 }
 
 function _saveLocally(svg, filename) {
@@ -320,8 +382,8 @@ function _saveLocally(svg, filename) {
   toast('SVG exported');
 }
 
-async function download(filename) {
-  const svg = await _makeSVG();
+async function download(filename, tight = false) {
+  const svg = await _makeSVG(tight);
   _saveLocally(svg, filename);
   return svg;
 }
