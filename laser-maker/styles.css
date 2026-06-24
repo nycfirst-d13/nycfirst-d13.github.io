@@ -1677,6 +1677,63 @@ input:invalid { color: var(--accent); }
 }
 .export-drive-error-close:hover { opacity: 1; }
 
+.export-field--toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.export-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.export-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.export-toggle-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  background: #0000FF;
+  transition: background 0.2s;
+}
+
+.export-toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+}
+
+.export-toggle-switch input:checked + .export-toggle-track {
+  background: #FF0000;
+}
+
+.export-toggle-switch input:checked + .export-toggle-track::after {
+  transform: translateX(16px);
+}
+
+.export-toggle-label {
+  font-size: 12px;
+  color: var(--ink-2);
+  user-select: none;
+}
+
 /* ── context menu ────────────────────────────────────────────────────── */
 .ctx-menu {
   position: fixed;

@@ -410,6 +410,12 @@ const _downloadBtn     = document.getElementById('export-download-btn');
 const _driveError      = document.getElementById('export-drive-error');
 const _driveDownloadBtn = document.getElementById('export-drive-download-btn');
 const _driveErrorClose = document.getElementById('export-drive-error-close');
+const _tightCb    = document.getElementById('export-tight-cb');
+const _tightLabel = document.getElementById('export-tight-label');
+
+_tightCb.addEventListener('change', () => {
+  _tightLabel.textContent = _tightCb.checked ? 'Fit to content' : 'Fit to artboard';
+});
 
 function _fitPiInput(input) {
   const chars = Math.max(input.value.length, input.placeholder.length, 16);
@@ -492,7 +498,7 @@ _downloadBtn.addEventListener('click', async () => {
   if (!filename) return;
   _syncHeader();
   _closeDialog();
-  await download(filename);
+  await download(filename, _tightCb.checked);
 });
 
 // Save to D13 Cloud button
@@ -500,13 +506,14 @@ _confirmBtn.addEventListener('click', async () => {
   const filename = _validateFields();
   if (!filename) return;
   _syncHeader();
+  const tight = _tightCb.checked;
 
   _driveError.hidden = true;
   _confirmBtn.disabled = true;
   _confirmBtn.textContent = 'Saving…';
   _backdrop.hidden = true; // hide export dialog so PIN dialog appears alone
 
-  const svg = await _makeSVG();
+  const svg = await _makeSVG(tight);
   const result = await uploadToDrive(svg, filename);
 
   _confirmBtn.disabled = false;
