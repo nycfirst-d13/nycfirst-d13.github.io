@@ -50,9 +50,11 @@ Both are plain static pages — no `generateStaticParams`. Game identity comes f
 
 ## Git & Commits
 
-Repo root is the parent directory. Always commit from there:
+Repo root is the parent directory — `game-gallery/` is a plain subdir, not a separate repo. Always commit from the parent. Scope each commit to one app + one logical change; stage `game-gallery/` paths only, never bare `git add .`:
 
 ```bash
 git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add game-gallery/<path>
-git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "..."
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(game-gallery): ..."
 ```
+
+Conventional prefix scoped to the area. Run `git status` to verify staging before committing. Don't ask permission to commit from the parent.

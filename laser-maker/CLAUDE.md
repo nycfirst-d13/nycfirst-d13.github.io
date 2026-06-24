@@ -79,6 +79,8 @@ git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add laser-maker/modules/
 git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "..."
 ```
 
+Scope each commit to one app + one logical change — stage `laser-maker/` paths only, never bare `git add .` that pulls in other apps. Use a conventional prefix (`feat(laser-maker): …`, `docs(laser-maker): …`) and `git status` to verify staging before committing.
+
 Do not ask for permission to run commits from the parent directory — this is always the correct behavior.
 
 ## Running the App

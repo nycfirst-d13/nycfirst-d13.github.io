@@ -15,6 +15,7 @@ Each child directory is a self-contained app or page. Current children:
 | Directory | Purpose |
 |-----------|---------|
 | `laser-maker/` | Browser-based vector design tool for laser cutting |
+| `game-gallery/` | 8-bit arcade gallery for student MakeCode games (Next.js static export) |
 | `stem-stations/` | STEM stations landing page |
 | `bird-bingo/` | Bird bingo game |
 | `hello-waves/` | Hello waves app |
@@ -31,6 +32,17 @@ git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "..."
 ```
 
 Do not ask for permission to commit from the parent directory — this is always correct.
+
+**Scope each commit to one child directory + one logical change.** Stage by path — never bare `git add .` that sweeps multiple apps into one commit:
+
+```bash
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add laser-maker/         # one app only
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(laser-maker): ..."
+```
+
+- Conventional prefix scoped to the area: `feat(game-gallery): …`, `docs(stem-stations): …`.
+- Run `git status` to verify what's staged before committing.
+- Touched two apps? Make two commits, one per app.
 
 **When working in a child directory that has its own `CLAUDE.md`:** that file should document the same `git -C` commit formula so future Claude instances invoked from within that child know where to commit.
 
