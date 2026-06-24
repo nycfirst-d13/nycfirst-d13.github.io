@@ -138,7 +138,7 @@ Stored as `type: 'image'`, base64 `href`, drag-to-drop or Import Image button. E
 | `properties.js` | Inspector panel: position/size/rotation, fill/stroke, process type |
 | `layers.js` | Layers panel: reorder, lock/hide, group/ungroup |
 | `pathops.js` | Boolean ops (unite/subtract/intersect) via Paper.js; Offset Path via Clipper. Rect/ellipse offset analytically; everything else via `collectPaperPaths` (recursive, world coords) → Clipper. Groups offset as one combined outline around all descendant geometry, so image-traced groups and nested groups work; group rotation applied around group bbox center. Per shape in multi-select. Skips text/line/image. |
-| `export.js` | Clean SVG export sized in inches |
+| `export.js` | Clean SVG export sized in inches. Toggle in export dialog switches between artboard bounds (default) and tight ink bounds (`_contentBBox`): geometry bbox + half stroke width, rotation-corrected, used for InDesign data merge / Illustrator tiling. |
 | `guides.js` | Smart snap guides: alignment detection with other shapes |
 | `text-panel.js` | Text tool + font loading (Google Fonts, custom uploads) |
 | `import-svg.js` | SVG import (→ editable group of paths) and raster image import (→ `image`, base64) via button + drag-drop. Falls back to `rawsvg` on parse failure or user request. |
