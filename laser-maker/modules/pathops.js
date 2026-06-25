@@ -66,6 +66,19 @@ function starPoints(a) {
   return pts;
 }
 
+// True overlap test: bbox reject, then boundary crossing, then containment.
+function pairOverlaps(a, b) {
+  if (!a.bounds.intersects(b.bounds)) return false;
+  if (a.intersects(b)) return true; // boundaries cross
+  return a.contains(b.bounds.center) || b.contains(a.bounds.center); // one inside other
+}
+function anyPairOverlaps(paths) {
+  for (let i = 0; i < paths.length; i++)
+    for (let j = i + 1; j < paths.length; j++)
+      if (pairOverlaps(paths[i], paths[j])) return true;
+  return false;
+}
+
 function runOp(op) {
   if (!ensurePaper()) { toast('Path engine still loading…'); return; }
   const s = store.get();
@@ -74,6 +87,13 @@ function runOp(op) {
 
   const paths = sel.map(shapeToPaper).filter(Boolean);
   if (paths.length < 2) { toast('Shapes not compatible'); return; }
+
+  // Require overlap: at least one pair must intersect or contain the other.
+  if (!anyPairOverlaps(paths)) {
+    toast('Shapes must overlap');
+    cleanup(paths);
+    return;
+  }
 
   let result;
   try {
@@ -384,6 +404,16 @@ function toast(msg) {
 document.querySelectorAll('.pf').forEach(b => {
   b.onclick = () => runOp(b.dataset.op);
 });
+
+// Show Pathfinder only with 2+ selected (same protocol as Align panel)
+const pfPanel = document.getElementById('pathfinder-panel');
+function _syncPathfinder() {
+  const n = store.selectedShapes().length;
+  pfPanel.style.display = n >= 2 ? '' : 'none';
+  if (n >= 2) pfPanel.classList.remove('collapsed');
+}
+store.subscribe(_syncPathfinder);
+_syncPathfinder();
 
 // Wire offset apply button
 document.getElementById('offset-apply').addEventListener('click', () => {

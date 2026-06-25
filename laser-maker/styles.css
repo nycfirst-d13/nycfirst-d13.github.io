@@ -750,6 +750,26 @@ input { font-family: inherit; }
 .prop-row .numeric { flex: 1; }
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
+/* Transform fields: slimmer to match the compact lock toggle */
+#transform-grid .numeric { padding: 0 6px; height: 26px; }
+
+/* Aspect-ratio lock: W/H row + borderless padlock toggle */
+.wh-lock-row { grid-column: 1 / -1; display: flex; align-items: center; gap: 4px; }
+.wh-lock-row .numeric { flex: 1; }
+.lock-spacer { flex: 0 0 auto; width: 18px; } /* mirrors .aspect-lock so X/Y match W/H */
+.aspect-lock {
+  flex: 0 0 auto; width: 18px; height: 26px; padding: 0;
+  display: flex; align-items: center; justify-content: center;
+  border: 0; background: none; color: var(--ink-3); cursor: pointer;
+  transition: color .12s;
+}
+.aspect-lock:hover:not(:disabled) { color: var(--ink); }
+.aspect-lock:disabled { opacity: .35; cursor: default; }
+.aspect-lock[aria-pressed="true"] { color: var(--ink); }
+.aspect-lock .lk-closed { display: none; }
+.aspect-lock[aria-pressed="true"] .lk-open { display: none; }
+.aspect-lock[aria-pressed="true"] .lk-closed { display: block; }
+
 .stepper {
   display: flex; align-items: center;
   border: 1px solid var(--rule-2);

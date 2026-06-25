@@ -26,6 +26,8 @@ const tY = document.getElementById('t-y');
 const tW = document.getElementById('t-w');
 const tH = document.getElementById('t-h');
 const tR = document.getElementById('t-r');
+const tLock = document.getElementById('t-lock');
+let lockAspect = false; // panel-level, session-only (ponytail: not per-shape, not persisted)
 const qrBtns = document.querySelectorAll('.qr-btn');
 
 const textPanel = document.getElementById('text-panel');
@@ -336,12 +338,14 @@ function syncFromState() {
       strokeWidth.value = s.defaults.strokeWidth;
     }
     [tX, tY, tW, tH, tR].forEach(i => { i.value = ''; i.disabled = true; });
+    tLock.disabled = true;
     qrBtns.forEach(b => b.disabled = true);
     syncing = false;
     return;
   }
 
   [tX, tY, tW, tH, tR].forEach(i => i.disabled = false);
+  tLock.disabled = sel.length !== 1; // lock only meaningful single-select
   qrBtns.forEach(b => b.disabled = false);
 
   // Process type across selection — for groups, inspect their leaf children
@@ -718,7 +722,34 @@ function scaleD(d, ob, nb) {
   });
 }
 
-[tX, tY, tW, tH, tR].forEach(i => i.addEventListener('change', applyTransform));
+// When locked, editing W/H scales the partner field proportionally before
+// applyTransform reads both. ponytail: wrapper on W/H change, applyBBox untouched.
+function constrainPartner(changed) {
+  if (!lockAspect) return;
+  const s = store.get();
+  if (s.selection.length !== 1) return;
+  const sh = store.findShape(s.selection[0]);
+  if (!sh) return;
+  const bb = artboard.getShapeBBox(sh);
+  if (!(bb.w > 0) || !(bb.h > 0)) return; // degenerate ratio guard
+  if (changed === tW) {
+    tH.value = round((parseFloat(tW.value) || 0) * (bb.h / bb.w), 2);
+  } else {
+    tW.value = round((parseFloat(tH.value) || 0) * (bb.w / bb.h), 2);
+  }
+}
+
+[tX, tY, tR].forEach(i => i.addEventListener('change', applyTransform));
+[tW, tH].forEach(i => i.addEventListener('change', e => {
+  constrainPartner(e.target);
+  applyTransform();
+}));
+
+tLock.addEventListener('click', () => {
+  lockAspect = !lockAspect;
+  tLock.setAttribute('aria-pressed', String(lockAspect));
+  tLock.title = lockAspect ? 'Unlock aspect ratio' : 'Lock aspect ratio';
+});
 
 qrBtns.forEach(btn => {
   btn.addEventListener('click', () => {
