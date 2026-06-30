@@ -643,13 +643,17 @@ class Artboard {
               const by = attrs.y + attrs.height - sz / 2;
               const badge = svgNS('g');
               badge.classList.add('text-overflow-badge');
-              badge.setAttribute('pointer-events', 'none');
+              badge.setAttribute('pointer-events', 'all');
+              badge.style.cursor = 'help';
+              const mkTip = () => { const tip = svgNS('title'); tip.textContent = 'Your text is cut off!'; return tip; };
               const bg = svgNS('rect');
               setAttrs(bg, { x: bx, y: by, width: sz, height: sz, fill: '#D93025', rx: sz * 0.15 });
+              bg.appendChild(mkTip());
               const t = svgNS('text');
               setAttrs(t, { x: bx + sz / 2, y: by + sz * 0.78, 'text-anchor': 'middle',
                 'font-size': sz * 0.75, 'font-weight': 700, 'font-family': 'system-ui,sans-serif', fill: 'white' });
               t.textContent = '+';
+              t.appendChild(mkTip());
               badge.appendChild(bg);
               badge.appendChild(t);
               g.appendChild(badge);
