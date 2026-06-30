@@ -613,22 +613,16 @@ async function convertTextToPath() {
       _bbox: null,
     }));
 
+    // ponytail: single glyph → bare path, no pointless 1-child group.
+    const replacement = children.length === 1
+      ? { ...children[0], name: sh.name + ' outline', visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0 }
+      : { id: groupId, type: 'group', textOutline: true, name: sh.name + ' outline', children, visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0, _bbox: null };
+
     store.commit(st => {
       const idx = st.shapes.findIndex(x => x.id === sh.id);
       if (idx === -1) return;
-      const group = {
-        id: groupId,
-        type: 'group',
-        textOutline: true,
-        name: sh.name + ' outline',
-        children,
-        visible: sh.visible,
-        locked: sh.locked,
-        rotation: sh.rotation || 0,
-        _bbox: null,
-      };
-      st.shapes.splice(idx, 1, group);
-      st.selection = [groupId];
+      st.shapes.splice(idx, 1, replacement);
+      st.selection = [replacement.id];
     }, 'convert-text');
     // ponytail: no clipRect — glyph paths are the visible ink, clipping to the
     // old frame is pointless and froze in absolute coords (broke on group move).
