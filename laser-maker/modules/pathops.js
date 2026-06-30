@@ -43,6 +43,22 @@ function shapeToPaper(sh) {
   return p;
 }
 
+// Boolean-op input: one paper PathItem per selected shape. Groups (and nested
+// groups, e.g. expanded/ungrouped text) collapse to their combined geometry via
+// collectPaperPaths, so unite/subtract/intersect work on them like any path.
+function shapeToPaperItem(sh) {
+  const parts = [];
+  collectPaperPaths(sh, parts);
+  if (!parts.length) return null;
+  let acc = parts[0];
+  for (let i = 1; i < parts.length; i++) {
+    const next = acc.unite(parts[i]);
+    acc.remove(); parts[i].remove();
+    acc = next;
+  }
+  return acc;
+}
+
 function polyPoints(a) {
   const pts = [];
   const start = -Math.PI / 2;
@@ -72,7 +88,7 @@ function runOp(op) {
   const sel = s.selection.map(id => s.shapes.find(x => x.id === id)).filter(Boolean);
   if (sel.length < 2) { toast('Select 2+ shapes'); return; }
 
-  const paths = sel.map(shapeToPaper).filter(Boolean);
+  const paths = sel.map(shapeToPaperItem).filter(Boolean);
   if (paths.length < 2) { toast('Shapes not compatible'); return; }
 
   let result;
