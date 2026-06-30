@@ -81,6 +81,9 @@ class Tools {
   }
 
   _onDown(e) {
+    // Let the text-edit overlay handle its own click-drag (text highlighting).
+    // Without this the active tool hijacks the drag (select→move, text→new box).
+    if (e.target.closest?.('.text-edit-overlay')) return;
     // Pan if hand tool active or spacebar held
     const handMode = store.get().activeTool === 'hand' || this.area.classList.contains('tool-hand');
     if (e.button === 1 || (handMode && e.button === 0)) {
