@@ -152,3 +152,14 @@ class Store {
 }
 
 export const store = new Store();
+
+// Recursively strip ids from every group's children. Was copy-pasted in
+// select.js / layers.js / keys.js; single home now.
+export function removeIdsFromGroups(shapes, ids) {
+  for (const sh of shapes) {
+    if (sh.type === 'group' && sh.children) {
+      sh.children = sh.children.filter(c => !ids.has(c.id));
+      removeIdsFromGroups(sh.children, ids);
+    }
+  }
+}

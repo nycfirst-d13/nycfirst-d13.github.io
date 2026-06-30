@@ -1,36 +1,18 @@
 // =============================================================================
 // keys.js — keyboard shortcuts
 // =============================================================================
-import { store } from './state.js';
+import { store, removeIdsFromGroups } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
-import { deepClone, uid, inToPx } from './utils.js';
+import { deepClone, deepCloneWithNewIds, inToPx } from './utils.js';
 import { nudgeShape } from './select.js';
 import { groupSelected, ungroupSelected } from './group.js';
 import { convertTextToPath } from './text-panel.js';
 import { showToast, selectionBBox } from './toast.js';
 
-function _removeIdsFromGroupsKeys(shapes, ids) {
-  for (const sh of shapes) {
-    if (sh.type === 'group' && sh.children) {
-      sh.children = sh.children.filter(c => !ids.has(c.id));
-      _removeIdsFromGroupsKeys(sh.children, ids);
-    }
-  }
-}
-
 let clipboard = [];
 let pasteCount = 0;
 
-// Deep clone a shape tree, assigning fresh IDs to every shape including group children
-function deepCloneWithNewIds(sh) {
-  const clone = deepClone(sh);
-  clone.id = uid();
-  if (clone.type === 'group' && clone.children) {
-    clone.children = clone.children.map(deepCloneWithNewIds);
-  }
-  return clone;
-}
 const PASTE_OFFSET = 40;   // 40 artboard px (= ~5/12 in)
 const NUDGE = 10;          // 10 artboard px
 const NUDGE_BIG = 40;      // 40 artboard px (shift+arrow)
@@ -80,7 +62,7 @@ export function doCut() {
   store.commit(st => {
     const ids = new Set(st.selection);
     st.shapes = st.shapes.filter(s => !ids.has(s.id));
-    _removeIdsFromGroupsKeys(st.shapes, ids);
+    removeIdsFromGroups(st.shapes, ids);
     st.selection = [];
   }, 'cut');
   return true;

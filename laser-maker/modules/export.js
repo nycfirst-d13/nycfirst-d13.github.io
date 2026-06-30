@@ -2,7 +2,7 @@
 // export.js — clean SVG export sized in inches
 // =============================================================================
 import { uploadToDrive } from './drive-upload.js';
-import { showToast } from './toast.js';
+import { showToast, toast } from './toast.js';
 import { store } from './state.js';
 import { artboard } from './artboard.js';
 import { inToPx, pxToIn, applyPathCorners, wordWrapLines, roundedPolygonPath } from './utils.js';
@@ -388,13 +388,6 @@ async function download(filename, tight = false) {
   return svg;
 }
 
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._t);
-  t._t = setTimeout(() => t.classList.remove('show'), 1600);
-}
 
 // ---- Export dialog ----
 const _backdrop     = document.getElementById('export-backdrop');
@@ -537,5 +530,3 @@ _projectInput.addEventListener('keydown', e => { if (e.key === 'Enter') _confirm
 _nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') _projectInput.focus(); });
 
 document.getElementById('export-btn').addEventListener('click', _openDialog);
-
-export const exporter = { download, buildSVG };

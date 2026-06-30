@@ -11,6 +11,7 @@
 // A signature watcher also re-bakes after undo/redo/load.
 // =============================================================================
 import { store } from './state.js';
+import { toast } from './toast.js';
 import { artboard } from './artboard.js';
 import { uid } from './utils.js';
 import { mulMat, applyMatrixToD } from './expand-svg.js';
@@ -202,14 +203,6 @@ C.reset.addEventListener('click', () => {
 // can switch them to any process afterward via the Process panel.
 const TRACE_MAX = 1000;   // cap longest traced side for performance
 
-function toast(msg) {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.remove('show'), 1800);
-}
 
 function traceSelected() {
   const sh = selectedEtchImage();

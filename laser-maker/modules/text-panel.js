@@ -2,6 +2,7 @@
 // text-panel.js — font picker, text property controls
 // =============================================================================
 import { store } from './state.js';
+import { toast } from './toast.js';
 import { uid } from './utils.js';
 import { artboard } from './artboard.js';
 import * as fontkit from 'https://esm.sh/fontkit@2.0.4';
@@ -337,13 +338,6 @@ async function handleCustomFontUpload(file) {
 
 // ---- Toast ----
 
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.remove('show'), 2000);
-}
 
 // ---- Convert text to path ----
 

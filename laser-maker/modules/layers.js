@@ -1,7 +1,7 @@
 // =============================================================================
 // layers.js — layers panel (stacking order, visibility, delete)
 // =============================================================================
-import { store } from './state.js';
+import { store, removeIdsFromGroups } from './state.js';
 import { enterIsolation } from './group.js';
 import { PROCESS_DEFINITIONS } from './process-registry.js';
 
@@ -199,20 +199,12 @@ function deleteSel() {
   store.commit(s => {
     const ids = new Set(s.selection);
     s.shapes = s.shapes.filter(sh => !ids.has(sh.id));
-    _removeIdsFromGroupsLayers(s.shapes, ids);
+    removeIdsFromGroups(s.shapes, ids);
     s.selection = [];
     if (ids.has(s.isolationGroup)) s.isolationGroup = null;
   }, 'delete');
 }
 
-function _removeIdsFromGroupsLayers(shapes, ids) {
-  for (const sh of shapes) {
-    if (sh.type === 'group') {
-      sh.children = sh.children.filter(c => !ids.has(c.id));
-      _removeIdsFromGroupsLayers(sh.children, ids);
-    }
-  }
-}
 
 store.subscribe(render);
 render();

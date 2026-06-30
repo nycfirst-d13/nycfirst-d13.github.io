@@ -28,7 +28,7 @@ const baseName = {
   polygon: 'Polygon', star: 'Star', text: 'Text', path: 'Path',
 };
 
-export let nameCounter = {};
+let nameCounter = {};
 export function nextName(type) {
   nameCounter[type] = (nameCounter[type] || 0) + 1;
   return `${baseName[type]} ${nameCounter[type]}`;

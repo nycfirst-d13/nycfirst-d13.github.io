@@ -84,3 +84,6 @@ export function showToast(msg, opts) {
   clearTimeout(_cleanup);
   _timer = setTimeout(dismissToast, 1800);
 }
+
+// Bare one-arg toast — was reimplemented in 5 modules; all route here now.
+export { showToast as toast };

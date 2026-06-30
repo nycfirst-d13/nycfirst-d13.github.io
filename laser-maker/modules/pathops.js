@@ -3,6 +3,7 @@
 //              + offset path
 // =============================================================================
 import { store } from './state.js';
+import { toast } from './toast.js';
 import { uid, PX_PER_INCH, rectToPathData, applyPathCorners } from './utils.js';
 import { artboard } from './artboard.js';
 import { progress, raf } from './progress.js';
@@ -388,13 +389,6 @@ async function _clipperOffsetFromPathsAsync(paperPaths, amount, report, onFinish
 
 function cleanup(paths) { for (const p of paths) p.remove(); }
 
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => t.classList.remove('show'), 1600);
-}
 
 // Wire pathfinder buttons
 document.querySelectorAll('.pf').forEach(b => {

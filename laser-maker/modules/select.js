@@ -1,7 +1,7 @@
 // =============================================================================
 // select.js — selection, transform handles, marquee, direct-select anchors
 // =============================================================================
-import { store } from './state.js';
+import { store, removeIdsFromGroups } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
 import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds, pxToIn, inToPx } from './utils.js';
@@ -14,8 +14,6 @@ const ROT_OFFSET   = 22;    // CSS px above bbox
 const ANCHOR_SIZE  = 7;
 const CW_R         = 3.5;   // corner-widget circle radius, CSS px
 const CW_MIN       = 16;    // corner-widget minimum inset from vertex, CSS px
-
-function px(v) { return v / store.get().viewport.zoom; } // convert CSS px -> artboard px
 
 // =============== Marquee + hit testing ==============================
 
@@ -205,7 +203,7 @@ tools.register('select', {
       const clones = origIds.map(id => deepCloneWithNewIds(store.findShape(id)));
       store.commit(st => {
         if (st.isolationGroup) {
-          const grp = _findShapeInTree(st.shapes, st.isolationGroup);
+          const grp = store.findShape(st.isolationGroup);
           if (grp?.type === 'group') {
             for (const clone of clones) grp.children.push(clone);
           }
@@ -1549,12 +1547,6 @@ function drawAnchors(id) {
   }
 }
 
-function rectToPath(sh) {
-  const d = rectToPathData(sh.attrs);
-  sh.type = 'path';
-  sh.attrs = { d };
-}
-
 function applyAnchorsDelta(sh, orig, idxs, dx, dy) {
   switch (sh.type) {
     case 'rect': {
@@ -2315,16 +2307,6 @@ function scalePathD(d, ob, nb) {
   });
 }
 
-function _findShapeInTree(shapes, id) {
-  for (const sh of shapes) {
-    if (sh.id === id) return sh;
-    if (sh.type === 'group' && sh.children) {
-      const found = _findShapeInTree(sh.children, id);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 
 // =============== Status / wiring ==============================
 function updateStatusSel() {
@@ -2364,7 +2346,7 @@ window.addEventListener('keydown', e => {
       // Remove from top-level shapes
       st.shapes = st.shapes.filter(sh => !ids.has(sh.id));
       // Also remove from group children (covers isolation mode selection)
-      _removeIdsFromGroups(st.shapes, ids);
+      removeIdsFromGroups(st.shapes, ids);
       st.selection = [];
       if (ids.has(st.isolationGroup)) st.isolationGroup = null;
     }, 'delete');
@@ -2403,14 +2385,6 @@ window.addEventListener('keyup', e => {
   if (e.key === 'Alt' && _altHeld) { _altHeld = false; renderOverlay(); }
 });
 
-function _removeIdsFromGroups(shapes, ids) {
-  for (const sh of shapes) {
-    if (sh.type === 'group') {
-      sh.children = sh.children.filter(c => !ids.has(c.id));
-      _removeIdsFromGroups(sh.children, ids);
-    }
-  }
-}
 
 // Marquee element factory
 function makeMarquee() {

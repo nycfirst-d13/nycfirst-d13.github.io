@@ -30,12 +30,6 @@ export function fmtIn(v) {
   return v.toFixed(2);
 }
 
-export function formatHex(s) {
-  if (!s) return '#000000';
-  if (s === 'none') return 'none';
-  return s.toUpperCase();
-}
-
 // rotate point (px,py) around (cx,cy) by deg
 export function rotatePoint(px, py, cx, cy, deg) {
   const r = deg * Math.PI / 180;
@@ -50,26 +44,6 @@ export function snap(value, step) {
   return Math.round(value / step) * step;
 }
 
-// shape bounding box (axis-aligned, ignores rotation — used for handle positions)
-export function shapeBBox(s) {
-  switch (s.type) {
-    case 'rect':    return { x: s.attrs.x, y: s.attrs.y, w: s.attrs.w, h: s.attrs.h };
-    case 'ellipse': return { x: s.attrs.cx - s.attrs.rx, y: s.attrs.cy - s.attrs.ry, w: s.attrs.rx*2, h: s.attrs.ry*2 };
-    case 'line': {
-      const x = Math.min(s.attrs.x1, s.attrs.x2);
-      const y = Math.min(s.attrs.y1, s.attrs.y2);
-      return { x, y, w: Math.abs(s.attrs.x2-s.attrs.x1), h: Math.abs(s.attrs.y2-s.attrs.y1) };
-    }
-    case 'polygon':
-    case 'star':
-    case 'path':
-    case 'text':
-      // computed from rendered element
-      return s._bbox || { x: 0, y: 0, w: 0, h: 0 };
-  }
-  return { x: 0, y: 0, w: 0, h: 0 };
-}
-
 // rotated bbox corners
 export function rotatedCorners(bbox, rot) {
   const cx = bbox.x + bbox.w/2, cy = bbox.y + bbox.h/2;
@@ -81,8 +55,6 @@ export function rotatedCorners(bbox, rot) {
   ];
   return pts.map(p => rotatePoint(p.x, p.y, cx, cy, rot));
 }
-
-export function on(el, ev, fn, opts) { el.addEventListener(ev, fn, opts); return () => el.removeEventListener(ev, fn, opts); }
 
 export function deepClone(o) {
   return JSON.parse(JSON.stringify(o));

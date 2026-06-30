@@ -390,9 +390,7 @@ function _applyReflectCopy(ax1, ay1, ax2, ay2) {
   }, 'reflect-copy');
 }
 
-export function quickFlip(dir) { _quickFlip(dir); }
-
-function _quickFlip(dir) {
+export function quickFlip(dir) {
   const bb = _selectionBBox();
   if (!bb) return;
   const cx = bb.x + bb.w / 2, cy = bb.y + bb.h / 2;
@@ -426,11 +424,11 @@ function _keyHandler(e) {
   if (key === 'h') {
     e.preventDefault(); e.stopPropagation();
     _reset();
-    _quickFlip('h');
+    quickFlip('h');
   } else if (key === 'f') {
     e.preventDefault(); e.stopPropagation();
     _reset();
-    _quickFlip('v');
+    quickFlip('v');
   } else if (key === 'escape') {
     e.preventDefault(); e.stopPropagation();
     _reset();

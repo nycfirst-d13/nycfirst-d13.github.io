@@ -24,7 +24,6 @@ class Artboard {
     this.abHInput    = document.getElementById('ab-h');
     this.statusCursor= document.getElementById('status-cursor');
 
-    this._renderListeners = [];
     this._init();
   }
 
@@ -91,10 +90,7 @@ class Artboard {
       const isViewport = reason === 'zoom' || reason === 'pan' || reason === 'fit';
       this._applyViewport();
       this._updateStatus();
-      if (isViewport) {
-        for (const fn of this._renderListeners) fn();
-        return;
-      }
+      if (isViewport) return;
       wIn.value = s.artboard.w;
       hIn.value = s.artboard.h;
       this._applyArtboard();
@@ -278,8 +274,6 @@ class Artboard {
   }
 
   // ---------------- Shape rendering ----------------
-  onAfterRender(fn) { this._renderListeners.push(fn); }
-
   _renderShapes() {
     const s = store.get();
     this.layerRoot.replaceChildren();
@@ -320,7 +314,6 @@ class Artboard {
         }
       }
     }
-    for (const fn of this._renderListeners) fn();
   }
 
   _cacheBBox(sh, node) {
