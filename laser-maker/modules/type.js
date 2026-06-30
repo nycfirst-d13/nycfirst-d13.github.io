@@ -26,6 +26,7 @@ export function enterTextEdit(shapeId) {
   const ta = document.createElement('textarea');
   ta.className = 'text-edit-overlay';
   ta.value = sh.attrs.content || '';
+  ta._initialValue = ta.value;   // baseline for the undo-leak guard (see keydown)
   ta.spellcheck = false;
   _positionTextarea(ta, sh);
 
@@ -37,6 +38,13 @@ export function enterTextEdit(shapeId) {
   });
 
   ta.addEventListener('keydown', e => {
+    // Cmd/Ctrl+Z with nothing left to undo in this box would leak to Chrome's
+    // cross-element undo fallback (the header name/project inputs) and wipe them.
+    // Block it when the textarea is back at its value-on-focus; otherwise let
+    // native char-by-char undo run. Canvas undo stays store-only (keys.js).
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && ta.value === ta._initialValue) {
+      e.preventDefault(); e.stopPropagation(); return;
+    }
     if (e.key === 'Escape' || (e.key === 'Enter' && (e.metaKey || e.ctrlKey))) { e.stopPropagation(); exitTextEdit(); return; }
     if (e.key === 'Tab') {
       e.preventDefault();
