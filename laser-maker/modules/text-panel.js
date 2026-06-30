@@ -627,12 +627,11 @@ async function convertTextToPath() {
         rotation: sh.rotation || 0,
         _bbox: null,
       };
-      if (frameW && sh.attrs.height != null) {
-        group.clipRect = { x: sh.attrs.x, y: sh.attrs.y, w: frameW, h: sh.attrs.height };
-      }
       st.shapes.splice(idx, 1, group);
       st.selection = [groupId];
     }, 'convert-text');
+    // ponytail: no clipRect — glyph paths are the visible ink, clipping to the
+    // old frame is pointless and froze in absolute coords (broke on group move).
 
     toast('Converted to path');
   } catch (err) {
