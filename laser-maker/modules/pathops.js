@@ -4,7 +4,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { toast } from './toast.js';
-import { uid, PX_PER_INCH, rectToPathData, applyPathCorners } from './utils.js';
+import { uid, PX_PER_INCH, rectToPathData, applyPathCorners, polygonPoints, starPoints } from './utils.js';
 import { artboard } from './artboard.js';
 import { progress, raf } from './progress.js';
 
@@ -24,7 +24,7 @@ function shapeToPaper(sh) {
     case 'rect':    p = new paper.Path(rectToPathData(a)); break;
     case 'ellipse': p = new paper.Path.Ellipse({ center: [a.cx, a.cy], radius: [a.rx, a.ry] }); break;
     case 'polygon': {
-      const pts = polyPoints(a);
+      const pts = polygonPoints(a);
       p = new paper.Path({ segments: pts.map(pt => [pt.x, pt.y]), closed: true });
       break;
     }
@@ -60,28 +60,6 @@ function shapeToPaperItem(sh) {
   return acc;
 }
 
-function polyPoints(a) {
-  const pts = [];
-  const start = -Math.PI / 2;
-  for (let i = 0; i < a.sides; i++) {
-    const ang = start + i * 2 * Math.PI / a.sides;
-    pts.push({ x: a.cx + a.r * Math.cos(ang), y: a.cy + a.r * Math.sin(ang) });
-  }
-  return pts;
-}
-
-function starPoints(a) {
-  const n = Math.max(3, (a.points)|0);
-  const ri = a.r * (a.innerRatio ?? 0.4);
-  const pts = [];
-  const start = -Math.PI / 2;
-  for (let i = 0; i < n * 2; i++) {
-    const ang = start + i * Math.PI / n;
-    const rad = i % 2 === 0 ? a.r : ri;
-    pts.push({ x: a.cx + rad * Math.cos(ang), y: a.cy + rad * Math.sin(ang) });
-  }
-  return pts;
-}
 
 function runOp(op) {
   if (!ensurePaper()) { toast('Path engine still loading…'); return; }

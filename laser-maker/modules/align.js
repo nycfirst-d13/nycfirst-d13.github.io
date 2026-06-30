@@ -94,28 +94,17 @@ export function runDistribute(axis) {
   const items = sel.map(sh => ({ sh, b: artboard.getShapeBBox(sh) })).filter(i => i.b);
   if (items.length < 3) return;
   store.commit(() => {
-    if (axis === 'h') {
-      items.sort((a, b) => a.b.x - b.b.x);
-      const first = items[0].b, last = items[items.length - 1].b;
-      const span = (last.x + last.w) - first.x;
-      const totalW = items.reduce((s, i) => s + i.b.w, 0);
-      const gap = (span - totalW) / (items.length - 1);
-      let cur = first.x;
-      for (const item of items) {
-        nudgeShape(item.sh, cur - item.b.x, 0);
-        cur += item.b.w + gap;
-      }
-    } else {
-      items.sort((a, b) => a.b.y - b.b.y);
-      const first = items[0].b, last = items[items.length - 1].b;
-      const span = (last.y + last.h) - first.y;
-      const totalH = items.reduce((s, i) => s + i.b.h, 0);
-      const gap = (span - totalH) / (items.length - 1);
-      let cur = first.y;
-      for (const item of items) {
-        nudgeShape(item.sh, 0, cur - item.b.y);
-        cur += item.b.h + gap;
-      }
+    const [pos, size] = axis === 'h' ? ['x', 'w'] : ['y', 'h'];
+    items.sort((a, b) => a.b[pos] - b.b[pos]);
+    const first = items[0].b, last = items[items.length - 1].b;
+    const span = (last[pos] + last[size]) - first[pos];
+    const total = items.reduce((s, i) => s + i.b[size], 0);
+    const gap = (span - total) / (items.length - 1);
+    let cur = first[pos];
+    for (const item of items) {
+      const d = cur - item.b[pos];
+      nudgeShape(item.sh, axis === 'h' ? d : 0, axis === 'h' ? 0 : d);
+      cur += item.b[size] + gap;
     }
   }, 'distribute');
 }

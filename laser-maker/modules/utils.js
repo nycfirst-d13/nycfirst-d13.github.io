@@ -44,6 +44,31 @@ export function snap(value, step) {
   return Math.round(value / step) * step;
 }
 
+// Vertex points for polygon/star shapes. Was copy-pasted in
+// artboard / pathops / shapebuilder; single home now. attrs: {cx,cy,r,sides}
+// for polygon, {cx,cy,r,points,innerRatio} for star.
+export function polygonPoints(a) {
+  const n = Math.max(3, a.sides | 0);
+  const pts = [], start = -Math.PI / 2;
+  for (let i = 0; i < n; i++) {
+    const ang = start + i * 2 * Math.PI / n;
+    pts.push({ x: a.cx + a.r * Math.cos(ang), y: a.cy + a.r * Math.sin(ang) });
+  }
+  return pts;
+}
+
+export function starPoints(a) {
+  const n = Math.max(3, a.points | 0);
+  const ri = a.r * (a.innerRatio ?? 0.4);
+  const pts = [], start = -Math.PI / 2;
+  for (let i = 0; i < n * 2; i++) {
+    const ang = start + i * Math.PI / n;
+    const rad = i % 2 === 0 ? a.r : ri;
+    pts.push({ x: a.cx + rad * Math.cos(ang), y: a.cy + rad * Math.sin(ang) });
+  }
+  return pts;
+}
+
 // rotated bbox corners
 export function rotatedCorners(bbox, rot) {
   const cx = bbox.x + bbox.w/2, cy = bbox.y + bbox.h/2;

@@ -4,7 +4,7 @@
 import { store, removeIdsFromGroups } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
-import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds, pxToIn, inToPx } from './utils.js';
+import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds, pxToIn, inToPx, polygonPoints, starPoints } from './utils.js';
 import { computeSnap, computePointSnap, renderGuides, clearGuides } from './guides.js';
 import { enterTextEdit } from './type.js';
 import { enterIsolation, exitIsolation } from './group.js';
@@ -994,12 +994,12 @@ function cwPositions(b, radii, z) {
 // Returns [{idx, x, y, bisX, bisY, maxR, sinHalf, radius}] for path/polygon/star shapes.
 function shapeCornerInfosWithR(sh) {
   if (sh.type === 'polygon') {
-    return getPolyCornerInfos(artboard._polyPoints(sh.attrs)).map(info => ({
+    return getPolyCornerInfos(polygonPoints(sh.attrs)).map(info => ({
       ...info, radius: sh.attrs.cornerRadii?.[info.idx] ?? sh.attrs.cornerRadius ?? 0,
     }));
   }
   if (sh.type === 'star') {
-    return getPolyCornerInfos(artboard._starPoints(sh.attrs)).map(info => ({
+    return getPolyCornerInfos(starPoints(sh.attrs)).map(info => ({
       ...info, radius: sh.attrs.cornerRadii?.[info.idx] ?? (info.idx % 2 === 0 ? (sh.attrs.outerCornerR ?? 0) : (sh.attrs.innerCornerR ?? 0)),
     }));
   }
@@ -1594,7 +1594,7 @@ function applyAnchorsDelta(sh, orig, idxs, dx, dy) {
       if (orig.type === 'rect') {
         sh.attrs.d = _rebuildPath(_parseAllPathSegs(rectToPathData(orig.attrs)), idxs, dx, dy);
       } else if (orig.type === 'polygon' || orig.type === 'star') {
-        const pts = orig.type === 'polygon' ? artboard._polyPoints(orig.attrs) : artboard._starPoints(orig.attrs);
+        const pts = orig.type === 'polygon' ? polygonPoints(orig.attrs) : starPoints(orig.attrs);
         for (const idx of idxs) pts[idx] = { x: pts[idx].x + dx, y: pts[idx].y + dy };
         sh.attrs.d = polyPointsToPath(pts);
       } else {
@@ -1612,14 +1612,14 @@ function applyAnchorsDelta(sh, orig, idxs, dx, dy) {
       break;
     }
     case 'polygon': {
-      const pts = artboard._polyPoints(orig.attrs);
+      const pts = polygonPoints(orig.attrs);
       for (const idx of idxs) pts[idx] = { x: pts[idx].x + dx, y: pts[idx].y + dy };
       sh.type = 'path';
       sh.attrs = { d: polyPointsToPath(pts) };
       break;
     }
     case 'star': {
-      const pts = artboard._starPoints(orig.attrs);
+      const pts = starPoints(orig.attrs);
       for (const idx of idxs) pts[idx] = { x: pts[idx].x + dx, y: pts[idx].y + dy };
       sh.type = 'path';
       sh.attrs = { d: polyPointsToPath(pts) };
@@ -1640,8 +1640,8 @@ function anchorPoints(sh) {
       const { cx, cy, rx, ry } = sh.attrs;
       return [{ x: cx, y: cy - ry }, { x: cx + rx, y: cy }, { x: cx, y: cy + ry }, { x: cx - rx, y: cy }];
     }
-    case 'polygon': return artboard._polyPoints(sh.attrs);
-    case 'star': return artboard._starPoints(sh.attrs);
+    case 'polygon': return polygonPoints(sh.attrs);
+    case 'star': return starPoints(sh.attrs);
   }
   return [];
 }

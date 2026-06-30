@@ -124,10 +124,15 @@ const foldAlignCtrBtn   = document.getElementById('fold-align-centered');
 
 const HEX_RE = /^#?[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$/;
 
+// Strip leading #, expand 3-digit shorthand to 6 digits. Returns bare digits.
+function expandHex(hex) {
+  const h = hex.startsWith('#') ? hex.slice(1) : hex;
+  return h.length === 3 ? h.split('').map(c => c+c).join('') : h;
+}
+
 function hexToRgbStr(hex) {
   if (!hex || hex === 'none' || hex === '—') return hex;
-  const h = (hex.startsWith('#') ? hex.slice(1) : hex);
-  const full = h.length === 3 ? h.split('').map(c => c+c).join('') : h;
+  const full = expandHex(hex);
   const r = parseInt(full.slice(0,2), 16);
   const g = parseInt(full.slice(2,4), 16);
   const b = parseInt(full.slice(4,6), 16);
@@ -139,8 +144,7 @@ function setRgbInputs(rInp, gInp, bInp, hex) {
     rInp.value = gInp.value = bInp.value = '';
     return;
   }
-  const h = hex.startsWith('#') ? hex.slice(1) : hex;
-  const full = h.length === 3 ? h.split('').map(c => c+c).join('') : h;
+  const full = expandHex(hex);
   rInp.value = parseInt(full.slice(0,2), 16);
   gInp.value = parseInt(full.slice(2,4), 16);
   bInp.value = parseInt(full.slice(4,6), 16);
@@ -161,9 +165,7 @@ function normalizeHex(v) {
     return `#${r}${g}${b}`.toUpperCase();
   }
   if (!HEX_RE.test(v)) return null;
-  let h = v.startsWith('#') ? v : '#' + v;
-  if (h.length === 4) h = '#' + [...h.slice(1)].map(c => c+c).join('');
-  return h.toUpperCase();
+  return ('#' + expandHex(v)).toUpperCase();
 }
 
 function commonValue(arr, fn) {
@@ -199,14 +201,20 @@ function _syncFoldDash(shapes) {
   }
 }
 
-function _setFoldDashInGroup(group, prop, value) {
+// Visit every non-group leaf under a group, recursing through nested groups.
+function forEachLeaf(group, fn) {
   for (const child of group.children) {
-    if (child.type === 'group') _setFoldDashInGroup(child, prop, value);
-    else if (child.processType === 'fold') {
-      if (!child.foldDash) child.foldDash = { ...FOLD_DASH_DEFAULTS };
-      child.foldDash[prop] = value;
-    }
+    if (child.type === 'group') forEachLeaf(child, fn);
+    else fn(child);
   }
+}
+
+function _setFoldDashInGroup(group, prop, value) {
+  forEachLeaf(group, child => {
+    if (child.processType !== 'fold') return;
+    if (!child.foldDash) child.foldDash = { ...FOLD_DASH_DEFAULTS };
+    child.foldDash[prop] = value;
+  });
 }
 
 function _setFoldDash(prop, value) {
@@ -459,24 +467,15 @@ function syncFromState() {
 }
 
 function _applyAppearanceToGroup(group, prop, value) {
-  for (const child of group.children) {
-    if (child.type === 'group') _applyAppearanceToGroup(child, prop, value);
-    else child[prop] = value;
-  }
+  forEachLeaf(group, child => { child[prop] = value; });
 }
 
 function _collectLeaves(group, out) {
-  for (const child of group.children) {
-    if (child.type === 'group') _collectLeaves(child, out);
-    else out.push(child);
-  }
+  forEachLeaf(group, child => out.push(child));
 }
 
 function _applyProcessTypeToGroup(group, pt) {
-  for (const child of group.children) {
-    if (child.type === 'group') _applyProcessTypeToGroup(child, pt);
-    else { child.processType = pt; normalizeForProcess(child, pt); }
-  }
+  forEachLeaf(group, child => { child.processType = pt; normalizeForProcess(child, pt); });
 }
 
 // Ensure each selected Etch image has its `attrs.etch` adjustment params. Actual
@@ -515,8 +514,7 @@ function setProcessType(pt) {
 
 function ensureColor(v) {
   if (!v || v === 'none') return '#000000';
-  if (v.length === 4) return '#' + [...v.slice(1)].map(c => c+c).join('');
-  return v;
+  return v.length === 4 ? '#' + expandHex(v) : v;
 }
 
 // ---------------- Fill / Stroke / Weight ----------------

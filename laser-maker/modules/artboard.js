@@ -2,7 +2,7 @@
 // artboard.js — viewport (zoom/pan/fit/1:1), grid, shape rendering, coord math
 // =============================================================================
 import { store } from './state.js';
-import { svgNS, setAttrs, inToPx, pxToIn, clamp, fmtIn, snap as snapVal, applyPathCorners, rotatedCorners, roundedPolygonPath } from './utils.js';
+import { svgNS, setAttrs, inToPx, pxToIn, clamp, fmtIn, snap as snapVal, applyPathCorners, rotatedCorners, roundedPolygonPath, polygonPoints, starPoints } from './utils.js';
 import { resolveAppearance } from './process-registry.js';
 
 const MIN_ZOOM = 0.1;
@@ -531,7 +531,7 @@ class Artboard {
         if (!resolved.stroke || resolved.stroke === 'none') styleAttrs.stroke = '#0F1419';
         break;
       case 'polygon': {
-        const pts = this._polyPoints(attrs);
+        const pts = polygonPoints(attrs);
         const radii = pts.map((_, i) => attrs.cornerRadii?.[i] ?? attrs.cornerRadius ?? 0);
         if (radii.some(r => r > 0)) {
           el = svgNS('path');
@@ -543,7 +543,7 @@ class Artboard {
         break;
       }
       case 'star': {
-        const pts = this._starPoints(attrs);
+        const pts = starPoints(attrs);
         const outerR = attrs.outerCornerR ?? 0;
         const innerR = attrs.innerCornerR ?? 0;
         const radii = pts.map((_, i) => attrs.cornerRadii?.[i] ?? (i % 2 === 0 ? outerR : innerR));
@@ -725,32 +725,6 @@ class Artboard {
     return g;
   }
 
-  _polyPoints(attrs) {
-    const { cx, cy, r, sides } = attrs;
-    const n = Math.max(3, sides|0);
-    const pts = [];
-    const startAngle = -Math.PI / 2;
-    for (let i = 0; i < n; i++) {
-      const a = startAngle + (i * 2*Math.PI / n);
-      pts.push({ x: cx + r*Math.cos(a), y: cy + r*Math.sin(a) });
-    }
-    return pts;
-  }
-
-  _starPoints(attrs) {
-    const { cx, cy, r, points, innerRatio } = attrs;
-    const n = Math.max(3, points|0);
-    const ri = r * (innerRatio ?? 0.4);
-    const pts = [];
-    const startAngle = -Math.PI / 2;
-    for (let i = 0; i < n * 2; i++) {
-      const a = startAngle + (i * Math.PI / n);
-      const rad = i % 2 === 0 ? r : ri;
-      pts.push({ x: cx + rad * Math.cos(a), y: cy + rad * Math.sin(a) });
-    }
-    return pts;
-  }
-
   // Geometry bbox without rotation (used when applying rotate around bbox center)
   _geometryBBox(sh) {
     switch (sh.type) {
@@ -764,12 +738,12 @@ class Artboard {
         h: Math.abs(sh.attrs.y2 - sh.attrs.y1),
       };
       case 'polygon': {
-        const pts = this._polyPoints(sh.attrs);
+        const pts = polygonPoints(sh.attrs);
         const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
         return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs)-Math.min(...xs), h: Math.max(...ys)-Math.min(...ys) };
       }
       case 'star': {
-        const pts = this._starPoints(sh.attrs);
+        const pts = starPoints(sh.attrs);
         const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
         return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs)-Math.min(...xs), h: Math.max(...ys)-Math.min(...ys) };
       }

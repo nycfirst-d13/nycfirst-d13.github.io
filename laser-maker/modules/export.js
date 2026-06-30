@@ -5,7 +5,7 @@ import { uploadToDrive } from './drive-upload.js';
 import { showToast, toast } from './toast.js';
 import { store } from './state.js';
 import { artboard } from './artboard.js';
-import { inToPx, pxToIn, applyPathCorners, wordWrapLines, roundedPolygonPath } from './utils.js';
+import { inToPx, pxToIn, applyPathCorners, wordWrapLines, roundedPolygonPath, polygonPoints, starPoints } from './utils.js';
 import { fetchFontBuffer, fontkit } from './text-panel.js';
 import { resolveAppearance } from './process-registry.js';
 
@@ -172,7 +172,7 @@ function shapeToSVG(sh, pathMap = new Map(), defs = []) {
     case 'line':
       return `<line x1="${a.x1.toFixed(3)}" y1="${a.y1.toFixed(3)}" x2="${a.x2.toFixed(3)}" y2="${a.y2.toFixed(3)}"${style}${transform}/>`;
     case 'polygon': {
-      const pts = polyPoints(a);
+      const pts = polygonPoints(a);
       const radii = pts.map((_, i) => a.cornerRadii?.[i] ?? a.cornerRadius ?? 0);
       if (radii.some(r => r > 0)) {
         return `<path d="${roundedPolygonPath(pts, radii)}"${style}${transform}/>`;
@@ -235,29 +235,6 @@ function shapeToSVG(sh, pathMap = new Map(), defs = []) {
     }
   }
   return '';
-}
-
-function polyPoints(a) {
-  const pts = [];
-  const start = -Math.PI / 2;
-  for (let i = 0; i < a.sides; i++) {
-    const ang = start + i * 2 * Math.PI / a.sides;
-    pts.push({ x: a.cx + a.r * Math.cos(ang), y: a.cy + a.r * Math.sin(ang) });
-  }
-  return pts;
-}
-
-function starPoints(a) {
-  const n = Math.max(3, (a.points)|0);
-  const ri = a.r * (a.innerRatio ?? 0.4);
-  const pts = [];
-  const start = -Math.PI / 2;
-  for (let i = 0; i < n * 2; i++) {
-    const ang = start + i * Math.PI / n;
-    const rad = i % 2 === 0 ? a.r : ri;
-    pts.push({ x: a.cx + rad * Math.cos(ang), y: a.cy + rad * Math.sin(ang) });
-  }
-  return pts;
 }
 
 function buildSVG(pathMap = new Map(), tight = false) {
