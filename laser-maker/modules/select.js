@@ -4,7 +4,7 @@
 import { store } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
-import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds } from './utils.js';
+import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds, pxToIn, inToPx } from './utils.js';
 import { computeSnap, computePointSnap, renderGuides, clearGuides } from './guides.js';
 import { enterTextEdit } from './type.js';
 import { enterIsolation, exitIsolation } from './group.js';
@@ -1007,6 +1007,135 @@ function shapeCornerInfosWithR(sh) {
   return [];
 }
 
+// =============== Corner-radius panel (numeric entry) ============
+// Single source of truth for the inspector "Corners" field. Master scope (all
+// corners) by default; one-corner scope when the direct tool has exactly one
+// roundable anchor selected. Values are inches at the UI; px internally.
+const RECT_CORNER_NAMES = ['nw', 'ne', 'se', 'sw'];
+
+function isRoundable(sh) {
+  return !!sh && (sh.type === 'rect' || sh.type === 'polygon' || sh.type === 'star' || sh.type === 'path');
+}
+
+function _rectCornerRadii(sh) {
+  return {
+    nw: sh.attrs.r_nw ?? sh.attrs.rx ?? 0,
+    ne: sh.attrs.r_ne ?? sh.attrs.rx ?? 0,
+    se: sh.attrs.r_se ?? sh.attrs.rx ?? 0,
+    sw: sh.attrs.r_sw ?? sh.attrs.rx ?? 0,
+  };
+}
+
+// Max radius (px) a corner may take. cornerKey null = master (min across all corners).
+function _cornerMaxPx(sh, cornerKey) {
+  if (sh.type === 'rect') return Math.min(sh.attrs.w, sh.attrs.h) / 2;
+  const infos = shapeCornerInfosWithR(sh);
+  if (cornerKey == null) return infos.length ? Math.min(...infos.map(i => i.maxR)) : 0;
+  const info = infos.find(i => i.idx === parseInt(cornerKey, 10));
+  return info ? info.maxR : 0;
+}
+
+// Read corner radius (px). cornerKey null = master; returns null when corners differ ("mixed").
+function _cornerRadiusPx(sh, cornerKey) {
+  if (sh.type === 'rect') {
+    const r = _rectCornerRadii(sh);
+    if (cornerKey != null) return r[cornerKey] ?? 0;
+    const vals = RECT_CORNER_NAMES.map(n => r[n]);
+    return vals.every(v => v === vals[0]) ? vals[0] : null;
+  }
+  const infos = shapeCornerInfosWithR(sh);
+  if (cornerKey != null) {
+    const info = infos.find(i => i.idx === parseInt(cornerKey, 10));
+    return info ? info.radius : 0;
+  }
+  if (!infos.length) return 0;
+  const vals = infos.map(i => i.radius);
+  return vals.every(v => v === vals[0]) ? vals[0] : null;
+}
+
+// Which single corner is the field scoped to? null = master. Only in direct tool,
+// exactly one selected anchor on the shape, mapping to a roundable corner.
+function _activeCornerKey(sh) {
+  if (store.get().activeTool !== 'direct') return null;
+  const anchors = selectedAnchors.filter(a => a.shapeId === sh.id);
+  if (anchors.length !== 1) return null;
+  const idx = anchors[0].idx;
+  if (sh.type === 'rect') return (idx >= 0 && idx < 4) ? RECT_CORNER_NAMES[idx] : null;
+  return shapeCornerInfosWithR(sh).some(i => i.idx === idx) ? String(idx) : null;
+}
+
+function _writeCornerRadius(sh, cornerKey, px) {
+  if (sh.type === 'rect') {
+    const v = Math.max(0, Math.min(Math.min(sh.attrs.w, sh.attrs.h) / 2, px));
+    if (cornerKey == null) {
+      sh.attrs.rx = v;
+      delete sh.attrs.r_nw; delete sh.attrs.r_ne; delete sh.attrs.r_se; delete sh.attrs.r_sw;
+    } else {
+      // Materialize all four so this corner becomes independent of the master.
+      const r = _rectCornerRadii(sh); r[cornerKey] = v;
+      delete sh.attrs.rx;
+      sh.attrs.r_nw = r.nw; sh.attrs.r_ne = r.ne; sh.attrs.r_se = r.se; sh.attrs.r_sw = r.sw;
+    }
+    return;
+  }
+  const infos = shapeCornerInfosWithR(sh);
+  if (cornerKey == null) {
+    const v = Math.max(0, Math.min(_cornerMaxPx(sh, null), px));
+    if (sh.type === 'polygon') { sh.attrs.cornerRadius = v; delete sh.attrs.cornerRadii; }
+    else if (sh.type === 'star') { sh.attrs.outerCornerR = v; sh.attrs.innerCornerR = v; delete sh.attrs.cornerRadii; }
+    else { // path — no single master field; clamp each corner to its own max
+      if (!sh.attrs.corners) sh.attrs.corners = {};
+      for (const info of infos) sh.attrs.corners[info.idx] = Math.max(0, Math.min(info.maxR, px));
+    }
+    return;
+  }
+  const idx = parseInt(cornerKey, 10);
+  const info = infos.find(i => i.idx === idx);
+  const v = Math.max(0, Math.min(info ? info.maxR : px, px));
+  if (sh.type === 'path') { if (!sh.attrs.corners) sh.attrs.corners = {}; sh.attrs.corners[idx] = v; }
+  else { if (!sh.attrs.cornerRadii) sh.attrs.cornerRadii = {}; sh.attrs.cornerRadii[idx] = v; }
+}
+
+// Inspector wiring — read current state for the Corners panel.
+export function getCornerUIState() {
+  const s = store.get();
+  if (s.selection.length !== 1) return { visible: false };
+  const sh = store.findShape(s.selection[0]);
+  if (!isRoundable(sh)) return { visible: false };
+  const cornerKey = _activeCornerKey(sh);
+  const px = _cornerRadiusPx(sh, cornerKey);
+  return {
+    visible: true,
+    scope: cornerKey != null ? 'one' : 'all',
+    valueIn: px == null ? null : +pxToIn(px).toFixed(3),
+    maxIn: +pxToIn(_cornerMaxPx(sh, cornerKey)).toFixed(3),
+  };
+}
+
+// Inspector wiring — commit a typed radius (inches) to the current scope.
+export function setCornerRadiusIn(valIn) {
+  const s = store.get();
+  if (s.selection.length !== 1) return;
+  const sh = store.findShape(s.selection[0]);
+  if (!isRoundable(sh)) return;
+  const cornerKey = _activeCornerKey(sh);
+  store.commit(st => {
+    const live = st.shapes.find(x => x.id === sh.id);
+    if (live) _writeCornerRadius(live, cornerKey, inToPx(Math.max(0, valIn || 0)));
+  }, 'corner-radius');
+  renderOverlay();
+}
+
+// Hybrid readout: while a corner widget is dragged, label it with its live inch value.
+function _appendCornerReadout(parent, wx, wy, sh, cornerKey, z) {
+  const px = _cornerRadiusPx(sh, cornerKey);
+  if (px == null) return;
+  const t = svgNS('text');
+  setAttrs(t, { x: wx, y: wy - 9 / z, class: 'corner-readout', 'font-size': 11 / z, 'text-anchor': 'middle' });
+  t.textContent = pxToIn(px).toFixed(2) + '"';
+  parent.appendChild(t);
+}
+
 // pts: [{x,y}]. Returns a closed straight-segment SVG path string.
 function polyPointsToPath(pts) {
   return 'M ' + pts.map(p => `${+p.x.toFixed(3)},${+p.y.toFixed(3)}`).join(' L ') + ' Z';
@@ -1053,6 +1182,9 @@ function _drawAltCloneIndicator(s) {
 
 function renderOverlay() {
   overlay.replaceChildren();
+  // Anchor/corner selection lives outside the store, so the inspector can't learn
+  // about scope changes via store.subscribe — nudge it whenever the overlay redraws.
+  window.dispatchEvent(new Event('lm-overlay-change'));
   const s = store.get();
 
   if (!s.selection.length) {
@@ -1135,6 +1267,7 @@ function drawSingleSelection(sh, b) {
         setAttrs(c, { cx: w.cx, cy: w.cy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
         c.dataset.cornerWidget = `${sh.id}:${w.name}`;
         g.appendChild(c);
+        if (isActive) _appendCornerReadout(g, w.cx, w.cy, sh, w.name, z);
       }
     } else {
       for (const info of shapeCornerInfosWithR(sh)) {
@@ -1148,6 +1281,7 @@ function drawSingleSelection(sh, b) {
         setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
         c.dataset.cornerWidget = `${sh.id}:${info.idx}`;
         g.appendChild(c);
+        if (isActive) _appendCornerReadout(g, wcx, wcy, sh, strIdx, z);
       }
     }
   }
@@ -1290,6 +1424,7 @@ function drawAnchors(id) {
       setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
       c.dataset.cornerWidget = `${id}:${info.idx}`;
       overlay.appendChild(c);
+      if (directCWActiveCorner === strIdx) _appendCornerReadout(overlay, wcx, wcy, sh, strIdx, z);
     }
   }
 
@@ -1326,6 +1461,7 @@ function drawAnchors(id) {
       setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
       c.dataset.cornerWidget = `${id}:${w.name}`;
       overlay.appendChild(c);
+      if (directCWActiveCorner === w.name) _appendCornerReadout(overlay, wcx, wcy, sh, w.name, z);
     }
   }
 
@@ -1352,6 +1488,7 @@ function drawAnchors(id) {
       setAttrs(c, { cx: wcx, cy: wcy, r: cwr, class: isActive ? 'corner-widget corner-widget-active' : 'corner-widget' });
       c.dataset.cornerWidget = `${id}:${info.idx}`;
       overlay.appendChild(c);
+      if (directCWActiveCorner === strIdx) _appendCornerReadout(overlay, wcx, wcy, sh, strIdx, z);
     }
   }
 

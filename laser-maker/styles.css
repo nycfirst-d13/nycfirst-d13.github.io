@@ -1013,6 +1013,17 @@ input { font-family: inherit; }
 }
 .corner-widget:hover { fill: var(--blue-soft); }
 .corner-widget.corner-widget-active { fill: var(--blue); stroke: var(--surface); }
+.corner-readout {
+  fill: var(--blue);
+  font-family: var(--font-ui, sans-serif);
+  font-weight: 600;
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 3;
+  vector-effect: non-scaling-stroke;
+  pointer-events: none;
+  user-select: none;
+}
 
 /* =========================================================================
    TOAST

@@ -7,6 +7,7 @@ import { inToPx, pxToIn, round, rotatedCorners } from './utils.js';
 import { PROCESS_DEFINITIONS, normalizeForProcess } from './process-registry.js';
 import { quickFlip } from './reflect.js';
 import { defaultEtchParams } from './image-filters.js';
+import { getCornerUIState, setCornerRadiusIn } from './select.js';
 
 const fillColor       = document.getElementById('fill-color');
 const fillSwatchWrap  = document.getElementById('fill-swatch-wrap');
@@ -31,6 +32,10 @@ const qrBtns = document.querySelectorAll('.qr-btn');
 const textPanel = document.getElementById('text-panel');
 const polygonPanel      = document.getElementById('polygon-panel');
 const polygonSidesInput = document.getElementById('polygon-sides');
+const cornerPanel       = document.getElementById('corner-panel');
+const cornerPanelTitle  = document.getElementById('corner-panel-title');
+const cornerRadiusLabel = document.getElementById('corner-radius-label');
+const cornerRadiusInput = document.getElementById('corner-radius');
 const starPanel         = document.getElementById('star-panel');
 const starPointsInput     = document.getElementById('star-points');
 const starInnerRatioInput = document.getElementById('star-inner-ratio');
@@ -300,6 +305,17 @@ function syncFromState() {
       starInnerRatioInput.value = (sel[0].attrs.innerRatio ?? 0.4).toFixed(2);
       const valSpan = starInnerRatioInput.closest('.slider-ctrl')?.querySelector('.slider-val');
       if (valSpan) valSpan.textContent = _sliderValText(starInnerRatioInput);
+    }
+  }
+
+  if (cornerPanel) {
+    const cs = getCornerUIState();
+    cornerPanel.style.display = cs.visible ? '' : 'none';
+    if (cs.visible && document.activeElement !== cornerRadiusInput) {
+      cornerPanelTitle.textContent  = cs.scope === 'one' ? 'Corner' : 'Corners';
+      cornerRadiusLabel.textContent = 'Radius';
+      cornerRadiusInput.max   = cs.maxIn;
+      cornerRadiusInput.value = cs.valueIn == null ? '' : cs.valueIn;
     }
   }
 
@@ -781,6 +797,15 @@ starInnerRatioInput.addEventListener('change', () => {
   }, 'star-inner-ratio');
 });
 
+if (cornerRadiusInput) {
+  cornerRadiusInput.addEventListener('change', () => {
+    if (cornerRadiusInput.value === '') return; // left "Mixed" untouched
+    setCornerRadiusIn(parseFloat(cornerRadiusInput.value) || 0);
+    const cs = getCornerUIState(); // reflect clamping back into the field
+    if (cs.visible && cs.valueIn != null) cornerRadiusInput.value = cs.valueIn;
+  });
+}
+
 function _sliderValText(input) {
   const step = parseFloat(input.step) || 1;
   const val  = step % 1 === 0 ? input.value : parseFloat(input.value).toFixed(2);
@@ -809,4 +834,5 @@ document.querySelectorAll('.stepper, .slider-ctrl').forEach(wrap => {
 });
 
 store.subscribe(syncFromState);
+window.addEventListener('lm-overlay-change', syncFromState);
 syncFromState();
