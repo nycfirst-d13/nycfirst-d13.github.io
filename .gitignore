@@ -1,0 +1,9 @@
+# OS / editor cruft
+.DS_Store
+
+# Playwright CLI scratch output (logs, page snapshots, screenshots)
+.playwright-cli/
+
+# Build output / deps
+node_modules/
+.next/
