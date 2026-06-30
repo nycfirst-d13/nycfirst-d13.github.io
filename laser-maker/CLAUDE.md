@@ -204,3 +204,19 @@ V = object-level (move/resize/rotate, all corners uniform). A = anchor-level (mo
 ### Star Tool
 
 `type: 'star'`, attrs: `{ cx, cy, r, points, innerRatio, outerCornerR, innerCornerR, cornerRadii? }`. Outer radius `r`, inner radius `r * innerRatio`. Inspector panel shows Points (3–20) and Inner Ratio (0.05–0.95). Default 5 points, 0.4 inner ratio, 0 corner radii. Drag-from-center like polygon.
+
+### Corner Rounding Panel
+
+The `#corner-panel` (inspector slot 3, after Process) gives numeric corner-radius entry in inches, complementing the drag-to-round corner widgets. Shown for `rect`/`polygon`/`star`/`path`; hidden for everything else (ellipse, text, group, line, image). Visibility tracks *selection of a roundable shape*, never the radius value — 0 stays editable, no flicker.
+
+**Scope.** Master (all corners) by default. The A (direct-select) tool with exactly one roundable anchor selected scopes the field to that single corner (title flips to "Corner"). Differing corners read as "mixed" → field blank with a `Mixed` placeholder.
+
+**Source of truth.** `select.js` owns the geometry and exports two functions consumed by `properties.js`:
+- `getCornerUIState()` → `{ visible, scope: 'all'|'one', valueIn, maxIn }`
+- `setCornerRadiusIn(valIn)` → commits a clamped radius to the current scope
+
+Internal helpers (`_cornerRadiusPx`, `_cornerMaxPx`, `_writeCornerRadius`, `_activeCornerKey`) reconcile the per-type data model: rect `rx`/`r_{nw,ne,se,sw}`, polygon `cornerRadius`/`cornerRadii`, star `outer/innerCornerR`/`cornerRadii`, path `corners[idx]`. Writing one rect corner materializes all four (deletes `rx`) so it becomes independent.
+
+**Sync seam.** Anchor/corner selection lives in `select.js` module state, *not* the store, so `store.subscribe` can't see scope changes. `renderOverlay()` dispatches a `lm-overlay-change` window event that `properties.js` listens to alongside `store.subscribe(syncFromState)`.
+
+**Hybrid drag readout.** While a corner widget is dragged, `_appendCornerReadout()` floats a live inch label (`.corner-readout`) at the active widget — wired into all four widget-render loops (V/A × rect/poly-star-path), gated on the active-drag corner. Cleared automatically when the drag ends and the overlay re-renders.
