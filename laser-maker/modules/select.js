@@ -590,6 +590,10 @@ tools.register('direct', {
       return;
     }
 
+    // Any fresh pointerdown resets the focused corner; the widget branch below
+    // re-establishes it. Keeps the inspector scoped to the corner being touched.
+    directFocusedCorner = null;
+
     // Corner widget?
     const cwEl = event.target.closest?.('[data-corner-widget]');
     if (cwEl) {
@@ -603,6 +607,7 @@ tools.register('direct', {
         this._cwOrigR = sh.attrs[`r_${cornerName}`] ?? sh.attrs.rx ?? 0;
         this._cwMaxR = Math.min(sh.attrs.w, sh.attrs.h) / 2;
         directCWActiveCorner = cornerName;
+        directFocusedCorner = { shapeId, key: cornerName };
         store.beginTransaction();
       } else if (sh?.type === 'path' || sh?.type === 'polygon' || sh?.type === 'star') {
         const vtxIdx = parseInt(cornerName, 10);
@@ -617,6 +622,7 @@ tools.register('direct', {
           this._cwBisX = info.bisX;
           this._cwBisY = info.bisY;
           directCWActiveCorner = cornerName;
+          directFocusedCorner = { shapeId, key: cornerName };
           store.beginTransaction();
         }
       }
@@ -1053,15 +1059,29 @@ function _cornerRadiusPx(sh, cornerKey) {
   return vals.every(v => v === vals[0]) ? vals[0] : null;
 }
 
-// Which single corner is the field scoped to? null = master. Only in direct tool,
-// exactly one selected anchor on the shape, mapping to a roundable corner.
+// Is `key` a corner that actually exists on this shape?
+function _cornerKeyValid(sh, key) {
+  if (key == null) return false;
+  if (sh.type === 'rect') return RECT_CORNER_NAMES.includes(key);
+  return shapeCornerInfosWithR(sh).some(i => String(i.idx) === String(key));
+}
+
+// Which single corner is the field scoped to? null = master. Only in the direct
+// tool: an explicitly selected anchor, else the corner last touched via its widget
+// (the corner-rounding affordance doesn't select an anchor on its own).
 function _activeCornerKey(sh) {
   if (store.get().activeTool !== 'direct') return null;
   const anchors = selectedAnchors.filter(a => a.shapeId === sh.id);
-  if (anchors.length !== 1) return null;
-  const idx = anchors[0].idx;
-  if (sh.type === 'rect') return (idx >= 0 && idx < 4) ? RECT_CORNER_NAMES[idx] : null;
-  return shapeCornerInfosWithR(sh).some(i => i.idx === idx) ? String(idx) : null;
+  if (anchors.length === 1) {
+    const idx = anchors[0].idx;
+    if (sh.type === 'rect') return (idx >= 0 && idx < 4) ? RECT_CORNER_NAMES[idx] : null;
+    return shapeCornerInfosWithR(sh).some(i => i.idx === idx) ? String(idx) : null;
+  }
+  if (anchors.length === 0 && directFocusedCorner?.shapeId === sh.id
+      && _cornerKeyValid(sh, directFocusedCorner.key)) {
+    return directFocusedCorner.key;
+  }
+  return null;
 }
 
 function _writeCornerRadius(sh, cornerKey, px) {
@@ -1150,6 +1170,7 @@ let _selectHoverClearTimer = null; // ponytail: debounce hide so inner star widg
 let selectCWActive = null;      // corner name being dragged in select tool
 let directCWActiveCorner = null; // corner name being dragged in direct select tool
 let directHoveredCorner = null; // { shapeId, name } | null — nearest corner under cursor in direct tool
+let directFocusedCorner = null; // { shapeId, key } | null — corner last touched via its widget; scopes the inspector when no anchor is explicitly selected
 let _altHeld = false;           // whether Alt is currently pressed
 let _selectHoverHitId = null;   // shape id under cursor in select tool (any shape, not just selected)
 let _isDragging = false;        // true while a move drag is in progress
