@@ -105,6 +105,9 @@ Browser-based SVG vector editor for middle-school students designing laser-cut p
 - `state.commit(delta)` — update + push to undo stack (80-level)
 - `state.undo()` / `state.redo()`
 
+**Undo history is canvas-only.** A snapshot (`_snapshot()`) holds exactly `artboard`, `shapes`, `selection`. UI/DOM state is deliberately excluded — most notably the header **name/project** inputs (`#header-name`/`#header-project`), which live in the DOM + localStorage (`canvas-cache.js`), never in the store. They must never be added to the snapshot.
+- Caveat: Chrome's native cross-element undo can leak. A `Cmd+Z` fired while editing a canvas text box (the textarea has no native undo history) falls back to the last-edited text input — the header fields — and wipes them. The text-edit overlay guards against this in `type.js`: `Cmd/Ctrl+Z` is `preventDefault`ed only when `ta.value === ta._initialValue` (nothing of its own to undo), so native char-by-char undo inside the box still works while the leak is blocked.
+
 ### Tool System
 
 `tools.js` is the tool registry. Each tool is an object with optional `pointerdown`, `pointermove`, `pointerup`, `keydown` handlers. Register with `registerTool(name, handler)`. Active tool routes all pointer events.
