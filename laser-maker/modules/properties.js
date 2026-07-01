@@ -3,7 +3,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { artboard } from './artboard.js';
-import { inToPx, pxToIn, round, rotatedCorners } from './utils.js';
+import { inToPx, pxToIn, round, rotatedCorners, scalePathD } from './utils.js';
 import { PROCESS_DEFINITIONS, normalizeForProcess } from './process-registry.js';
 import { quickFlip } from './reflect.js';
 import { defaultEtchParams } from './image-filters.js';
@@ -688,7 +688,7 @@ function applyBBox(sh, ob, nb) {
       break;
     }
     case 'path': {
-      sh.attrs.d = scaleD(sh.attrs.d, ob, nb);
+      sh.attrs.d = scalePathD(sh.attrs.d, ob, nb);
       if (sh.attrs.corners) {
         const psx = ob.w > 0 ? nb.w / ob.w : 1;
         const psy = ob.h > 0 ? nb.h / ob.h : 1;
@@ -715,23 +715,6 @@ function applyBBox(sh, ob, nb) {
     }
   }
 }
-function scaleD(d, ob, nb) {
-  const sx = nb.w / Math.max(0.0001, ob.w);
-  const sy = nb.h / Math.max(0.0001, ob.h);
-  return d.replace(/([MLCSQTAHVZmlcsqtahvz])([^MLCSQTAHVZmlcsqtahvz]*)/g, (m, cmd, args) => {
-    if (cmd === 'Z' || cmd === 'z') return cmd;
-    const nums = args.trim().split(/[\s,]+/).filter(Boolean).map(Number);
-    const isAbs = cmd === cmd.toUpperCase();
-    let scaled;
-    if (cmd === 'H' || cmd === 'h') scaled = nums.map(n => isAbs ? nb.x + (n - ob.x) * sx : n * sx);
-    else if (cmd === 'V' || cmd === 'v') scaled = nums.map(n => isAbs ? nb.y + (n - ob.y) * sy : n * sy);
-    else scaled = nums.map((n, i) => (i % 2 === 0)
-      ? (isAbs ? nb.x + (n - ob.x) * sx : n * sx)
-      : (isAbs ? nb.y + (n - ob.y) * sy : n * sy));
-    return cmd + ' ' + scaled.map(n => n.toFixed(3)).join(' ');
-  });
-}
-
 [tX, tY, tW, tH, tR].forEach(i => i.addEventListener('change', applyTransform));
 
 qrBtns.forEach(btn => {

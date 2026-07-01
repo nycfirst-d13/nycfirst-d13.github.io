@@ -4,7 +4,7 @@
 import { store, removeIdsFromGroups } from './state.js';
 import { tools } from './tools.js';
 import { artboard } from './artboard.js';
-import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds, pxToIn, inToPx, polygonPoints, starPoints } from './utils.js';
+import { svgNS, setAttrs, rotatePoint, rotatedCorners, rectToPathData, getPathCornerInfos, getPolyCornerInfos, deepCloneWithNewIds, pxToIn, inToPx, polygonPoints, starPoints, scalePathD } from './utils.js';
 import { computeSnap, computePointSnap, renderGuides, clearGuides } from './guides.js';
 import { enterTextEdit } from './type.js';
 import { enterIsolation, exitIsolation } from './group.js';
@@ -2289,23 +2289,6 @@ function setGeomFromBBox(sh, snap, nb) {
   }
 }
 
-function scalePathD(d, ob, nb) {
-  const sx = nb.w / Math.max(0.0001, ob.w);
-  const sy = nb.h / Math.max(0.0001, ob.h);
-  return d.replace(/([MLCSQTAHVZmlcsqtahvz])([^MLCSQTAHVZmlcsqtahvz]*)/g, (m, cmd, args) => {
-    if (cmd === 'Z' || cmd === 'z') return cmd;
-    const nums = args.trim().split(/[\s,]+/).filter(Boolean).map(Number);
-    const isAbs = cmd === cmd.toUpperCase();
-    let scaled;
-    if (cmd === 'H' || cmd === 'h') scaled = nums.map(n => (isAbs ? nb.x + (n - ob.x) * sx : n * sx));
-    else if (cmd === 'V' || cmd === 'v') scaled = nums.map(n => (isAbs ? nb.y + (n - ob.y) * sy : n * sy));
-    else scaled = nums.map((n, i) => {
-      if (i % 2 === 0) return isAbs ? nb.x + (n - ob.x) * sx : n * sx;
-      else            return isAbs ? nb.y + (n - ob.y) * sy : n * sy;
-    });
-    return cmd + ' ' + scaled.map(n => n.toFixed(3)).join(' ');
-  });
-}
 
 
 // =============== Status / wiring ==============================

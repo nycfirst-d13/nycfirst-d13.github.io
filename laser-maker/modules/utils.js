@@ -135,6 +135,25 @@ export function getShapeAnchorPoints(sh) {
 
 // ---- Rect-to-path and path corner rounding utilities ----
 
+// Scale an SVG path `d` from old bbox `ob` to new bbox `nb`. Was copy-pasted
+// as scaleD (properties) / scalePathD (select); single home now.
+export function scalePathD(d, ob, nb) {
+  const sx = nb.w / Math.max(0.0001, ob.w);
+  const sy = nb.h / Math.max(0.0001, ob.h);
+  return d.replace(/([MLCSQTAHVZmlcsqtahvz])([^MLCSQTAHVZmlcsqtahvz]*)/g, (m, cmd, args) => {
+    if (cmd === 'Z' || cmd === 'z') return cmd;
+    const nums = args.trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    const isAbs = cmd === cmd.toUpperCase();
+    let scaled;
+    if (cmd === 'H' || cmd === 'h') scaled = nums.map(n => isAbs ? nb.x + (n - ob.x) * sx : n * sx);
+    else if (cmd === 'V' || cmd === 'v') scaled = nums.map(n => isAbs ? nb.y + (n - ob.y) * sy : n * sy);
+    else scaled = nums.map((n, i) => (i % 2 === 0)
+      ? (isAbs ? nb.x + (n - ob.x) * sx : n * sx)
+      : (isAbs ? nb.y + (n - ob.y) * sy : n * sy));
+    return cmd + ' ' + scaled.map(n => n.toFixed(3)).join(' ');
+  });
+}
+
 export function rectToPathData(a) {
   const hasPC = a.r_nw || a.r_ne || a.r_se || a.r_sw;
   const half = Math.min(a.w, a.h) / 2;
