@@ -7,3 +7,6 @@
 # Build output / deps
 node_modules/
 .next/
+
+# Next.js build scratch (game-gallery source workspace)
+game-gallery-src/
