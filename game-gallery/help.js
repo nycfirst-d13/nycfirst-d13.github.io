@@ -28,7 +28,7 @@ function controlsVis() {
       <span class="ctrls-lbl">Play / Action</span>
     </div>
     <div class="ctrls-row">
-      <span class="key" style="--i:5">Esc</span>
+      <span class="key wide" style="--i:5">Esc</span>
       <span class="key wide" style="--i:5">Start</span>
       <span class="ctrls-lbl">Back to gallery</span>
     </div>
