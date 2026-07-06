@@ -17,7 +17,9 @@
 * { box-sizing: border-box; }
 
 /* ---- arcade scrollbars ---- */
-html { scrollbar-color: var(--ink) var(--panel); } /* Firefox: thumb, track */
+/* Chrome/Safari: chunky square scrollbars. Note: setting the standard
+   `scrollbar-color` here would make Chrome IGNORE these pseudo-elements, so
+   scrollbar-color is scoped to Firefox-only below. */
 ::-webkit-scrollbar { width: 16px; height: 16px; }
 ::-webkit-scrollbar-track { background: var(--panel); }
 ::-webkit-scrollbar-thumb {
@@ -26,6 +28,10 @@ html { scrollbar-color: var(--ink) var(--panel); } /* Firefox: thumb, track */
 }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 ::-webkit-scrollbar-corner { background: var(--panel); }
+/* Firefox (no ::-webkit-scrollbar support) gets the standard properties. */
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-color: var(--ink) var(--panel); }
+}
 
 html { background: var(--bg); }
 
