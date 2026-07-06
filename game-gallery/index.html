@@ -7,7 +7,7 @@
   <meta name="description" content="NYC FIRST District 13 — student MakeCode Arcade games">
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="browse">
   <header class="top">
     <a class="brand" href="./">
       <img src="nycfirst-pixel.png" alt="NYC FIRST District 13" width="40" height="40">
@@ -60,7 +60,41 @@
            <p class="made">Made with <a href="https://arcade.makecode.com" target="_blank" rel="noreferrer">MakeCode Arcade</a></p>
          </footer>`
       startKiosk(games)
+      fitGrid()
     }
+
+    // Size the grid so every card fits on one screen — pick the column count
+    // that makes the largest reasonably-shaped cells; fixed rows fill the
+    // height so nothing overflows. Too many games to fit → smallest usable
+    // size with an (arcade-styled) scroll.
+    function fitGrid() {
+      const grid = document.querySelector('.grid')
+      if (!grid || !grid.children.length) return
+      const n = grid.children.length, gap = 18
+      const cw = grid.clientWidth, ch = grid.clientHeight
+      if (cw <= 0 || ch <= 0) return
+      let best = null
+      for (let c = 1; c <= n; c++) {
+        const rows = Math.ceil(n / c)
+        const cellW = (cw - (c - 1) * gap) / c
+        const cellH = (ch - (rows - 1) * gap) / rows
+        if (cellW < 140 || cellH < 140) continue
+        const aspect = cellW / cellH
+        if (aspect < 0.5 || aspect > 2.2) continue
+        const area = cellW * cellH
+        if (!best || area > best.area) best = { c, rows, area }
+      }
+      if (!best) {
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))'
+        grid.style.gridTemplateRows = ''
+        grid.style.overflowY = 'auto'
+        return
+      }
+      grid.style.overflowY = 'hidden'
+      grid.style.gridTemplateColumns = `repeat(${best.c}, 1fr)`
+      grid.style.gridTemplateRows = `repeat(${best.rows}, 1fr)`
+    }
+    addEventListener('resize', fitGrid)
 
     function showError() {
       app.innerHTML = `<div class="state"><p class="pixel">Couldn't load games</p>
