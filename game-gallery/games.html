@@ -30,10 +30,12 @@
       return `
         <section class="player">
           <h1>${esc(g.game_title)}</h1>
-          <div class="stage">
+          <div class="stage" id="stage">
             <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
           </div>
+          <button class="btn" style="margin-top:12px"
+            onclick="document.getElementById('stage').requestFullscreen()">⛶ Fullscreen</button>
           <p class="by">By <b>${esc(g.student_name)}</b> · ${esc(gradeLabel(g.grade))}</p>
           ${src}
         </section>`
