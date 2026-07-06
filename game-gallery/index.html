@@ -30,6 +30,7 @@
       const shareId = extractShareId(g.d13_url)
       const thumb = shareId ? thumbUrl(shareId) : 'nycfirst-pixel.png'
       const filled = g.grade === 'Instructor' || g.grade === 'Intern'
+      const label = /^\d+$/.test(g.grade) ? `Grade ${g.grade}` : g.grade
       return `
         <a class="card" href="games.html?id=${encodeURIComponent(g.id)}">
           <img class="thumb" loading="lazy" src="${esc(thumb)}" alt="${esc(g.game_title)}"
@@ -37,7 +38,7 @@
           <div class="body">
             <span class="name">${esc(g.game_title)}</span>
             <span class="who">${esc(g.student_name)}</span>
-            <span class="badge ${filled ? 'filled' : ''}">${esc(g.grade)}</span>
+            <span class="badge ${filled ? 'filled' : ''}">${esc(label)}</span>
           </div>
         </a>`
     }
