@@ -111,6 +111,8 @@ function startKiosk(games) {
     // site header on top while the game fills the rest, and Esc still fires
     // fullscreenchange on the container to exit.
     const codeUrl = game.student_url || game.d13_url
+    // Help panel lives INSIDE the overlay: in fullscreen only the fullscreened
+    // element's subtree renders, so a body-level popover wouldn't show.
     overlay.innerHTML = `
       <header class="top">
         <button class="chip" data-back><span class="ico">←</span> Gallery</button>
@@ -118,14 +120,39 @@ function startKiosk(games) {
           <span class="g-title">${game.game_title}</span>
           <span class="g-by">${game.student_name} · ${gradeLabel(game.grade)}</span>
         </div>
-        <a class="chip" href="${codeUrl}" target="_blank" rel="noreferrer">See code <span class="ico">↗</span></a>
+        <button class="chip" data-help>Help</button>
       </header>
       <div class="kiosk-stage">
         <iframe src="${url}" title="${game.game_title}" allowfullscreen
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+      </div>
+      <div class="popover game-help" hidden>
+        <button class="pop-close" aria-label="Close">✕</button>
+        <div class="pop-inner">
+          <h1 class="pop-title">Playing ${game.game_title}</h1>
+          <h2 class="pop-h">Controls</h2>
+          <ul>
+            <li><b>Move:</b> arrow keys / <b>W A S D</b> / joystick.</li>
+            <li><b>Action:</b> <b>Space</b> = A button (the game also shows its controls on screen).</li>
+          </ul>
+          <h2 class="pop-h">Done playing?</h2>
+          <ul>
+            <li>Click <b><span class="ico">←</span> Gallery</b> (top-left), or press <b>Esc</b> / <b>Start</b>.</li>
+          </ul>
+          <h2 class="pop-h">See &amp; learn from the code</h2>
+          <ul>
+            <li>Open this game in MakeCode to view and remix it:</li>
+            <li><a class="chip" href="${codeUrl}" target="_blank" rel="noreferrer">Open in MakeCode <span class="ico">↗</span></a></li>
+            <li>Switch <b>Blocks</b> / <b>JavaScript</b> / <b>Python</b> to see how it works, then <b>Edit</b> to make your own copy.</li>
+          </ul>
+        </div>
       </div>`
     document.body.appendChild(overlay)
     overlay.querySelector('[data-back]').addEventListener('click', close)
+    const help = overlay.querySelector('.game-help')
+    overlay.querySelector('[data-help]').addEventListener('click', () => { help.hidden = false })
+    help.querySelector('.pop-close').addEventListener('click', () => { help.hidden = true })
+    help.addEventListener('click', e => { if (e.target === help) help.hidden = true })
     // Best-effort real fullscreen (works when launched by a keyboard gesture;
     // a gamepad press isn't a user gesture, so this may no-op — the overlay
     // covers the screen either way).
