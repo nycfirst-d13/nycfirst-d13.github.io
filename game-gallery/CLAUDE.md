@@ -2,51 +2,45 @@
 
 NYC FIRST District 13 game gallery — 8-bit virtual arcade for student MakeCode Arcade games.
 
-**Design spec:** `../docs/superpowers/specs/2026-06-24-game-gallery-design.md`
+**Design spec:** `../docs/superpowers/specs/2026-06-24-game-gallery-design.md` (reference only; the Next.js stack it describes was replaced — see below).
 
 ## Stack
 
-- Next.js static export (`output: 'export'`)
-- 8bitcn.com pixel-art components (copy-pasted, owned — not a live dependency)
-- Fonts: Press Start 2P (headings), Geist (body)
-- Deployed to `/game-gallery/` on GitHub Pages via GitHub Actions
+Plain static HTML/CSS/JS. **No build step, no framework, no node_modules.** Files are served as-is by GitHub Pages at `/game-gallery/`. Edit and commit directly.
 
-## Key Config
+| File | Role |
+|------|------|
+| `index.html` | Grid page — fetches CSV, renders cards, loading/error/empty states, XP footer |
+| `games.html` | Detail page — reads `?id=`, iframes the game, shows provenance |
+| `app.js` | Shared data layer — CSV fetch/parse, sort-newest, `findGame`, thumbnail URLs |
+| `style.css` | 8-bit arcade theme, minimal black & white (Press Start 2P + VT323, Google Fonts) |
+| `dev-games.csv` | Committed fixture of real public MakeCode games (made-up student names) |
 
-```js
-// next.config.js
-output: 'export'
-basePath: '/game-gallery'
-trailingSlash: true
-```
+> History: previously a Next.js static-export app in `game-gallery-src/`. Dropped — a static CSV-driven gallery didn't need React or a build pipeline. Source is still in git history (commit `12e9ea8`) if ever needed.
 
 ## Data Source
 
-Gallery reads a published Google Sheet CSV at load time. No API key needed.
+`CSV_URL` at the top of `app.js` picks the data source. Defaults to the local `dev-games.csv` fixture. To go live, set it to the published "Approved" Google Sheet CSV:
+
+```
+https://docs.google.com/spreadsheets/d/<id>/pub?gid=<n>&single=true&output=csv
+```
 
 Sheet columns (Approved tab): `id`, `game_title`, `student_name`, `grade`, `student_url`, `d13_url`, `submitted_at`, `session`
 
-- `d13_url` — D13 Cloud MakeCode share URL, used for iframes
-- `student_url` — original student submission URL, shown on game page as provenance
+- `d13_url` — D13 Cloud MakeCode share URL, used for the iframe
+- `student_url` — original student submission URL, shown on the game page as provenance
+
+New approved rows go live on refresh — no rebuild, no redeploy.
 
 ## Routes
 
-Both are plain static pages — no `generateStaticParams`. Game identity comes from the runtime `?id=` query, not the route, so new approved games go live without a rebuild.
+- `/game-gallery/` → `index.html` — game grid
+- `/game-gallery/games.html?id=<slug>` — single game; reads `?id=`, iframes `d13_url`
 
-- `/game-gallery/` — game grid (client-fetches Approved CSV)
-- `/game-gallery/games/?id=<slug>` — single game page; reads `?id=`, fetches CSV, iframes `d13_url`
+## Testing
 
-## Brand Palette
-
-```css
---bg: #0A0E1A;
---surface: #141929;
---accent: #E0241B;    /* NYC FIRST red */
---accent-hi: #FF3B30;
---blue: #2563EB;
---ink: #F0F4FF;
---ink-2: #9DA8C4;
-```
+`app.js` has a built-in parser self-check (quoted-comma fields, newest-first sort, case-insensitive lookup). Run it by loading any page with `?selftest=1` and watching the console, or in node.
 
 ## Git & Commits
 

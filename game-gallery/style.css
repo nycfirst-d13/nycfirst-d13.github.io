@@ -1,0 +1,139 @@
+/* D13 Game Gallery — 8-bit arcade, minimal black & white. */
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
+:root {
+  --bg: #0a0a0a;
+  --panel: #111;
+  --ink: #fff;
+  --ink-2: #999;
+  --line: #fff;
+  --line-dim: #333;
+  --pixel: 'Press Start 2P', monospace;
+  --body: 'VT323', monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1.4;
+  /* faint scanline texture — the only "CRT" flourish, kept subtle */
+  background-image: repeating-linear-gradient(
+    to bottom, transparent 0 3px, rgba(255, 255, 255, 0.02) 3px 4px);
+  image-rendering: pixelated;
+}
+
+a { color: var(--ink); }
+
+.pixel { font-family: var(--pixel); line-height: 1.6; text-transform: uppercase; }
+
+/* ---- header ---- */
+.top {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 4px solid var(--line);
+  background: var(--panel);
+}
+.top a.brand { display: flex; align-items: center; gap: 14px; text-decoration: none; }
+.top img { width: 40px; height: 40px; image-rendering: pixelated;
+  background: #fff; padding: 3px; }
+.top .title { font-family: var(--pixel); font-size: 15px; letter-spacing: 1px; }
+
+/* ---- layout ---- */
+main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
+
+/* ---- grid ---- */
+.grid {
+  display: grid; gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* ---- card ---- */
+.card {
+  display: block; text-decoration: none; color: var(--ink);
+  background: #000;
+  border: 4px solid var(--line);
+  box-shadow: 6px 6px 0 var(--line-dim);
+  transition: transform .08s steps(2), box-shadow .08s steps(2);
+}
+.card:hover, .card:focus-visible {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 var(--ink);
+  outline: none;
+}
+.card .thumb {
+  width: 100%; aspect-ratio: 160 / 120; object-fit: cover;
+  display: block; background: #000;
+  border-bottom: 4px solid var(--line);
+  image-rendering: pixelated;
+}
+.card .body { padding: 12px 12px 14px; }
+.card .name { font-family: var(--pixel); font-size: 11px; line-height: 1.5;
+  display: block; margin-bottom: 8px; }
+.card .who { color: var(--ink-2); font-size: 19px; }
+
+/* ---- grade badge (outlined, monochrome) ---- */
+.badge {
+  display: inline-block; margin-top: 10px;
+  font-family: var(--pixel); font-size: 8px; letter-spacing: 1px;
+  padding: 5px 7px; border: 2px solid var(--ink);
+}
+.badge.filled { background: var(--ink); color: #000; }
+
+/* ---- buttons ---- */
+.btn {
+  display: inline-block; cursor: pointer; text-decoration: none;
+  font-family: var(--pixel); font-size: 10px; letter-spacing: 1px;
+  color: var(--ink); background: #000;
+  border: 3px solid var(--line); padding: 12px 14px; min-height: 44px;
+  box-shadow: 4px 4px 0 var(--line-dim);
+}
+.btn:hover { background: var(--ink); color: #000; }
+.btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* ---- states ---- */
+.state { text-align: center; padding: 80px 20px; color: var(--ink-2); }
+.state .pixel { color: var(--ink); font-size: 13px; margin-bottom: 12px; }
+.skel {
+  aspect-ratio: 160 / 120; border: 4px solid var(--line-dim);
+  background: repeating-linear-gradient(45deg, #111 0 10px, #181818 10px 20px);
+  animation: pulse 1s steps(2) infinite;
+}
+@keyframes pulse { 50% { opacity: .5; } }
+
+/* ---- footer / xp ---- */
+.foot { border-top: 4px solid var(--line); margin-top: 40px; padding: 24px 20px; }
+.foot .count { font-family: var(--pixel); font-size: 11px; color: var(--ink-2);
+  margin: 0 0 12px; letter-spacing: 1px; }
+.xp { height: 20px; border: 3px solid var(--line); background: #000; padding: 3px; }
+.xp > span { display: block; height: 100%; background: var(--ink);
+  /* chunky steps so it reads as a pixel meter, not a smooth bar */
+  background-image: repeating-linear-gradient(to right, var(--ink) 0 8px, #000 8px 10px); }
+.foot .made { color: var(--ink-2); margin-top: 16px; }
+
+/* ---- detail / player ---- */
+.player { max-width: 760px; margin: 0 auto; }
+.player h1 { font-family: var(--pixel); font-size: 16px; line-height: 1.5; margin: 20px 0; }
+.stage {
+  position: relative; width: 100%; aspect-ratio: 160 / 120;
+  max-width: 720px; margin: 0 auto;
+  border: 4px solid var(--line); background: #000;
+}
+.stage iframe { width: 100%; height: 100%; border: 0; display: block; }
+.player .by { color: var(--ink-2); margin-top: 16px; }
+.player .by b { color: var(--ink); font-weight: normal; }
+.player .src { display: inline-block; margin-top: 8px; }
+.back { margin: 4px 0 0 4px; }
+
+.spinner {
+  width: 24px; height: 24px; margin: 60px auto;
+  background: var(--ink);
+  animation: spin 1s steps(8) infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
