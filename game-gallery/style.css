@@ -138,6 +138,12 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
 .stage:fullscreen { border: 0; }
 
 /* ---- kiosk mode ---- */
+.kiosk-badge { display: none; }
+.kiosk .kiosk-badge {
+  display: inline-block;
+  font-family: var(--pixel); font-size: 9px; letter-spacing: 1px;
+  background: var(--ink); color: #000; padding: 6px 8px;
+}
 .kiosk .card.sel {
   outline: 4px solid var(--ink);
   outline-offset: 2px;
