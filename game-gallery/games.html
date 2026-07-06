@@ -31,12 +31,12 @@
         `<span class="g-title">${esc(g.game_title)}</span>` +
         `<span class="g-by">${esc(g.student_name)} · ${esc(gradeLabel(g.grade))}</span>`
       const src = g.student_url
-        ? `<a class="btn" href="${esc(g.student_url)}" target="_blank" rel="noreferrer">See code ↗</a>`
+        ? `<a class="btn" href="${esc(g.student_url)}" target="_blank" rel="noreferrer">See code <span class="ico">↗</span></a>`
         : ''
       actions.innerHTML =
-        `<a class="btn" href="./">← Gallery</a>` +
+        `<a class="btn" href="./"><span class="ico">←</span> Gallery</a>` +
         src +
-        `<button class="btn" onclick="document.getElementById('stage').requestFullscreen()">⛶ Fullscreen</button>`
+        `<button class="btn" onclick="document.getElementById('stage').requestFullscreen()"><span class="ico">⛶</span> Fullscreen</button>`
       app.innerHTML =
         `<div class="stage" id="stage">
            <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen
@@ -45,7 +45,7 @@
     }
 
     function showState(msg) {
-      actions.innerHTML = `<a class="btn" href="./">← Gallery</a>`
+      actions.innerHTML = `<a class="btn" href="./"><span class="ico">←</span> Gallery</a>`
       app.innerHTML = `<div class="state"><p class="pixel">${esc(msg)}</p></div>`
     }
 

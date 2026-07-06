@@ -113,12 +113,12 @@ function startKiosk(games) {
     const codeUrl = game.student_url || game.d13_url
     overlay.innerHTML = `
       <header class="top">
-        <button class="chip" data-back>← Gallery</button>
+        <button class="chip" data-back><span class="ico">←</span> Gallery</button>
         <div class="play-meta">
           <span class="g-title">${game.game_title}</span>
           <span class="g-by">${game.student_name} · ${gradeLabel(game.grade)}</span>
         </div>
-        <a class="chip" href="${codeUrl}" target="_blank" rel="noreferrer">See code ↗</a>
+        <a class="chip" href="${codeUrl}" target="_blank" rel="noreferrer">See code <span class="ico">↗</span></a>
       </header>
       <div class="kiosk-stage">
         <iframe src="${url}" title="${game.game_title}" allowfullscreen

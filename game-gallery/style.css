@@ -124,16 +124,23 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
 }
 .badge.filled { background: var(--ink); color: #000; }
 
-/* ---- buttons ---- */
+/* ---- buttons ----
+   Kid-legibility rules (see CLAUDE.md "Styling"): icon + label centered on one
+   line, generous ≥44px tap target, roomy padding, and an oversized icon via
+   .ico so glyphs read clearly from across a room. */
 .btn {
-  display: inline-block; cursor: pointer; text-decoration: none;
-  font-family: var(--pixel); font-size: 10px; letter-spacing: 1px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; text-decoration: none;
+  font-family: var(--pixel); font-size: 11px; letter-spacing: 1px;
   color: var(--ink); background: #000;
-  border: 3px solid var(--line); padding: 12px 14px; min-height: 44px;
+  border: 3px solid var(--line); padding: 12px 18px; min-height: 48px;
   box-shadow: 4px 4px 0 var(--line-dim);
 }
 .btn:hover { background: var(--ink); color: #000; }
 .btn:active { transform: translate(2px, 2px); box-shadow: none; }
+
+/* Oversized icon glyph inside a button/chip. */
+.ico { font-size: 1.6em; line-height: 1; }
 
 /* ---- states ---- */
 .state { text-align: center; padding: 80px 20px; color: var(--ink-2); }
@@ -162,8 +169,7 @@ body.play .top { flex-wrap: wrap; }
 .play-meta .g-title { font-family: var(--pixel); font-size: 11px; line-height: 1.5;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .play-meta .g-by { color: var(--ink-2); font-size: 17px; }
-.play-actions { display: flex; gap: 10px; flex-shrink: 0; }
-.play-actions .btn { font-size: 9px; padding: 10px 11px; }
+.play-actions { display: flex; gap: 14px; flex-shrink: 0; }
 
 body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
   max-width: none; margin: 0; }
@@ -178,10 +184,11 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
 /* ---- chip (help button, overlay actions) ---- */
 .top-right { margin-left: auto; }
 .chip {
-  display: inline-block; cursor: pointer; text-decoration: none;
-  font-family: var(--pixel); font-size: 9px; letter-spacing: 1px;
-  background: var(--ink); color: #000; padding: 8px 10px;
-  border: 0; min-height: 34px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer; text-decoration: none;
+  font-family: var(--pixel); font-size: 11px; letter-spacing: 1px;
+  background: var(--ink); color: #000; padding: 11px 16px;
+  border: 0; min-height: 44px;
 }
 .chip:hover { background: var(--accent); color: var(--ink); }
 

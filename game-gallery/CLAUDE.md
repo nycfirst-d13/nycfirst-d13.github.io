@@ -20,6 +20,23 @@ Plain static HTML/CSS/JS. **No build step, no framework, no node_modules.** File
 
 > History: previously a Next.js static-export app in `game-gallery-src/`. Dropped — a static CSV-driven gallery didn't need React or a build pipeline. Source is still in git history (commit `12e9ea8`) if ever needed.
 
+## Styling
+
+**Prioritize high visual clarity for children (elementary–middle school).** This
+is an arcade used by kids, often from a distance at a shared station. When adding
+or changing UI:
+
+- **Big, legible text and icons.** Bump size before adding cleverness. Interactive
+  glyphs (arrows, ↗, ⛶) use `.ico` so they render oversized next to their label.
+- **Icon + label centered on one line** (`display: inline-flex; align-items:
+  center; gap`) — never a tiny icon crammed against text.
+- **Generous tap targets** — buttons/chips are `min-height: 44px+` with roomy
+  padding.
+- **High contrast, minimal clutter** — the black & white arcade theme; red
+  (`--accent`) only for emphasis. Few words, plain language.
+- Shared button styles: `.btn` (bordered, on the game page) and `.chip` (solid,
+  in headers/overlays). Reuse them instead of one-off styles.
+
 ## Data Source
 
 `CSV_URL` at the top of `app.js` picks the data source. Defaults to the local `dev-games.csv` fixture. To go live, set it to the published "Approved" Google Sheet CSV:
