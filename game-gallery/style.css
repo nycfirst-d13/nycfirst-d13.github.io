@@ -117,24 +117,25 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
   background-image: repeating-linear-gradient(to right, var(--ink) 0 8px, #000 8px 10px); }
 .foot .made { color: var(--ink-2); margin-top: 16px; }
 
-/* ---- detail / player ---- */
-.player { max-width: 1400px; margin: 0 auto; }
-.player h1 { font-family: var(--pixel); font-size: 16px; line-height: 1.5; margin: 20px 0; }
-/* As large as fits: full width, but capped so height stays in view (no scroll).
-   The ~260px reserves the site header, back button, title, and by-line. */
+/* ---- play page: header on top, game fills the rest of the viewport ---- */
+body.play { height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+body.play .top { flex-wrap: wrap; }
+.play-meta { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.play-meta .g-title { font-family: var(--pixel); font-size: 11px; line-height: 1.5;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.play-meta .g-by { color: var(--ink-2); font-size: 17px; }
+.play-actions { display: flex; gap: 10px; flex-shrink: 0; }
+.play-actions .btn { font-size: 9px; padding: 10px 11px; }
+
+body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
+  max-width: none; margin: 0; }
 .stage {
-  position: relative; margin: 0 auto;
-  width: min(100%, calc((100vh - 260px) * 4 / 3));
-  aspect-ratio: 4 / 3;
+  position: relative; flex: 1; min-height: 0; width: 100%;
   border: 4px solid var(--line); background: #000;
 }
 .stage iframe { width: 100%; height: 100%; border: 0; display: block; }
 /* fill the whole screen when the stage goes fullscreen */
-.stage:fullscreen { width: 100%; height: 100%; max-width: none; aspect-ratio: auto; border: 0; }
-.player .by { color: var(--ink-2); margin-top: 16px; }
-.player .by b { color: var(--ink); font-weight: normal; }
-.player .src { display: inline-block; margin-top: 8px; }
-.back { margin: 4px 0 0 4px; }
+.stage:fullscreen { border: 0; }
 
 .spinner {
   width: 24px; height: 24px; margin: 60px auto;

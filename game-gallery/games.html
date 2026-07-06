@@ -6,52 +6,55 @@
   <title>D13 Game Gallery</title>
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="play">
   <header class="top">
     <a class="brand" href="./">
       <img src="nycfirst-pixel.png" alt="NYC FIRST District 13" width="40" height="40">
       <span class="title">D13 Game Gallery</span>
     </a>
+    <div class="play-meta" id="meta"></div>
+    <div class="play-actions" id="actions"></div>
   </header>
 
-  <main>
-    <a class="btn back" href="./">← Back to gallery</a>
-    <div id="app"><div class="spinner"></div></div>
-  </main>
+  <main id="app"><div class="spinner"></div></main>
 
   <script src="app.js"></script>
   <script>
     const app = document.getElementById('app')
+    const meta = document.getElementById('meta')
+    const actions = document.getElementById('actions')
 
-    function playerHtml(g) {
+    function showGame(g) {
+      meta.innerHTML =
+        `<span class="g-title">${esc(g.game_title)}</span>` +
+        `<span class="g-by">${esc(g.student_name)} · ${esc(gradeLabel(g.grade))}</span>`
       const src = g.student_url
-        ? `<a class="src" href="${esc(g.student_url)}" target="_blank" rel="noreferrer">Original submission →</a>`
+        ? `<a class="btn" href="${esc(g.student_url)}" target="_blank" rel="noreferrer">Original ↗</a>`
         : ''
-      return `
-        <section class="player">
-          <h1>${esc(g.game_title)}</h1>
-          <div class="stage" id="stage">
-            <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen
-              sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
-          </div>
-          <button class="btn" style="margin-top:12px"
-            onclick="document.getElementById('stage').requestFullscreen()">⛶ Fullscreen</button>
-          <p class="by">By <b>${esc(g.student_name)}</b> · ${esc(gradeLabel(g.grade))}</p>
-          ${src}
-        </section>`
+      actions.innerHTML =
+        `<a class="btn" href="./">← Gallery</a>` +
+        src +
+        `<button class="btn" onclick="document.getElementById('stage').requestFullscreen()">⛶ Fullscreen</button>`
+      app.innerHTML =
+        `<div class="stage" id="stage">
+           <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen
+             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+         </div>`
     }
 
-    const state = msg =>
+    function showState(msg) {
+      actions.innerHTML = `<a class="btn" href="./">← Gallery</a>`
       app.innerHTML = `<div class="state"><p class="pixel">${esc(msg)}</p></div>`
+    }
 
     const id = new URLSearchParams(location.search).get('id') || ''
-    if (!id) state('Game not found.')
+    if (!id) showState('Game not found.')
     else fetchGames()
       .then(games => {
         const g = findGame(games, id)
-        g ? app.innerHTML = playerHtml(g) : state('Game not found.')
+        g ? showGame(g) : showState('Game not found.')
       })
-      .catch(() => state("Couldn't load the game. Try again later."))
+      .catch(() => showState("Couldn't load the game. Try again later."))
   </script>
 </body>
 </html>
