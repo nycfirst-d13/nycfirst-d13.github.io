@@ -23,6 +23,7 @@
   </main>
 
   <script src="app.js"></script>
+  <script src="kiosk.js"></script>
   <script>
     const app = document.getElementById('app')
 
@@ -56,6 +57,7 @@
            <div class="xp"><span style="width:${Math.min(games.length, 100)}%"></span></div>
            <p class="made">Made with <a href="https://arcade.makecode.com" target="_blank" rel="noreferrer">MakeCode Arcade</a></p>
          </footer>`
+      if (KIOSK) startKiosk(games)
     }
 
     function showError() {
