@@ -34,7 +34,7 @@
             <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen
               sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
           </div>
-          <p class="by">By <b>${esc(g.student_name)}</b> · ${esc(g.grade)}</p>
+          <p class="by">By <b>${esc(g.student_name)}</b> · ${esc(gradeLabel(g.grade))}</p>
           ${src}
         </section>`
     }

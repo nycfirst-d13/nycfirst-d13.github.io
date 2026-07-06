@@ -62,6 +62,9 @@ function extractShareId(d13Url) {
 
 const thumbUrl = shareId => `https://makecode.com/api/${shareId}/thumb`
 
+// "5" -> "Grade 5"; "Intern"/"Instructor" pass through unchanged.
+const gradeLabel = grade => /^\d+$/.test(grade) ? `Grade ${grade}` : grade
+
 async function fetchGames() {
   const res = await fetch(CSV_URL)
   if (!res.ok) throw new Error(`CSV fetch failed: ${res.status}`)
