@@ -245,6 +245,8 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
   animation: keypress 2.6s infinite; animation-delay: calc(var(--i) * 0.4s);
 }
 .key.wide { width: auto; padding: 0 16px; font-size: 12px; }
+/* One thick up-arrow glyph, rotated per direction so all four match. */
+.arw { display: inline-block; line-height: 1; transform: rotate(var(--r, 0deg)); }
 
 @keyframes keypress {
   0%   { transform: translateY(0);   box-shadow: 0 5px 0 var(--line-dim); background: #000; color: var(--ink); }

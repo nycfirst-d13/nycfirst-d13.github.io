@@ -16,10 +16,10 @@ function controlsVis() {
       </div>
       <span class="ctrls-eq">=</span>
       <div class="keypad" aria-hidden="true">
-        <span class="key" style="--i:0">↑</span>
-        <span class="key" style="--i:1">←</span>
-        <span class="key" style="--i:2">↓</span>
-        <span class="key" style="--i:3">→</span>
+        <span class="key" style="--i:0"><span class="arw">↑</span></span>
+        <span class="key" style="--i:1"><span class="arw" style="--r:-90deg">↑</span></span>
+        <span class="key" style="--i:2"><span class="arw" style="--r:180deg">↑</span></span>
+        <span class="key" style="--i:3"><span class="arw" style="--r:90deg">↑</span></span>
       </div>
       <span class="ctrls-lbl">Move</span>
     </div>
@@ -44,7 +44,7 @@ function helpHtml() {
   ${controlsVis()}
   <ul>
     <li><b>Mouse:</b> click any game to play. Click <span class="ref"><span class="ico">←</span> Gallery</span> (top-left) to come back.</li>
-    <li><b>Controller / Makey Makey:</b> D-pad or joystick to move, <b>A</b> to play, <b>Start</b> (or <b>Esc</b>) to go back.</li>
+    <li><b>Controller:</b> D-pad or joystick to move, <b>A</b> to play, <b>Start</b> (or <b>Esc</b>) to go back.</li>
   </ul>
 
   <h2 class="pop-h">Playing a game</h2>
