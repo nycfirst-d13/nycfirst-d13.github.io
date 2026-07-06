@@ -130,7 +130,7 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
    .ico so glyphs read clearly from across a room. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; text-decoration: none;
+  cursor: pointer; text-decoration: none; line-height: 1;
   font-family: var(--pixel); font-size: 11px; letter-spacing: 1px;
   color: var(--ink); background: #000;
   border: 3px solid var(--line); padding: 12px 18px; min-height: 48px;
@@ -139,8 +139,9 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
 .btn:hover { background: var(--ink); color: #000; }
 .btn:active { transform: translate(2px, 2px); box-shadow: none; }
 
-/* Oversized icon glyph inside a button/chip. */
-.ico { font-size: 1.6em; line-height: 1; }
+/* Oversized icon glyph inside a button/chip; flex-centered so it sits on the
+   text's optical center regardless of the glyph's own font metrics. */
+.ico { font-size: 1.6em; line-height: 1; display: inline-flex; align-items: center; }
 
 /* ---- states ---- */
 .state { text-align: center; padding: 80px 20px; color: var(--ink-2); }
@@ -185,7 +186,7 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
 .top-right { margin-left: auto; }
 .chip {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  cursor: pointer; text-decoration: none;
+  cursor: pointer; text-decoration: none; line-height: 1;
   font-family: var(--pixel); font-size: 11px; letter-spacing: 1px;
   background: var(--ink); color: #000; padding: 11px 16px;
   border: 0; min-height: 44px;
