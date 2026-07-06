@@ -3,6 +3,8 @@
 
 const HELP_HTML = `
   <button class="pop-close" aria-label="Close">✕</button>
+  <div class="pop-inner">
+  <h1 class="pop-title">Help</h1>
   <h2 class="pop-h">How to get around</h2>
   <ul>
     <li><b>Mouse:</b> click any game to play. Click <b>← Gallery</b> (top-left) to come back.</li>
@@ -30,6 +32,7 @@ const HELP_HTML = `
       <a href="https://arcade.makecode.com" target="_blank" rel="noreferrer">arcade.makecode.com</a>.</li>
     <li>Ask your instructor how to submit it to the gallery.</li>
   </ul>
+  </div>
 `
 
 function initHelp() {
