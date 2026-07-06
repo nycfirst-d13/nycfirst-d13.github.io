@@ -43,19 +43,19 @@ function helpHtml() {
   <h2 class="pop-h">How to get around</h2>
   ${controlsVis()}
   <ul>
-    <li><b>Mouse:</b> click any game to play. Click <b>← Gallery</b> (top-left) to come back.</li>
+    <li><b>Mouse:</b> click any game to play. Click <span class="ref"><span class="ico">←</span> Gallery</span> (top-left) to come back.</li>
     <li><b>Controller / Makey Makey:</b> D-pad or joystick to move, <b>A</b> to play, <b>Start</b> (or <b>Esc</b>) to go back.</li>
   </ul>
 
   <h2 class="pop-h">Playing a game</h2>
   <ul>
     <li>The game fills the screen under the header. Use the controls the game shows on-screen.</li>
-    <li>Done or stuck? Press <b>Esc</b>, <b>Start</b>, or <b>← Gallery</b> to return.</li>
+    <li>Done or stuck? Press <b>Esc</b>, <b>Start</b>, or click <span class="ref"><span class="ico">←</span> Gallery</span> to return.</li>
   </ul>
 
   <h2 class="pop-h">See &amp; learn from the code</h2>
   <ul>
-    <li>While playing, open <b>Help</b> and click <b>Open in MakeCode ↗</b> to view the game's code.</li>
+    <li>While playing, open <span class="ref">Help</span> and click <span class="ref">Open in MakeCode <span class="ico">↗</span></span> to view the game's code.</li>
     <li>In MakeCode, switch between <b>Blocks</b>, <b>JavaScript</b>, and <b>Python</b> to see how it works.</li>
     <li>Hit <b>Edit</b> to make your own copy and remix it — change sprites, speed, or rules.</li>
   </ul>

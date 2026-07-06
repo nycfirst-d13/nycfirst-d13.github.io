@@ -255,6 +255,15 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
 @media (prefers-reduced-motion: reduce) {
   .key { animation: none; }
 }
+
+/* Inline reference to an on-site button (e.g. "← Gallery"), styled to match the
+   real .chip so the help text points at something kids recognize on screen. */
+.ref {
+  display: inline-flex; align-items: center; gap: 6px; vertical-align: middle;
+  font-family: var(--pixel); font-size: 0.55em; letter-spacing: 1px; line-height: 1;
+  background: var(--ink); color: #000; padding: 6px 9px;
+}
+.ref .ico { font-size: 1.6em; }
 .popover b { color: var(--ink); }
 .popover a { color: var(--blue); }
 
