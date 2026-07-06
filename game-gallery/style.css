@@ -16,6 +16,17 @@
 
 * { box-sizing: border-box; }
 
+/* ---- arcade scrollbars ---- */
+html { scrollbar-color: var(--ink) var(--panel); } /* Firefox: thumb, track */
+::-webkit-scrollbar { width: 16px; height: 16px; }
+::-webkit-scrollbar-track { background: var(--panel); }
+::-webkit-scrollbar-thumb {
+  background: var(--ink);
+  border: 3px solid var(--panel); /* inset so the thumb reads as a chunky block */
+}
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+::-webkit-scrollbar-corner { background: var(--panel); }
+
 html { background: var(--bg); }
 
 body {
