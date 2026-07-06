@@ -85,11 +85,13 @@ function startKiosk(games) {
   }
   highlight()
 
-  // Mouse: clicking a card plays it in the overlay instead of navigating away.
-  cards.forEach((card, i) => card.addEventListener('click', e => {
-    e.preventDefault()
-    sel = i; highlight(); open(games[i])
-  }))
+  cards.forEach((card, i) => {
+    // Hovering moves the selection, so mouse and keyboard/controller share one
+    // highlight — never two lit at once. Arrow keys continue from the hovered card.
+    card.addEventListener('mouseenter', () => { sel = i; highlight() })
+    // Clicking plays the game in the overlay instead of navigating away.
+    card.addEventListener('click', e => { e.preventDefault(); sel = i; highlight(); open(games[i]) })
+  })
 
   let overlay = null
   let idleTimer = null

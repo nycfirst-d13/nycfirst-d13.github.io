@@ -64,10 +64,13 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
   box-shadow: 6px 6px 0 var(--line-dim);
   transition: transform .08s steps(2), box-shadow .08s steps(2);
 }
-.card:hover, .card:focus-visible {
+/* Hover, keyboard focus, and controller selection all share ONE highlight.
+   Hovering also updates the selection (kiosk.js), so only one card is ever lit. */
+.card:hover, .card:focus-visible, .card.sel {
+  outline: 4px solid var(--ink);
+  outline-offset: 2px;
   transform: translate(-2px, -2px);
   box-shadow: 8px 8px 0 var(--ink);
-  outline: none;
 }
 .card .thumb {
   width: 100%; aspect-ratio: 160 / 120; object-fit: cover;
@@ -172,13 +175,6 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
 .popover b { color: var(--ink); }
 .popover a { color: var(--blue); }
 
-/* ---- keyboard/controller selection highlight ---- */
-.card.sel {
-  outline: 4px solid var(--ink);
-  outline-offset: 2px;
-  transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0 var(--ink);
-}
 .kiosk-overlay {
   position: fixed; inset: 0; z-index: 100; background: #000;
   display: flex; flex-direction: column;
