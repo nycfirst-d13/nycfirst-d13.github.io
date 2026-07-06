@@ -25,9 +25,13 @@ mode (Chrome: `--kiosk` flag, or F11) so there's no address bar to escape to.
 |--------|----------|------------------------------|-----------------|
 | Move selection | Arrow keys or WASD | Up / Down / Left / Right pads | D-pad or left stick |
 | Play selected game | Space or Enter | Space pad | A / bottom button |
-| Back to gallery | Esc | *see below* | B button or Start |
+| Back to gallery | Esc | Esc (see below) | Start / Select |
 
-When a game is open, the same **Back** control returns you to the grid.
+This mirrors MakeCode Arcade's own kiosk, where **Reset** (bound to **Esc** or
+the key **2**) returns you to the menu. We deliberately **do not** use the **B**
+button for back — B is a live in-game action, so overloading it would fire both
+"jump/shoot" and "exit" at once. Exit is always a dedicated control (Esc /
+Start), never a gameplay button.
 
 ## The one catch: getting *out* of a game
 
@@ -36,24 +40,33 @@ means the page underneath **can't see keystrokes during play** — with one
 exception: **Esc**, which the browser always handles (it exits full-screen), so
 we use it as the reliable keyboard "back".
 
+**Esc is the one input that always works** — the browser handles it at the
+document level (exit full-screen), so it reaches the page even while the game
+holds keyboard focus. It's also MakeCode's own Reset key, so it's the natural
+"back". This is why every recommended setup routes "back" through Esc.
+
 What this means per input device:
 
-- **Game controller (recommended for kiosks):** Works completely. The Gamepad
-  API is read continuously, even while the game is focused, so **B** or **Start**
-  always returns to the gallery. A cheap USB gamepad is the most reliable arcade
-  station setup.
-- **Keyboard:** **Esc** returns to the gallery from any game.
-- **Makey Makey:** Its pads emulate a keyboard, so they're blocked during play
-  just like a keyboard — *except* Esc. To get a working "back" pad, **remap one
-  Makey Makey input to the Esc key** using the
-  [Makey Makey remapping tool](https://makeymakey.com/pages/how-to-remap), then
-  label that pad "BACK". The four arrows + Space (front connectors) already work
-  for browsing and launching.
+- **Keyboard:** **Esc** returns to the gallery from any game. Done.
+- **Makey Makey (native MakeCode controller style):** Its pads emulate a
+  keyboard, so during play they're blocked by iframe focus — *except* Esc. Wire
+  the four arrows + Space (front connectors) for browsing/launching, then **remap
+  one extra input to the Esc key** with the
+  [Makey Makey remapping tool](https://makeymakey.com/pages/how-to-remap) and
+  label that pad **RESET / BACK**.
+- **USB game controller:** **Start** or **Select** returns to the gallery
+  (polled via the Gamepad API, which is read even while the game is focused).
+  Caveat: MakeCode's browser player is keyboard-first — direct Gamepad-API input
+  into games is unreliable (some controllers make the game reload its title
+  screen). Most MakeCode arcade controllers (Adafruit, `pxt-maker-controller`)
+  **emulate a keyboard** rather than using the Gamepad API, so treat them as the
+  Keyboard/Makey Makey row above. A plain USB gamepad is best for *navigating*
+  and *exiting*, not necessarily for *playing*.
 
-> Why not just forward controls into the game? MakeCode share embeds only accept
-> injected input if each individual game opts in (`control.simmessages`), which
+> Why not forward controls into the game instead? MakeCode share embeds only
+> accept injected input if each game opts in (`control.simmessages`), which
 > student games don't. So we drive navigation from the page and let MakeCode
-> handle in-game play natively.
+> handle in-game play natively — the same split MakeCode's own kiosk uses.
 
 ## Optional: auto-return when idle
 
@@ -67,9 +80,11 @@ play mid-game is invisible to the page — so keep this generous (e.g. `300000` 
 
 1. A computer running the gallery in browser kiosk/full-screen mode at
    `?kiosk=1`.
-2. A **USB game controller** (simplest, fully working back button), **or** a
-   Makey Makey with the four arrows + Space wired, plus one pad **remapped to
-   Esc** for back.
+2. A keyboard-emulating arcade controller or **Makey Makey**: four arrows +
+   Space for browse/launch/play, plus one input **remapped to Esc** for
+   reset/back. (This is the native MakeCode arcade setup and plays games
+   reliably.) A plain USB gamepad also works for navigating and exiting via
+   Start/Select, but may not play every game cleanly.
 3. That's it — no mouse or keyboard needed for players.
 
 ## How it works (for maintainers)

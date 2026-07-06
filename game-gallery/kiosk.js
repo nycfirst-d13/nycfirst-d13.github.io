@@ -55,8 +55,10 @@ function kioskInput(handle) {
         down['b' + i] = p
       }
       edge(0, 'select')            // A / bottom face button
-      edge(1, 'back')              // B / right face button
-      edge(9, 'back')              // Start / menu
+      // NOT B (button 1) — that's a live in-game arcade button. MakeCode's own
+      // kiosk exits via Reset, never B. We mirror that: Start/Select = back.
+      edge(8, 'back')              // Select
+      edge(9, 'back')              // Start
     }
     requestAnimationFrame(poll)
   }
@@ -101,7 +103,7 @@ function startKiosk(games) {
     overlay.className = 'kiosk-overlay'
     overlay.innerHTML = `<iframe src="${url}" title="${game.game_title}" allowfullscreen
       sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
-      <p class="kiosk-hint">◉ Menu / B / Esc → back to gallery</p>`
+      <p class="kiosk-hint">Reset / Esc / Start → back to gallery</p>`
     document.body.appendChild(overlay)
     // Best-effort real fullscreen (works when launched by a keyboard gesture;
     // a gamepad press isn't a user gesture, so this may no-op — the overlay
