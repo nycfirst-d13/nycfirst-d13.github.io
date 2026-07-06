@@ -101,9 +101,25 @@ function startKiosk(games) {
     url.searchParams.set('nofooter', '1') // hide MakeCode footer chrome
     overlay = document.createElement('div')
     overlay.className = 'kiosk-overlay'
-    overlay.innerHTML = `<iframe src="${url}" title="${game.game_title}" allowfullscreen
-      sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
-      <p class="kiosk-hint">Reset / Esc / Start → back to gallery</p>`
+    // Header + game in one container, then fullscreen the container — keeps the
+    // site header on top while the game fills the rest, and Esc still fires
+    // fullscreenchange on the container to exit.
+    overlay.innerHTML = `
+      <header class="top">
+        <span class="brand">
+          <img src="nycfirst-pixel.png" alt="NYC FIRST District 13" width="40" height="40">
+          <span class="title">D13 Game Gallery</span>
+        </span>
+        <div class="play-meta">
+          <span class="g-title">${game.game_title}</span>
+          <span class="g-by">${game.student_name} · ${gradeLabel(game.grade)}</span>
+        </div>
+        <span class="kiosk-badge">Reset / Esc / Start → gallery</span>
+      </header>
+      <div class="kiosk-stage">
+        <iframe src="${url}" title="${game.game_title}" allowfullscreen
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+      </div>`
     document.body.appendChild(overlay)
     // Best-effort real fullscreen (works when launched by a keyboard gesture;
     // a gamepad press isn't a user gesture, so this may no-op — the overlay

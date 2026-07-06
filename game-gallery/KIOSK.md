@@ -92,8 +92,11 @@ play mid-game is invisible to the page — so keep this generous (e.g. `300000` 
 - `kiosk.js` is loaded by `index.html` and activates only when `?kiosk=1` is
   present.
 - Navigation, launching, and return all happen **on the gallery page** — a
-  selected game opens as a full-screen overlay iframe rather than navigating
-  away, so a single input loop stays in control the whole time.
+  selected game opens as a full-screen overlay rather than navigating away, so a
+  single input loop stays in control the whole time.
+- The overlay puts the **site header + game in one container** and fullscreens
+  *that container* (not just the iframe), so the header stays visible above the
+  game while still getting real full-screen + the focus-independent Esc exit.
 - Input is unified into six actions (`up/down/left/right/select/back`) from both
   keyboard events and polled Gamepad state. See the comments in `kiosk.js`.
 - The game iframe is loaded with `?nofooter=1` to hide MakeCode's footer chrome.
