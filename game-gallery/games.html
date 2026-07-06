@@ -19,7 +19,9 @@
   <main id="app"><div class="spinner"></div></main>
 
   <script src="app.js"></script>
+  <script src="help.js"></script>
   <script>
+    initHelp()
     const app = document.getElementById('app')
     const meta = document.getElementById('meta')
     const actions = document.getElementById('actions')
@@ -29,7 +31,7 @@
         `<span class="g-title">${esc(g.game_title)}</span>` +
         `<span class="g-by">${esc(g.student_name)} · ${esc(gradeLabel(g.grade))}</span>`
       const src = g.student_url
-        ? `<a class="btn" href="${esc(g.student_url)}" target="_blank" rel="noreferrer">Original ↗</a>`
+        ? `<a class="btn" href="${esc(g.student_url)}" target="_blank" rel="noreferrer">See code ↗</a>`
         : ''
       actions.innerHTML =
         `<a class="btn" href="./">← Gallery</a>` +

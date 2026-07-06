@@ -14,7 +14,8 @@ Plain static HTML/CSS/JS. **No build step, no framework, no node_modules.** File
 | `games.html` | Detail page — reads `?id=`, iframes the game, shows provenance |
 | `app.js` | Shared data layer — CSV fetch/parse, sort-newest, `findGame`, thumbnail URLs |
 | `style.css` | 8-bit arcade theme, minimal black & white (Press Start 2P + VT323, Google Fonts) |
-| `kiosk.js` | Kiosk mode — keyboard/Makey Makey/gamepad navigation (`?kiosk=1`). See `KIOSK.md` |
+| `kiosk.js` | Always-on gallery navigation + full-screen play (mouse/keyboard/Makey Makey/gamepad). See `KIOSK.md` |
+| `help.js` | Help button + popover (controls, navigation, view-code, learn), injected into the header on both pages |
 | `dev-games.csv` | Committed fixture of real public MakeCode games (made-up student names) |
 
 > History: previously a Next.js static-export app in `game-gallery-src/`. Dropped — a static CSV-driven gallery didn't need React or a build pipeline. Source is still in git history (commit `12e9ea8`) if ever needed.

@@ -1,6 +1,7 @@
-// Kiosk mode — browse the gallery and play games hands-free with a keyboard
-// or a game controller (a Makey Makey wired as arcade controls, or a USB/BT
-// gamepad). Turn it on with ?kiosk=1 on the gallery. Full docs: KIOSK.md.
+// Gallery navigation + play. Always on: browse and play with a mouse, a
+// keyboard, a Makey Makey wired as arcade controls, or a USB/BT gamepad. A
+// selected game opens as a full-screen overlay (site header on top, game
+// below). Full controls docs: KIOSK.md.
 //
 // How input reaches us:
 //   - Keyboard events only arrive while THIS page has focus. Once a game
@@ -9,8 +10,6 @@
 //   - The Gamepad API is *polled*, so it works even while the game has focus.
 //     That's why a gamepad can always exit a game; a keyboard-only setup exits
 //     via Esc (map one Makey Makey input to Esc). See KIOSK.md.
-
-const KIOSK = new URLSearchParams(location.search).has('kiosk')
 
 // Return to gallery after this many ms with no controller activity (safety net
 // for abandoned sessions). 0 disables it. Keyboard-only play can't be detected
@@ -78,7 +77,6 @@ function gridColumns(cards) {
 function startKiosk(games) {
   const cards = [...document.querySelectorAll('.card')]
   if (!cards.length) return
-  document.body.classList.add('kiosk')
 
   let sel = 0
   const highlight = () => {
@@ -86,6 +84,12 @@ function startKiosk(games) {
     cards[sel].scrollIntoView({ block: 'nearest' })
   }
   highlight()
+
+  // Mouse: clicking a card plays it in the overlay instead of navigating away.
+  cards.forEach((card, i) => card.addEventListener('click', e => {
+    e.preventDefault()
+    sel = i; highlight(); open(games[i])
+  }))
 
   let overlay = null
   let idleTimer = null
@@ -104,23 +108,22 @@ function startKiosk(games) {
     // Header + game in one container, then fullscreen the container — keeps the
     // site header on top while the game fills the rest, and Esc still fires
     // fullscreenchange on the container to exit.
+    const codeUrl = game.student_url || game.d13_url
     overlay.innerHTML = `
       <header class="top">
-        <span class="brand">
-          <img src="nycfirst-pixel.png" alt="NYC FIRST District 13" width="40" height="40">
-          <span class="title">D13 Game Gallery</span>
-        </span>
+        <button class="chip" data-back>← Gallery</button>
         <div class="play-meta">
           <span class="g-title">${game.game_title}</span>
           <span class="g-by">${game.student_name} · ${gradeLabel(game.grade)}</span>
         </div>
-        <span class="kiosk-badge">Reset / Esc / Start → gallery</span>
+        <a class="chip" href="${codeUrl}" target="_blank" rel="noreferrer">See code ↗</a>
       </header>
       <div class="kiosk-stage">
         <iframe src="${url}" title="${game.game_title}" allowfullscreen
           sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
       </div>`
     document.body.appendChild(overlay)
+    overlay.querySelector('[data-back]').addEventListener('click', close)
     // Best-effort real fullscreen (works when launched by a keyboard gesture;
     // a gamepad press isn't a user gesture, so this may no-op — the overlay
     // covers the screen either way).

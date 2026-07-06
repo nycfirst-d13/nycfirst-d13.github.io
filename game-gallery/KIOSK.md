@@ -1,23 +1,21 @@
-# Kiosk Mode
+# Controls & Kiosk
 
-Hands-free arcade mode for the D13 Game Gallery: browse the grid and play games
-using only a **keyboard**, a **Makey Makey** wired as arcade controls, or a
-**USB/Bluetooth game controller** — no mouse needed. Built for a shared arcade
-station at the STEM center.
+The D13 Game Gallery is playable with a **mouse**, a **keyboard**, a **Makey
+Makey** wired as arcade controls, or a **USB/Bluetooth game controller** — no
+setup, no special URL. This makes it work equally as a normal web page and as a
+shared arcade station at the STEM center.
 
-## Turn it on
+The currently selected game shows a highlighted border once you start navigating
+with keys/controller. A selected game opens as a full-screen overlay with the
+site header on top and the game below.
 
-Add `?kiosk=1` to the gallery URL:
+## Running as a dedicated arcade station
 
-```
-https://<site>/game-gallery/?kiosk=1
-```
+Just open the gallery in the browser's own full-screen/kiosk mode (Chrome:
+`--kiosk` flag, or F11) so there's no address bar. Everything else already works.
 
-The currently selected game gets a highlighted border. Everything else looks the
-same — kiosk mode only adds controller navigation on top of the normal site.
-
-For a dedicated station, open that URL in the browser's own full-screen/kiosk
-mode (Chrome: `--kiosk` flag, or F11) so there's no address bar to escape to.
+Players can also tap **Help** (top-right) any time for a controls + how-to
+reference.
 
 ## Controls
 
@@ -89,8 +87,9 @@ play mid-game is invisible to the page — so keep this generous (e.g. `300000` 
 
 ## How it works (for maintainers)
 
-- `kiosk.js` is loaded by `index.html` and activates only when `?kiosk=1` is
-  present.
+- `kiosk.js` is loaded by `index.html` and always active — it drives mouse,
+  keyboard, and gamepad navigation for the whole gallery.
+- `help.js` injects the Help button + popover into the header on both pages.
 - Navigation, launching, and return all happen **on the gallery page** — a
   selected game opens as a full-screen overlay rather than navigating away, so a
   single input loop stays in control the whole time.
