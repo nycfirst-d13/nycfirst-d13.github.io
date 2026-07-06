@@ -131,13 +131,9 @@ function startKiosk(games) {
         <div class="pop-inner">
           <h1 class="pop-title">Playing ${game.game_title}</h1>
           <h2 class="pop-h">Controls</h2>
+          ${controlsVis()}
           <ul>
-            <li><b>Move:</b> arrow keys / <b>W A S D</b> / joystick.</li>
-            <li><b>Action:</b> <b>Space</b> = A button (the game also shows its controls on screen).</li>
-          </ul>
-          <h2 class="pop-h">Done playing?</h2>
-          <ul>
-            <li>Click <b><span class="ico">←</span> Gallery</b> (top-left), or press <b>Esc</b> / <b>Start</b>.</li>
+            <li>The game also shows its controls on screen.</li>
           </ul>
           <h2 class="pop-h">See &amp; learn from the code</h2>
           <ul>

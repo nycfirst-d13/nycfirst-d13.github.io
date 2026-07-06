@@ -217,6 +217,44 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
 .popover ul { margin: 0; padding-left: 28px; }
 .popover li { margin-bottom: 14px; font-size: 30px; line-height: 1.35; }
 .popover li:has(.chip) { list-style: none; margin-left: -8px; margin-top: 4px; }
+
+/* ---- animated control keys (help dialogs) ---- */
+.ctrls { margin: 4px 0 26px; }
+.ctrls-move { display: flex; align-items: center; flex-wrap: wrap; gap: 22px; margin-bottom: 20px; }
+.ctrls-eq { font-family: var(--pixel); font-size: 22px; color: var(--ink-2); }
+.ctrls-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.ctrls-lbl { font-size: 26px; color: var(--ink); }
+
+/* WASD / arrows laid out like a keyboard: top key centered, three below. */
+.keypad {
+  display: grid; gap: 6px; width: max-content;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-areas: ". u ." "l d r";
+}
+.keypad .key:nth-child(1) { grid-area: u; }
+.keypad .key:nth-child(2) { grid-area: l; }
+.keypad .key:nth-child(3) { grid-area: d; }
+.keypad .key:nth-child(4) { grid-area: r; }
+
+.key {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 52px; height: 52px; box-sizing: border-box;
+  font-family: var(--pixel); font-size: 17px; color: var(--ink);
+  background: #000; border: 3px solid var(--line);
+  box-shadow: 0 5px 0 var(--line-dim);
+  animation: keypress 2.6s infinite; animation-delay: calc(var(--i) * 0.4s);
+}
+.key.wide { width: auto; padding: 0 16px; font-size: 12px; }
+
+@keyframes keypress {
+  0%   { transform: translateY(0);   box-shadow: 0 5px 0 var(--line-dim); background: #000; color: var(--ink); }
+  6%   { transform: translateY(4px); box-shadow: 0 1px 0 var(--line-dim); background: var(--accent); color: #000; }
+  14%  { transform: translateY(0);   box-shadow: 0 5px 0 var(--line-dim); background: #000; color: var(--ink); }
+  100% { transform: translateY(0);   box-shadow: 0 5px 0 var(--line-dim); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .key { animation: none; }
+}
 .popover b { color: var(--ink); }
 .popover a { color: var(--blue); }
 
