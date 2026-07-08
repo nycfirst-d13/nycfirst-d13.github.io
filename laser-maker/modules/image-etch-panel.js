@@ -204,6 +204,14 @@ C.reset.addEventListener('click', () => {
 const TRACE_MAX = 1000;   // cap longest traced side for performance
 
 
+// Split a transformed (all-absolute) compound path d into one string per
+// subpath. applyMatrixToD always emits absolute commands, so every subpath
+// begins with a capital M. Drop degenerate subpaths (M with no geometry).
+function splitSubpaths(d) {
+  return d.split(/(?=M)/).map(s => s.trim())
+    .filter(s => /[LCQAHVZ]/.test(s));
+}
+
 function traceSelected() {
   const sh = selectedEtchImage();
   if (!sh) return;
@@ -223,6 +231,10 @@ function traceSelected() {
     const cv = document.createElement('canvas');
     cv.width = tw; cv.height = th;
     const ctx = cv.getContext('2d');
+    // Flatten transparency onto white — else transparent pixels read as
+    // RGB(0,0,0) and the tracer paints the whole background solid black.
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, tw, th);
     ctx.drawImage(img, 0, 0, tw, th);
     const imgData = ctx.getImageData(0, 0, tw, th);
 
@@ -254,12 +266,20 @@ function traceSelected() {
       return lum < 128;
     }).map(p => applyMatrixToD(p.getAttribute('d'), m)).filter(Boolean);
 
-    if (!paths.length) { toast('Nothing to trace'); return; }
+    // ImageTracer emits one <path> per color, so all dark regions land in a
+    // single compound d. Split it into subpaths (each M…Z) so every traced
+    // line/shape is its own selectable child — not one un-decomposable blob.
+    // ponytail: this drops even-odd holes (a subpath that was a hole becomes a
+    // solid fill). Fine for the line-art students trace; revisit if donut
+    // shapes matter.
+    const subpaths = paths.flatMap(splitSubpaths);
+
+    if (!subpaths.length) { toast('Nothing to trace'); return; }
 
     const base = { fill: '#000000', stroke: 'none', strokeWidth: 1,
                    processType: 'etch', visible: true, locked: false, rotation: 0 };
     let n = 0;
-    const children = paths.map(d => ({
+    const children = subpaths.map(d => ({
       id: uid('tp'), type: 'path', name: `Path ${++n}`, attrs: { d }, ...base,
     }));
     const replacement = children.length === 1
@@ -273,7 +293,7 @@ function traceSelected() {
       st.shapes.splice(idx, 1, replacement);
       st.selection = [replacement.id];
     }, 'trace-image');
-    toast(`Traced to ${paths.length} path${paths.length > 1 ? 's' : ''}`);
+    toast(`Traced to ${subpaths.length} path${subpaths.length > 1 ? 's' : ''}`);
   }).catch(() => toast('Trace failed'));
 }
 
