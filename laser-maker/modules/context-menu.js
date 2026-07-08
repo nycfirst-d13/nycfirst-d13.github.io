@@ -3,6 +3,7 @@
 // =============================================================================
 import { doCopy, doCut, doPaste, doPasteInPlace, canPaste } from './keys.js';
 import { groupSelected, ungroupSelected } from './group.js';
+import { convertTextToPath } from './text-panel.js';
 import { hitShape } from './select.js';
 import { store } from './state.js';
 import { showToast, selectionBBox } from './toast.js';
@@ -14,6 +15,11 @@ const _paste    = _menu.querySelector('[data-action=paste]');
 const _pasteIP  = _menu.querySelector('[data-action=paste-in-place]');
 const _group    = _menu.querySelector('[data-action=group]');
 const _ungroup  = _menu.querySelector('[data-action=ungroup]');
+const _convert  = _menu.querySelector('[data-action=convert-path]');
+
+function _hasText(sh) {
+  return sh?.type === 'text' || (sh?.type === 'group' && sh.children.some(_hasText));
+}
 
 const mod = /Mac/.test(navigator.userAgent) ? '⌘' : 'Ctrl+';
 _copy   .querySelector('.ctx-shortcut').textContent = mod + 'C';
@@ -52,6 +58,8 @@ function _open(e) {
   _pasteIP.disabled = !canPaste();
   _group  .disabled = sel.length < 2;
   _ungroup.disabled = !hasGroup;
+  _convert.disabled = !shapes.some(_hasText);
+  _convert.querySelector('.ctx-shortcut').textContent = mod + '⇧O';
 
   _menu.hidden = false;
   const w = _menu.offsetWidth, h = _menu.offsetHeight;
@@ -91,6 +99,8 @@ _menu.addEventListener('click', e => {
   } else if (action === 'ungroup') {
     ungroupSelected();
     requestAnimationFrame(() => showToast('Ungrouped! 💨', { bbox: selectionBBox() }));
+  } else if (action === 'convert-path') {
+    convertTextToPath();
   }
 
   _close();

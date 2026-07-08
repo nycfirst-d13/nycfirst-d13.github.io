@@ -435,19 +435,9 @@ async function _domVisualLines(shapeId, content, frameW, family, size, weight, l
   return result.length ? result : [''];
 }
 
-async function convertTextToPath() {
-  if (!fontkit) { toast('Font engine not loaded yet — try again'); return; }
-
-  const s = store.get();
-  const sh = s.selection.length === 1
-    ? s.shapes.find(x => x.id === s.selection[0])
-    : null;
-  if (!sh || sh.type !== 'text') return;
-
-  convertBtn.disabled = true;
-  convertBtn.textContent = 'Converting…';
-
-  try {
+// Build the outline replacement (path or text-outline group) for one text shape.
+// Returns null for blank/empty text. Does not touch the store — caller commits.
+async function buildTextOutline(sh) {
     const family = sh.attrs.family || 'Geist';
     const weight = sh.attrs.weight || 400;
     const rawBuffer = await fetchFontBuffer(family, weight);
@@ -590,7 +580,7 @@ async function convertTextToPath() {
       }
     }
 
-    if (!letterPaths.length) { toast('Nothing to convert — try a different font'); return; }
+    if (!letterPaths.length) return null;
 
     const groupId = uid('g');
     const children = letterPaths.map(({ name, d }) => ({
@@ -608,18 +598,65 @@ async function convertTextToPath() {
     }));
 
     // ponytail: single glyph → bare path, no pointless 1-child group.
-    const replacement = children.length === 1
-      ? { ...children[0], name: sh.name + ' outline', visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0 }
-      : { id: groupId, type: 'group', textOutline: true, name: sh.name + ' outline', children, visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0, _bbox: null };
-
-    store.commit(st => {
-      const idx = st.shapes.findIndex(x => x.id === sh.id);
-      if (idx === -1) return;
-      st.shapes.splice(idx, 1, replacement);
-      st.selection = [replacement.id];
-    }, 'convert-text');
     // ponytail: no clipRect — glyph paths are the visible ink, clipping to the
     // old frame is pointless and froze in absolute coords (broke on group move).
+    return children.length === 1
+      ? { ...children[0], name: sh.name + ' outline', visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0 }
+      : { id: groupId, type: 'group', textOutline: true, name: sh.name + ' outline', children, visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0, _bbox: null };
+}
+
+// Recursively convert every text descendant to outlines, preserving group
+// structure so each former text box becomes its own selectable subgroup with
+// editable glyph children. Returns a replacement shape, or null if unchanged.
+async function convertTree(sh) {
+  if (sh.type === 'text') return await buildTextOutline(sh);
+  if (sh.type === 'group') {
+    let changed = false;
+    const children = [];
+    for (const c of sh.children) {
+      const rep = await convertTree(c);
+      if (rep) { children.push(rep); changed = true; }
+      else children.push(c);
+    }
+    return changed ? { ...sh, children, _bbox: null } : null;
+  }
+  return null;
+}
+
+function hasTextDeep(sh) {
+  return sh?.type === 'text' || (sh?.type === 'group' && sh.children.some(hasTextDeep));
+}
+
+// Replace a shape by id anywhere in the tree (top-level or nested in a group).
+function replaceById(shapes, id, newShape) {
+  const i = shapes.findIndex(x => x.id === id);
+  if (i >= 0) { shapes.splice(i, 1, newShape); return true; }
+  for (const sh of shapes) {
+    if (sh.type === 'group' && replaceById(sh.children, id, newShape)) return true;
+  }
+  return false;
+}
+
+async function convertTextToPath() {
+  if (!fontkit) { toast('Font engine not loaded yet — try again'); return; }
+
+  const roots = store.get().selection.map(id => store.findShape(id)).filter(Boolean);
+  if (!roots.some(hasTextDeep)) return;
+
+  convertBtn.disabled = true;
+  convertBtn.textContent = 'Converting…';
+  try {
+    const reps = [];
+    for (const root of roots) {
+      const rep = await convertTree(root);
+      if (rep) reps.push({ oldId: root.id, rep });
+    }
+    if (!reps.length) { toast('Nothing to convert — try a different font'); return; }
+
+    store.commit(st => {
+      for (const { oldId, rep } of reps) replaceById(st.shapes, oldId, rep);
+      st.selection = reps.map(r => r.rep.id);
+    }, 'convert-text');
 
     toast('Converted to path');
   } catch (err) {
