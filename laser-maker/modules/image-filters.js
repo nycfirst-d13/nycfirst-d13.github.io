@@ -62,6 +62,10 @@ export function processToDataURL(img, params, maxDim = 0) {
   const cv = document.createElement('canvas');
   cv.width = w; cv.height = h;
   const ctx = cv.getContext('2d');
+  // Flatten transparency onto white — else transparent pixels read as
+  // RGB(0,0,0) and bake to solid black instead of the intended tones.
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, w, h);
   ctx.drawImage(img, 0, 0, w, h);
   const imgData = ctx.getImageData(0, 0, w, h);
   const px = imgData.data;
