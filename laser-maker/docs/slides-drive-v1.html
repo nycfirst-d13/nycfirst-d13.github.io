@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Maker · Save to Cloud — Staff Overview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* === THEME TOKENS (Laser Maker app design system) === */
+        :root {
+            --paper: #E8EFF8;
+            --surface: #FFFFFF;
+            --surface-2: #EDF2FA;
+            --rule: #CDDAEE;
+            --rule-2: #B8CCEA;
+            --ink: #0F1117;
+            --ink-2: #3A3D45;
+            --ink-3: #6B6F7A;
+            --muted: #9DA1AC;
+            --accent: #E0241B;
+            --accent-soft: #FEF0EF;
+            --blue: #2563EB;
+            --blue-soft: #DCE8FC;
+            --green: #047857;
+            --green-soft: #D1FAE5;
+            --stage-bg: #0F1117;
+            --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+            --font-mono: 'Geist Mono', ui-monospace, monospace;
+            --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-smooth: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* === viewport-base.css (mandatory) === */
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: var(--stage-bg); }
+        .deck-viewport { position: fixed; inset: 0; overflow: hidden; background: var(--stage-bg); }
+        .deck-stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; transform-origin: 0 0; background: var(--paper); }
+        .slide { position: absolute; inset: 0; width: 1920px; height: 1080px; overflow: hidden; display: block; visibility: hidden; opacity: 0; pointer-events: none; background: var(--paper); }
+        .slide.active, .slide.visible { visibility: visible; opacity: 1; pointer-events: auto; z-index: 1; }
+        img, video, canvas, svg { max-width: 100%; max-height: 100%; }
+        .deck-controls { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); z-index: 1000; }
+        @media print {
+            html, body { width: 1920px; height: auto; overflow: visible; background: #fff; }
+            .deck-viewport { position: static; overflow: visible; background: #fff; }
+            .deck-stage { position: static; width: auto; height: auto; transform: none !important; background: none; }
+            .slide { position: relative; display: block !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; width: 1920px; height: 1080px; break-after: page; page-break-after: always; }
+            .slide:last-child { break-after: auto; page-break-after: auto; }
+            .deck-controls { display: none !important; }
+        }
+        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; } }
+
+        /* === TRANSITIONS === */
+        .slide { transition: opacity 0.4s var(--ease-smooth); }
+
+        /* === REVEAL ANIMATIONS === */
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s var(--ease-expo), transform 0.6s var(--ease-expo); }
+        .reveal-scale { opacity: 0; transform: scale(0.94); transition: opacity 0.5s var(--ease-expo), transform 0.5s var(--ease-expo); }
+        .slide.visible .reveal, .slide.visible .reveal-scale { opacity: 1; transform: none; }
+        .d1 { transition-delay: 0.04s; } .d2 { transition-delay: 0.12s; } .d3 { transition-delay: 0.22s; }
+        .d4 { transition-delay: 0.32s; } .d5 { transition-delay: 0.42s; } .d6 { transition-delay: 0.52s; }
+        .d7 { transition-delay: 0.62s; } .d8 { transition-delay: 0.72s; }
+
+        /* === TYPOGRAPHY === */
+        .tag { font-family: var(--font-mono); font-size: 15px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.1em; color: var(--blue); }
+        .tag-red { color: var(--accent); }
+        .h1 { font-family: var(--font-sans); font-size: 104px; font-weight: 700; line-height: 0.93; letter-spacing: -0.026em; color: var(--ink); }
+        .h2 { font-family: var(--font-sans); font-size: 64px; font-weight: 700; line-height: 0.98; letter-spacing: -0.02em; color: var(--ink); }
+        .h3 { font-family: var(--font-sans); font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; color: var(--ink); }
+        .body { font-family: var(--font-sans); font-size: 22px; font-weight: 400; line-height: 1.55; color: var(--ink-2); }
+        .body-sm { font-family: var(--font-sans); font-size: 18px; font-weight: 400; line-height: 1.65; color: var(--ink-3); }
+        .mono { font-family: var(--font-mono); font-size: 14px; font-weight: 500; }
+
+        /* === CARDS === */
+        .card { background: var(--surface); border: 1.5px solid var(--rule); border-radius: 12px; box-shadow: 0 2px 12px rgba(15,17,23,0.07); }
+        .card-blue { background: var(--blue-soft); border-color: var(--rule-2); }
+        .card-green { background: var(--green-soft); border-color: #A7F3D0; }
+        .card-ink { background: var(--ink); border-color: var(--ink); }
+
+        /* === SHARED ELEMENTS === */
+        .dot-bg { position: absolute; inset: 0; background-image: radial-gradient(circle, rgba(37,99,235,0.09) 1px, transparent 1px); background-size: 34px 34px; pointer-events: none; }
+        .dot-bg-white { background-image: radial-gradient(circle, rgba(255,255,255,0.15) 1px, transparent 1px); }
+        .icon-box { width: 52px; height: 52px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .step-num { font-family: var(--font-mono); font-size: 17px; font-weight: 600; color: var(--blue); min-width: 32px; padding-top: 2px; }
+        .step-row { display: flex; align-items: flex-start; gap: 18px; padding: 18px 22px; background: var(--surface); border: 1.5px solid var(--rule); border-radius: 10px; }
+
+        /* Process color system swatches */
+        .proc-row { display: flex; gap: 10px; }
+        .proc-chip { display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: var(--surface); border: 1.5px solid var(--rule); border-radius: 6px; }
+        .proc-dot { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+
+        /* Code / monospace block */
+        .code-block { background: var(--surface-2); border: 1.5px solid var(--rule); border-radius: 8px; padding: 14px 18px; font-family: var(--font-mono); font-size: 14px; line-height: 1.7; color: var(--ink-2); }
+
+        /* Slide counter */
+        .s-counter { position: fixed; bottom: 28px; right: 44px; font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.3); letter-spacing: 0.06em; z-index: 1000; }
+
+        /* Inline edit */
+        .edit-hotzone { position: fixed; top: 0; left: 0; width: 80px; height: 80px; z-index: 10000; cursor: pointer; }
+        .edit-toggle { position: fixed; top: 14px; left: 14px; background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.12); border-radius: 8px; padding: 6px 14px; font-size: 13px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 10001; font-family: var(--font-sans); }
+        .edit-toggle.show, .edit-toggle.active { opacity: 1; pointer-events: auto; }
+        [contenteditable] { outline: 2px solid var(--blue); border-radius: 3px; }
+    </style>
+</head>
+<body>
+<div class="deck-viewport">
+<main class="deck-stage" id="deckStage">
+
+<!-- ================================================================
+     SLIDE 1 — TITLE
+     Left: Tag + big title + body + red bar
+     Right: Blue panel with cloud icon + process color legend
+     ================================================================ -->
+<section class="slide active" id="s1">
+    <div class="dot-bg"></div>
+    <div style="position:absolute;inset:0;display:grid;grid-template-columns:1fr 420px">
+        <!-- Left: copy -->
+        <div style="padding:96px 72px 96px 108px;display:flex;flex-direction:column;justify-content:center;gap:28px">
+            <div class="tag reveal d1">NYC FIRST District 13 · STEM Center</div>
+            <h1 class="h1 reveal d2">Save<br>to Cloud</h1>
+            <p class="body reveal d3" style="max-width:620px">Google Drive integration for Laser Maker — students upload SVG designs directly from the browser, no accounts needed. Ready for the laser cutter.</p>
+            <div class="reveal d4" style="width:56px;height:5px;border-radius:3px;background:var(--accent)"></div>
+        </div>
+        <!-- Right: Blue panel -->
+        <div style="background:var(--blue);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:52px 44px">
+            <!-- Cloud icon -->
+            <div class="reveal-scale d2" style="width:130px;height:130px;background:rgba(255,255,255,0.12);border-radius:22px;display:flex;align-items:center;justify-content:center">
+                <svg width="76" height="76" viewBox="0 0 76 76" fill="none">
+                    <path d="M56 46c0-6.63-5.37-12-12-12a12 12 0 0 0-3.53.53A15 15 0 0 0 16 46" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M56 46a10 10 0 0 1 0 20H20a10 10 0 0 1 0-20" stroke="white" stroke-width="3" stroke-linecap="round"/>
+                    <path d="M38 34V16M31 23l7-7 7 7" stroke="rgba(255,255,255,0.6)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <!-- Label -->
+            <div class="reveal d4" style="text-align:center">
+                <div style="font-family:var(--font-mono);font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:6px">Staff Overview</div>
+                <div style="font-family:var(--font-sans);font-size:22px;font-weight:600;color:white">Laser Maker</div>
+            </div>
+            <!-- NYC FIRST logo -->
+            <div class="reveal d5" style="width:100%;border-top:1px solid rgba(255,255,255,0.15);padding-top:24px;display:flex;justify-content:center">
+                <div style="background:white;border-radius:10px;padding:12px 20px;display:flex;align-items:center;justify-content:center">
+                    <img src="../assets/horizontal-logo.svg" style="height:60px;width:auto;display:block">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================
+     SLIDE 2 — WHAT IS IT?
+     Left: Big display claim + 3 stat numbers
+     Right: 3 stacked horizontal feature cards (horizontal = icon left + text right)
+     ================================================================ -->
+<section class="slide" id="s2">
+    <div style="position:absolute;inset:0;display:grid;grid-template-columns:620px 1fr">
+        <!-- Left: Claim + stats -->
+        <div style="padding:72px 64px 72px 100px;display:flex;flex-direction:column;justify-content:center;gap:36px;border-right:1.5px solid var(--rule)">
+            <div>
+                <div class="tag reveal d1" style="margin-bottom:18px">Feature Overview</div>
+                <h2 class="h2 reveal d2" style="font-size:58px;line-height:1.06">No accounts.<br>One PIN.<br>Designs in Drive.</h2>
+            </div>
+            <p class="body reveal d3" style="color:var(--ink-3);font-size:20px">A built-in button in Laser Maker that sends the student's SVG directly to a shared Google Drive folder.</p>
+            <!-- 3 stat blocks -->
+            <div class="reveal d4" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
+                <div class="card" style="padding:18px 14px;text-align:center">
+                    <div style="font-family:var(--font-sans);font-size:54px;font-weight:700;line-height:1;color:var(--blue)">0</div>
+                    <div style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-top:6px">Student<br>Accounts</div>
+                </div>
+                <div class="card" style="padding:18px 14px;text-align:center">
+                    <div style="font-family:var(--font-sans);font-size:54px;font-weight:700;line-height:1;color:var(--blue)">1</div>
+                    <div style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-top:6px">Shared<br>Folder</div>
+                </div>
+                <div class="card" style="padding:18px 14px;text-align:center">
+                    <div style="font-family:var(--font-sans);font-size:54px;font-weight:700;line-height:1;color:var(--accent)">1</div>
+                    <div style="font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;margin-top:6px">Class<br>PIN</div>
+                </div>
+            </div>
+        </div>
+        <!-- Right: Feature cards (horizontal layout) -->
+        <div style="padding:52px 100px 52px 52px;display:flex;flex-direction:column;gap:20px;justify-content:center">
+            <div class="card reveal d2" style="padding:32px 36px;display:flex;gap:24px;align-items:flex-start">
+                <div class="icon-box" style="background:var(--blue-soft)">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="9" stroke="#2563EB" stroke-width="2.5"/><path d="M9 13l3 3 5-5" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div style="flex:1">
+                    <div class="h3" style="margin-bottom:8px">No logins</div>
+                    <p class="body-sm">One shared class PIN typed once per session. The browser caches it in localStorage (<span class="mono" style="background:var(--surface-2);padding:1px 6px;border-radius:3px">laserMakerDrivePin</span>) — returning students skip the prompt. No Google accounts, no OAuth, no student credentials to manage.</p>
+                </div>
+            </div>
+            <div class="card reveal d3" style="padding:32px 36px;display:flex;gap:24px;align-items:flex-start">
+                <div class="icon-box" style="background:var(--accent-soft)">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 5v10M8 11l5 5 5-5" stroke="#E0241B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 19v2a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-2" stroke="#E0241B" stroke-width="2.5" stroke-linecap="round"/></svg>
+                </div>
+                <div style="flex:1">
+                    <div class="h3" style="margin-bottom:8px">Instant upload</div>
+                    <p class="body-sm">Click "Save to Cloud," enter Design Name + Project. A fetch POST sends the PIN, SVG, and slugified filename to a Google Apps Script. The script validates the PIN, finds or creates today's date subfolder, and saves the file. Green toast: <span class="mono" style="background:var(--surface-2);padding:1px 6px;border-radius:3px;font-size:13px">Saved to Drive · filename</span>.</p>
+                </div>
+            </div>
+            <div class="card reveal d4" style="padding:32px 36px;display:flex;gap:24px;align-items:flex-start">
+                <div class="icon-box" style="background:var(--green-soft)">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 21V11l9-7 9 7v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" stroke="#047857" stroke-width="2.5" stroke-linejoin="round"/><path d="M9 23V17h8v6" stroke="#047857" stroke-width="2.5" stroke-linejoin="round"/></svg>
+                </div>
+                <div style="flex:1">
+                    <div class="h3" style="margin-bottom:8px">One shared folder</div>
+                    <p class="body-sm">Designs land in a date subfolder inside "Laser Maker Exports" — automatically organized by class session. Files are dimensioned in real inches, ready for Illustrator and the laser. Re-exports stack alongside rather than overwrite.</p>
+                    <div class="code-block" style="font-size:13px;margin-top:10px">Laser Maker Exports / 06-24-26 / name-project_laser.svg</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================
+     SLIDE 3 — END-TO-END PIPELINE
+     Pipeline nodes + process color legend below
+     ================================================================ -->
+<section class="slide" id="s3">
+    <div style="position:absolute;inset:0;padding:64px 88px;display:flex;flex-direction:column;justify-content:center;gap:36px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="tag reveal d1">End-to-End Pipeline</div>
+            <h2 class="h2 reveal d2">From browser to laser cutter</h2>
+        </div>
+        <!-- Pipeline nodes -->
+        <div class="reveal d3" style="display:flex;align-items:flex-start;gap:0">
+            <!-- Node 1: Laser Maker -->
+            <div class="card" style="flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:32px 20px;background:var(--blue-soft);border-color:var(--rule-2)">
+                <div class="icon-box" style="background:var(--blue)">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="3" y="4" width="20" height="18" rx="3" stroke="white" stroke-width="2.5"/><path d="M3 9h20" stroke="white" stroke-width="2"/><path d="M7 14h5M7 18h9" stroke="rgba(255,255,255,0.65)" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <div class="h3" style="font-size:20px;color:var(--blue)">Laser Maker</div>
+                <p class="body-sm" style="font-size:16px">Student designs parts, clicks Save to Cloud</p>
+                <div style="padding:8px 12px;background:rgba(37,99,235,0.08);border-radius:6px;width:100%">
+                    <div class="mono" style="font-size:12px;color:var(--blue)">Browser app · SVG output</div>
+                </div>
+            </div>
+            <div style="width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;align-self:center">→</div>
+            <!-- Node 2: Google Drive -->
+            <div class="card" style="flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:32px 20px">
+                <div class="icon-box" style="background:#FEF9C3">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M13 3L22 19H4L13 3z" stroke="#92400E" stroke-width="2.5" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h3" style="font-size:20px">Google Drive</div>
+                <p class="body-sm" style="font-size:16px">SVG file saved to shared folder — visible to all staff</p>
+                <div style="padding:8px 12px;background:var(--surface-2);border-radius:6px;width:100%">
+                    <div class="mono" style="font-size:12px;color:var(--muted)">Laser Maker Exports/</div>
+                </div>
+            </div>
+            <div style="width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;align-self:center">→</div>
+            <!-- Node 3: Adobe Illustrator -->
+            <div class="card" style="flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:32px 20px">
+                <div class="icon-box" style="background:var(--surface-2)">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="3" y="3" width="20" height="20" rx="3" stroke="#6B6F7A" stroke-width="2.5"/><path d="M8 19l3-7 3 7M9.5 16h5" stroke="#6B6F7A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 11v8" stroke="#6B6F7A" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <div class="h3" style="font-size:20px">Illustrator</div>
+                <p class="body-sm" style="font-size:16px">Teacher opens SVG in Illustrator, sends to laser cutter</p>
+                <div style="padding:8px 12px;background:var(--surface-2);border-radius:6px;width:100%">
+                    <div class="mono" style="font-size:12px;color:var(--muted)">open SVG · File → Print</div>
+                </div>
+            </div>
+            <div style="width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;align-self:center">→</div>
+            <!-- Node 4: Epilog Driver -->
+            <div class="card" style="flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:32px 20px">
+                <div class="icon-box" style="background:var(--accent-soft)">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="7" width="22" height="13" rx="2" stroke="#E0241B" stroke-width="2.5"/><path d="M6 12h14M6 16h9" stroke="#E0241B" stroke-width="2" stroke-linecap="round"/><circle cx="19" cy="16" r="1.5" fill="#E0241B"/></svg>
+                </div>
+                <div class="h3" style="font-size:20px">Epilog Driver</div>
+                <p class="body-sm" style="font-size:16px">File → Print → Fusion Job Manager. Colors drive power/speed settings</p>
+                <div style="padding:8px 12px;background:var(--accent-soft);border-radius:6px;width:100%">
+                    <div class="mono" style="font-size:12px;color:var(--accent)">File → Print → Send</div>
+                </div>
+            </div>
+            <div style="width:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;align-self:center">→</div>
+            <!-- Node 5: Laser Cutter -->
+            <div class="card card-green" style="flex:1;display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:32px 20px">
+                <div class="icon-box" style="background:rgba(4,120,87,0.15)">
+                    <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="3" y="3" width="20" height="20" rx="3" stroke="#047857" stroke-width="2.5"/><circle cx="13" cy="13" r="3.5" stroke="#047857" stroke-width="2"/><path d="M13 3v3M13 20v3M3 13h3M20 13h3" stroke="rgba(4,120,87,0.4)" stroke-width="2" stroke-linecap="round"/></svg>
+                </div>
+                <div class="h3" style="font-size:20px;color:var(--green)">Epilog Fusion</div>
+                <p class="body-sm" style="font-size:16px">Laser cutter executes the job — cuts, scores, etches</p>
+                <div style="padding:8px 12px;background:rgba(4,120,87,0.08);border-radius:6px;width:100%">
+                    <div class="mono" style="font-size:12px;color:var(--green)">Burn baby burn.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================
+     SLIDE 4 — STUDENT PROCESS
+     Left column: Steps 1-3 (setup / design / export)
+     Right column: Steps 4-5 (Save to Cloud + Done) — bigger, more prominent
+     ================================================================ -->
+<section class="slide" id="s4">
+    <div style="position:absolute;inset:0;padding:64px 88px;display:flex;flex-direction:column;gap:36px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="tag reveal d1">Student Workflow</div>
+            <h2 class="h2 reveal d2">The Process — 5 Steps</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex:1">
+            <!-- Left: Steps 1-3 -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="card reveal d1" style="flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0.08em;min-width:56px">STEP 01</div>
+                        <div class="h3" style="font-size:22px">Open browser</div>
+                    </div>
+                    <p class="body-sm">Navigate to the Laser Maker URL on a Mac desktop running Chrome. No install, no account — just a URL. The app runs entirely in the browser.</p>
+                    <div class="code-block">nycfirst-d13.github.io/laser-maker/</div>
+                </div>
+                <div class="card reveal d2" style="flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0.08em;min-width:56px">STEP 02</div>
+                        <div class="h3" style="font-size:22px">Design parts</div>
+                    </div>
+                    <p class="body-sm">Use the drawing tools — rect, ellipse, pen, text — to design laser-cut parts. Assign a process type to each shape: Main Cut (blue), Fold (red), Final Cut (green), or Etch (black). Colors are locked automatically.</p>
+                    <div class="proc-row">
+                        <div class="proc-chip"><div class="proc-dot" style="background:#0000FF"></div><span class="mono" style="font-size:11px">Cut</span></div>
+                        <div class="proc-chip"><div class="proc-dot" style="background:#FF0000"></div><span class="mono" style="font-size:11px">Fold</span></div>
+                        <div class="proc-chip"><div class="proc-dot" style="background:#00FF00;outline:1px solid #ccc"></div><span class="mono" style="font-size:11px">Final</span></div>
+                        <div class="proc-chip"><div class="proc-dot" style="background:#000;outline:1px solid #ccc"></div><span class="mono" style="font-size:11px">Etch</span></div>
+                    </div>
+                </div>
+                <div class="card reveal d3" style="flex:1;padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0.08em;min-width:56px">STEP 03</div>
+                        <div class="h3" style="font-size:22px">Export → enter Design Name + Project</div>
+                    </div>
+                    <p class="body-sm">Top bar export icon. Enter a Design Name and Project — these become the Drive filename. Keep them descriptive.</p>
+                    <div class="code-block" style="font-size:13px">name + project → name-project_laser.svg</div>
+                </div>
+            </div>
+            <!-- Right: Steps 4-5 (bigger, key steps) -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="card card-blue reveal d4" style="flex:1;padding:36px 40px;display:flex;flex-direction:column;gap:18px">
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--blue);letter-spacing:0.08em;min-width:56px">STEP 04</div>
+                        <div class="h3" style="font-size:26px">Save to Cloud</div>
+                    </div>
+                    <p class="body-sm">Click "Save to Cloud" → enter the class PIN. First time: teacher announces it. Students type it once — it caches per device. Escape aborts without error and restores the export dialog.</p>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;gap:8px;align-items:center"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm">PIN caches per device — skipped on subsequent exports</p></div>
+                        <div style="display:flex;gap:8px;align-items:center"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm">Escape → restores export dialog, no error shown</p></div>
+                        <div style="display:flex;gap:8px;align-items:center"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm">Wrong PIN → dialog shakes, clears cache, retry</p></div>
+                    </div>
+                </div>
+                <div class="card card-green reveal d5" style="flex:1;padding:36px 40px;display:flex;flex-direction:column;gap:18px">
+                    <div style="display:flex;align-items:center;gap:14px">
+                        <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--green);letter-spacing:0.08em;min-width:56px">STEP 05</div>
+                        <div class="h3" style="font-size:26px;color:var(--green)">Done — in Drive</div>
+                    </div>
+                    <p class="body-sm" style="color:var(--green)">All student designs land in a subfolder for today's date inside "Laser Maker Exports". Files are named, dimensioned in real inches, and ready for Illustrator and the laser.</p>
+                    <div class="code-block" style="font-size:13px;line-height:1.9">
+                        Laser Maker Exports<br>
+                        &nbsp;└─ <span style="color:var(--green)">06-24-26</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;└─ name-project_laser.svg
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================
+     SLIDE 5 — TEACHER WORKFLOW
+     Left: During class (5 steps)
+     Right: Sending to laser + Drive folder visual
+     ================================================================ -->
+<section class="slide" id="s5">
+    <div style="position:absolute;inset:0;padding:64px 88px;display:flex;flex-direction:column;gap:36px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="tag reveal d1">For Teachers</div>
+            <h2 class="h2 reveal d2">Teacher Workflow</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex:1">
+            <!-- Left: During class -->
+            <div class="card reveal d2" style="padding:40px;display:flex;flex-direction:column;gap:20px">
+                <div style="display:flex;align-items:center;gap:10px;border-bottom:1.5px solid var(--rule);padding-bottom:16px">
+                    <div style="width:8px;height:8px;border-radius:50%;background:var(--blue)"></div>
+                    <div class="h3" style="font-size:22px">During Class</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:11px;flex:1">
+                    <div class="step-row"><span class="step-num">1.</span><p class="body-sm">Open Laser Maker on a Mac desktop in Chrome — no install, no student accounts. Just share the URL.</p></div>
+                    <div class="step-row"><span class="step-num">2.</span><p class="body-sm">Students design their parts using drawing tools — rect, ellipse, pen, text. Each shape gets a process type (cut, fold, etch) that controls how the laser treats it.</p></div>
+                    <div class="step-row"><span class="step-num">3.</span><p class="body-sm">Top bar export icon → enter Design Name + Project. The names become the Drive filename — keep them descriptive. <span class="mono" style="font-size:13px;background:var(--surface-2);padding:1px 5px;border-radius:3px">name-project_laser.svg</span></p></div>
+                    <div class="step-row"><span class="step-num">4.</span><p class="body-sm">Click "Save to Cloud" → enter class PIN. First time: announce the PIN. Students type it once — caches per device, won't be prompted again.</p></div>
+                    <div class="step-row" style="background:var(--blue-soft);border-color:var(--rule-2)"><span class="step-num">5.</span><p class="body-sm">Open Drive → Laser Maker Exports. All designs land in a subfolder for today's date — ready for Illustrator and the laser.</p></div>
+                </div>
+                <div style="border-top:1.5px solid var(--rule);padding-top:16px">
+                    <p class="body-sm">Share the PIN verbally or written on the board before class. Rotate it between sessions to keep it fresh.</p>
+                </div>
+            </div>
+            <!-- Right: Sending to laser + Drive folder visual -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="card card-blue reveal d3" style="padding:40px;display:flex;flex-direction:column;gap:16px">
+                    <div style="display:flex;align-items:center;gap:10px;border-bottom:1.5px solid var(--rule-2);padding-bottom:16px">
+                        <div style="width:8px;height:8px;border-radius:50%;background:var(--accent)"></div>
+                        <div class="h3" style="font-size:22px">Sending to Laser</div>
+                    </div>
+                    <p class="body-sm">After class, open Google Drive → "Laser Maker Exports/" — all student SVGs are there. Open each in Adobe Illustrator. Use File → Print → Epilog Fusion Job Manager to queue the job and send to the cutter.</p>
+                    <div class="code-block">Drive → Illustrator → File → Print → Job Manager</div>
+                </div>
+                <!-- Drive folder visual -->
+                <div class="card reveal d4" style="padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+                    <div class="tag" style="font-size:13px;margin-bottom:4px">Drive folder structure</div>
+                    <div class="code-block" style="font-size:13px;line-height:1.9">
+                        Laser Maker Exports<br>
+                        &nbsp;└─ <span style="color:var(--green)">06-24-26</span><br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;├─ name-project_laser.svg<br>
+                        &nbsp;&nbsp;&nbsp;&nbsp;└─ name-project_laser.svg
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================
+     SLIDE 6 — ONE-TIME SETUP
+     Left 60%: 5 numbered steps
+     Right 40%: Config visual (script properties + deploy URL)
+     ================================================================ -->
+<section class="slide" id="s6">
+    <div style="position:absolute;inset:0;padding:64px 88px;display:flex;flex-direction:column;gap:36px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="tag reveal d1">Admin Setup</div>
+            <h2 class="h2 reveal d2">One-Time Setup</h2>
+            <p class="body reveal d3" style="color:var(--ink-3);font-size:20px">Done once by a teacher or IT admin — takes about 10 minutes.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 480px;gap:24px;flex:1">
+            <!-- Left: Steps -->
+            <div style="display:flex;flex-direction:column;gap:12px;justify-content:center">
+                <div class="step-row reveal d1">
+                    <span class="step-num" style="font-size:20px;min-width:40px;font-weight:700">01</span>
+                    <div><div class="h3" style="font-size:20px;margin-bottom:4px">Create the Drive folder</div><p class="body-sm">In Google Drive, create a folder called "Laser Maker Exports". Open it and copy the folder ID from the URL — it's the string after <span class="mono" style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:12px">/folders/</span>.</p></div>
+                </div>
+                <div class="step-row reveal d2">
+                    <span class="step-num" style="font-size:20px;min-width:40px;font-weight:700">02</span>
+                    <div><div class="h3" style="font-size:20px;margin-bottom:4px">Create an Apps Script project</div><p class="body-sm">Go to <span class="mono" style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:12px">script.google.com</span>, create a new project, and paste the contents of <span class="mono" style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:12px;color:var(--blue)">docs/apps-script-uploader.js</span> from this repo.</p></div>
+                </div>
+                <div class="step-row reveal d3">
+                    <span class="step-num" style="font-size:20px;min-width:40px;font-weight:700">03</span>
+                    <div><div class="h3" style="font-size:20px;margin-bottom:4px">Set Script Properties</div><p class="body-sm">Project Settings → Script Properties: add <span class="mono" style="background:var(--surface-2);padding:1px 6px;border-radius:3px">DRIVE_PIN</span> and <span class="mono" style="background:var(--surface-2);padding:1px 6px;border-radius:3px">ROOT_FOLDER_ID</span>.</p></div>
+                </div>
+                <div class="step-row reveal d4">
+                    <span class="step-num" style="font-size:20px;min-width:40px;font-weight:700">04</span>
+                    <div><div class="h3" style="font-size:20px;margin-bottom:4px">Deploy as Web App</div><p class="body-sm">Deploy → New Deployment → Web App → Execute as: Me → Who has access: Anyone. Copy the /exec URL.</p></div>
+                </div>
+                <div class="step-row card-blue reveal d5" style="border-color:var(--rule-2)">
+                    <span class="step-num" style="font-size:20px;min-width:40px;font-weight:700">05</span>
+                    <div><div class="h3" style="font-size:20px;margin-bottom:4px">Paste URL into the app</div><p class="body-sm">In <span class="mono" style="background:var(--surface);padding:1px 6px;border-radius:3px">modules/drive-upload.js</span>, set <span class="mono" style="background:var(--surface);padding:1px 6px;border-radius:3px">DRIVE_UPLOAD_URL</span> to the deployed URL. Done — commit and push.</p></div>
+                </div>
+            </div>
+            <!-- Right: Config visual -->
+            <div style="display:flex;flex-direction:column;gap:16px">
+                <div class="card reveal d3" style="padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+                    <div class="tag" style="font-size:13px">Script Properties (Step 03)</div>
+                    <div class="code-block" style="font-size:13px;line-height:2">
+                        DRIVE_PIN<br>
+                        <span style="color:var(--ink-3)">→</span> <span style="color:var(--accent)">stemcenter2026</span><br><br>
+                        ROOT_FOLDER_ID<br>
+                        <span style="color:var(--ink-3)">→</span> <span style="color:var(--blue)">1BxiMVs0XRA5nFMd...</span>
+                    </div>
+                </div>
+                <div class="card reveal d4" style="padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+                    <div class="tag" style="font-size:13px">Deployment URL (Step 04-05)</div>
+                    <div class="code-block" style="font-size:12px;line-height:1.9;word-break:break-all">
+                        script.google.com/macros/s/<br>
+                        <span style="color:var(--blue)">AKfyc...long-id.../exec</span>
+                    </div>
+                    <p class="body-sm" style="font-size:15px">This URL goes into <span class="mono" style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:12px">modules/drive-upload.js</span> as the <span class="mono" style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:12px">DRIVE_UPLOAD_URL</span> constant.</p>
+                </div>
+                <div class="card reveal d5" style="padding:24px 32px;display:flex;flex-direction:column;gap:10px">
+                    <div class="tag" style="font-size:13px">What the Script does</div>
+                    <div style="display:flex;flex-direction:column;gap:6px">
+                        <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Reads <span class="mono" style="font-size:12px">DRIVE_PIN</span> from Script Properties, compares — never in source code</p></div>
+                        <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Finds or creates today's date subfolder (US Eastern) inside Exports</p></div>
+                        <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Writes SVG as plain text — duplicates stack, never overwrite</p></div>
+                        <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Returns <span class="mono" style="font-size:12px">&#123;"ok":true&#125;</span> — app caches PIN, shows green toast</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================
+     SLIDE 7 — PIN SYSTEM
+     3 full-height cards with technical detail
+     ================================================================ -->
+<section class="slide" id="s7">
+    <div style="position:absolute;inset:0;padding:64px 88px;display:flex;flex-direction:column;justify-content:center;gap:36px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+            <div class="tag reveal d1">Authentication</div>
+            <h2 class="h2 reveal d2">The PIN System</h2>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;align-items:start">
+            <!-- Card 1: Shared PIN -->
+            <div class="card reveal-scale d1" style="padding:40px 36px;display:flex;flex-direction:column;gap:18px">
+                <div class="icon-box" style="background:var(--blue-soft)">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><rect x="6" y="13" width="16" height="11" rx="2" stroke="#2563EB" stroke-width="2.5"/><path d="M9 13V9a5 5 0 0 1 10 0v4" stroke="#2563EB" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="18.5" r="1.5" fill="#2563EB"/></svg>
+                </div>
+                <div class="h3">Shared class PIN</div>
+                <p class="body-sm">One PIN per class — shared verbally or on the board before class starts. Students type it once per session in the PIN dialog that appears when they click "Save to Cloud."</p>
+                <div style="border-top:1.5px solid var(--rule);padding-top:16px;margin-top:16px;display:flex;flex-direction:column;gap:8px">
+                    <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">localStorage key: <span class="mono" style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:12px">laserMakerDrivePin</span> — cached per device</p></div>
+                    <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Never in app source code — server side only (Script Properties)</p></div>
+                    <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Auto-invalidated on all devices when the PIN rotates</p></div>
+                </div>
+            </div>
+            <!-- Card 2: Rotate -->
+            <div class="card reveal-scale d2" style="padding:40px 36px;display:flex;flex-direction:column;gap:18px">
+                <div class="icon-box" style="background:var(--accent-soft)">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M14 6v5l3.5 2" stroke="#E0241B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 6a8 8 0 1 0 0 16A8 8 0 0 0 14 6z" stroke="#E0241B" stroke-width="2.5"/></svg>
+                </div>
+                <div class="h3">Rotate anytime</div>
+                <p class="body-sm">Change only the <span class="mono" style="background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:13px">DRIVE_PIN</span> Script Property. No redeploy needed. All cached PINs on student devices are rejected on their next export and they'll be prompted for the new one.</p>
+                <div style="border-top:1.5px solid var(--rule);padding-top:16px;margin-top:16px">
+                    <div class="tag" style="font-size:12px;margin-bottom:10px">How to rotate</div>
+                    <div class="code-block" style="font-size:13px;line-height:1.9">
+                        Apps Script → Settings<br>
+                        → Script Properties<br>
+                        → Edit <span style="color:var(--accent)">DRIVE_PIN</span><br>
+                        → Save
+                    </div>
+                </div>
+            </div>
+            <!-- Card 3: Resilient -->
+            <div class="card reveal-scale d3" style="padding:40px 36px;display:flex;flex-direction:column;gap:18px">
+                <div class="icon-box" style="background:var(--green-soft)">
+                    <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M7 14l4 4 10-10" stroke="#047857" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </div>
+                <div class="h3">Resilient design</div>
+                <p class="body-sm">If Drive is unreachable, the SVG downloads locally as a fallback. Students never lose work — the local file is always the safety net.</p>
+                <div style="border-top:1.5px solid var(--rule);padding-top:16px;margin-top:16px;display:flex;flex-direction:column;gap:8px">
+                    <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Wrong PIN → dialog shakes, inline error, clears cached copy</p></div>
+                    <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">No lockout — re-enter correct PIN, upload retries automatically</p></div>
+                    <div style="display:flex;gap:8px;align-items:center"><div style="width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0"></div><p class="body-sm" style="font-size:15px">Network fail → SVG downloads locally, file never lost</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ================================================================
+     SLIDE 8 — CLOSING
+     Big headline + process color strip
+     ================================================================ -->
+<section class="slide" id="s8" style="background:var(--blue)">
+    <div class="dot-bg dot-bg-white"></div>
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:80px">
+        <div class="reveal d1" style="font-family:var(--font-mono);font-size:14px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.5)">NYC FIRST District 13 · STEM Center</div>
+        <h2 class="h1 reveal d2" style="color:white;text-align:center;font-size:92px">Designs in Drive.<br>Ready to cut.</h2>
+        <p class="body reveal d3" style="color:rgba(255,255,255,0.7);max-width:820px;text-align:center">Laser Maker's Save to Cloud bridges the classroom and the cutter — students save, teachers collect, the laser cuts.</p>
+        <!-- NYC FIRST logo -->
+        <div class="reveal d4" style="margin-top:8px">
+            <div style="background:white;border-radius:12px;padding:14px 28px;display:flex;align-items:center;justify-content:center">
+                <img src="../assets/horizontal-logo.svg" style="height:64px;width:auto;display:block">
+            </div>
+        </div>
+        <div class="reveal d5" style="display:flex;gap:16px;margin-top:4px">
+            <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.18);border-radius:100px;padding:10px 24px">
+                <span style="font-family:var(--font-mono);font-size:14px;color:rgba(255,255,255,0.75);letter-spacing:0.04em">Laser Maker</span>
+            </div>
+            <div style="display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.18);border-radius:100px;padding:10px 24px">
+                <span style="font-family:var(--font-mono);font-size:14px;color:rgba(255,255,255,0.75);letter-spacing:0.04em">NYC FIRST D13</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+</main>
+</div>
+
+<div class="s-counter" id="sCounter">1 / 8</div>
+<div class="edit-hotzone" id="editHotzone"></div>
+<button class="edit-toggle" id="editToggle">✏️ Edit</button>
+
+<script>
+class Deck {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.cur = 0;
+        this.total = this.slides.length;
+        this.stage = document.getElementById('deckStage');
+        this.counter = document.getElementById('sCounter');
+        this.scaleStage();
+        window.addEventListener('resize', () => this.scaleStage());
+        this.bindKeys();
+        this.bindTouch();
+        this.show(0);
+    }
+    scaleStage() {
+        const f = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+        const x = (window.innerWidth - 1920 * f) / 2;
+        const y = (window.innerHeight - 1080 * f) / 2;
+        this.stage.style.transform = `translate(${x}px,${y}px) scale(${f})`;
+    }
+    show(i) {
+        this.slides[this.cur].classList.remove('active','visible');
+        this.cur = Math.max(0, Math.min(i, this.total - 1));
+        this.slides[this.cur].classList.add('active');
+        requestAnimationFrame(() => this.slides[this.cur].classList.add('visible'));
+        if (this.counter) this.counter.textContent = `${this.cur + 1} / ${this.total}`;
+    }
+    next() { if (this.cur < this.total - 1) this.show(this.cur + 1); }
+    prev() { if (this.cur > 0) this.show(this.cur - 1); }
+    bindKeys() {
+        document.addEventListener('keydown', e => {
+            if (e.target.getAttribute('contenteditable')) return;
+            if (['ArrowRight','ArrowDown',' ','PageDown'].includes(e.key)) { e.preventDefault(); this.next(); }
+            else if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)) { e.preventDefault(); this.prev(); }
+            else if (e.key === 'Home') this.show(0);
+            else if (e.key === 'End') this.show(this.total - 1);
+            else if (e.key === 'e' || e.key === 'E') editor.toggle();
+        });
+        document.addEventListener('wheel', e => { if (e.deltaY > 0) this.next(); else if (e.deltaY < 0) this.prev(); }, { passive: true });
+    }
+    bindTouch() {
+        let sx = 0;
+        document.addEventListener('touchstart', e => { sx = e.touches[0].clientX; });
+        document.addEventListener('touchend', e => {
+            const dx = e.changedTouches[0].clientX - sx;
+            if (Math.abs(dx) > 50) { dx < 0 ? this.next() : this.prev(); }
+        });
+    }
+}
+
+const editor = {
+    active: false,
+    toggle() {
+        this.active = !this.active;
+        const btn = document.getElementById('editToggle');
+        btn.classList.toggle('active', this.active);
+        btn.textContent = this.active ? '✓ Done' : '✏️ Edit';
+        const sel = '.h1,.h2,.h3,p,.tag,.body,.body-sm,.mono';
+        document.querySelectorAll(sel).forEach(el => {
+            this.active ? el.setAttribute('contenteditable','true') : el.removeAttribute('contenteditable');
+        });
+    }
+};
+
+const deck = new Deck();
+
+const hz = document.getElementById('editHotzone');
+const et = document.getElementById('editToggle');
+let ht = null;
+hz.addEventListener('mouseenter', () => { clearTimeout(ht); et.classList.add('show'); });
+hz.addEventListener('mouseleave', () => { ht = setTimeout(() => { if (!editor.active) et.classList.remove('show'); }, 400); });
+et.addEventListener('mouseenter', () => clearTimeout(ht));
+et.addEventListener('mouseleave', () => { ht = setTimeout(() => { if (!editor.active) et.classList.remove('show'); }, 400); });
+hz.addEventListener('click', () => editor.toggle());
+et.addEventListener('click', () => editor.toggle());
+</script>
+</body>
+</html>

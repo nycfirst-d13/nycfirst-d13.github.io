@@ -43,13 +43,13 @@ function helpHtml() {
   <h2 class="pop-h">How to get around</h2>
   ${controlsVis()}
   <ul>
-    <li><b>Mouse:</b> click any game to play. Click <span class="ref"><span class="ico">←</span> Gallery</span> (top-left) to come back.</li>
+    <li><b>Mouse:</b> click any game to play.</br>Click <span class="ref"><span class="ico">←</span> Gallery</span> (top-left) to come back.</li>
     <li><b>Controller:</b> D-pad or joystick to move, <b>A</b> to play, <b>Start</b> (or <b>Esc</b>) to go back.</li>
   </ul>
 
   <h2 class="pop-h">Playing a game</h2>
   <ul>
-    <li>The game fills the screen under the header. Use the controls the game shows on-screen.</li>
+    <li>The game fills the screen under the header.</br>Use the controls the game shows on-screen.</li>
     <li>Done or stuck? Press <b>Esc</b>, <b>Start</b>, or click <span class="ref"><span class="ico">←</span> Gallery</span> to return.</li>
   </ul>
 

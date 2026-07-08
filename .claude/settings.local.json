@@ -24,7 +24,12 @@
       "Bash(pandoc stem-stations-review.md -o stem-stations-review.docx)",
       "Bash(npx live-server *)",
       "Bash(echo \"PID: $!\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/)",
+      "Bash(rm -rf game-gallery/_next game-gallery/.next)",
+      "Bash(cp -R game-gallery-src/out/. game-gallery/)",
+      "Bash(rm -f game-gallery/.DS_Store)",
+      "Skill(playwright-cli)",
+      "WebSearch"
     ]
   }
 }
