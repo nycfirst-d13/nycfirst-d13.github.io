@@ -212,6 +212,62 @@ function splitSubpaths(d) {
     .filter(s => /[LCQAHVZ]/.test(s));
 }
 
+let _paperReady = false;
+function ensurePaper() {
+  if (_paperReady) return true;
+  if (typeof paper === 'undefined') return false;
+  paper.setup(new paper.Size(1, 1));
+  _paperReady = true;
+  return true;
+}
+
+// Group traced subpaths into filled regions. ImageTracer flattens all dark
+// pixels into one compound path; naively splitting on M makes each contour a
+// solid shape, so holes (the white interior of line art) fill black. Instead,
+// nest subpaths by containment: each outermost contour + its immediate holes
+// becomes ONE selectable shape rendered even-odd, so holes stay open. A hole's
+// own island nests recursively as its own region.
+// ponytail: containment is bbox-only, not true point-in-polygon — good enough
+// for cleanly-nested line art; may misgroup shapes whose bboxes overlap but
+// don't actually contain each other. Upgrade to path.contains() if that bites.
+function subpathsToRegions(subs) {
+  if (!subs.length) return [];
+  if (!ensurePaper()) return subs;   // no paper → fall back to raw subpaths
+  const items = subs.map(d => {
+    const p = new paper.Path(d);
+    const it = { d, area: Math.abs(p.area), b: p.bounds };
+    p.remove();
+    return it;
+  }).filter(x => x.area > 0);
+
+  // parent[i] = smallest-area region strictly containing region i (or -1).
+  const parent = items.map((it, i) => {
+    let best = -1, bestArea = Infinity;
+    items.forEach((o, j) => {
+      if (j !== i && o.area > it.area && o.b.contains(it.b) && o.area < bestArea) {
+        best = j; bestArea = o.area;
+      }
+    });
+    return best;
+  });
+  const depth = items.map((_, i) => {
+    let d = 0, k = parent[i];
+    while (k >= 0) { d++; k = parent[k]; }
+    return d;
+  });
+
+  // Even depth = a filled region → its own shape; its direct children (odd
+  // depth) are holes appended to the same d and painted out via even-odd.
+  const regions = [];
+  items.forEach((it, i) => {
+    if (depth[i] % 2 !== 0) return;
+    let d = it.d;
+    items.forEach((o, j) => { if (parent[j] === i) d += ' ' + o.d; });
+    regions.push(d);
+  });
+  return regions;
+}
+
 function traceSelected() {
   const sh = selectedEtchImage();
   if (!sh) return;
@@ -266,21 +322,18 @@ function traceSelected() {
       return lum < 128;
     }).map(p => applyMatrixToD(p.getAttribute('d'), m)).filter(Boolean);
 
-    // ImageTracer emits one <path> per color, so all dark regions land in a
-    // single compound d. Split it into subpaths (each M…Z) so every traced
-    // line/shape is its own selectable child — not one un-decomposable blob.
-    // ponytail: this drops even-odd holes (a subpath that was a hole becomes a
-    // solid fill). Fine for the line-art students trace; revisit if donut
-    // shapes matter.
-    const subpaths = paths.flatMap(splitSubpaths);
+    // Break the one compound path into separate selectable regions, each
+    // keeping its holes so line art doesn't fill solid black.
+    const regions = subpathsToRegions(paths.flatMap(splitSubpaths));
 
-    if (!subpaths.length) { toast('Nothing to trace'); return; }
+    if (!regions.length) { toast('Nothing to trace'); return; }
 
     const base = { fill: '#000000', stroke: 'none', strokeWidth: 1,
                    processType: 'etch', visible: true, locked: false, rotation: 0 };
     let n = 0;
-    const children = subpaths.map(d => ({
-      id: uid('tp'), type: 'path', name: `Path ${++n}`, attrs: { d }, ...base,
+    const children = regions.map(d => ({
+      id: uid('tp'), type: 'path', name: `Path ${++n}`,
+      attrs: { d, fillRule: 'evenodd' }, ...base,
     }));
     const replacement = children.length === 1
       ? { ...children[0], name: sh.name }
@@ -293,7 +346,7 @@ function traceSelected() {
       st.shapes.splice(idx, 1, replacement);
       st.selection = [replacement.id];
     }, 'trace-image');
-    toast(`Traced to ${subpaths.length} path${subpaths.length > 1 ? 's' : ''}`);
+    toast(`Traced to ${regions.length} path${regions.length > 1 ? 's' : ''}`);
   }).catch(() => toast('Trace failed'));
 }
 
