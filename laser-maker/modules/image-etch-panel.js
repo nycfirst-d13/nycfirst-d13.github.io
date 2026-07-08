@@ -276,7 +276,7 @@ function traceSelected() {
   if (!src) return;
   toast('Tracing…');
 
-  loadImage(src).then(img => {
+  loadImage(src).then(async img => {
     // Draw the processed image to a (possibly downscaled) canvas → ImageData.
     let tw = img.naturalWidth || 1, th = img.naturalHeight || 1;
     if (Math.max(tw, th) > TRACE_MAX) {
@@ -293,6 +293,26 @@ function traceSelected() {
     ctx.fillRect(0, 0, tw, th);
     ctx.drawImage(img, 0, 0, tw, th);
     const imgData = ctx.getImageData(0, 0, tw, th);
+
+    // Trace runs on the baked etch image, which is opaque (and may be
+    // inverted, turning the transparent region dark). Re-derive the alpha
+    // mask from the ORIGINAL png and force originally-transparent pixels to
+    // white so they trace as droppable background, never as a black object.
+    const origSrc = sh.attrs.href;
+    if (origSrc) {
+      const oimg = await loadImage(origSrc).catch(() => null);
+      if (oimg) {
+        const oc = document.createElement('canvas');
+        oc.width = tw; oc.height = th;
+        const octx = oc.getContext('2d');
+        octx.drawImage(oimg, 0, 0, tw, th);
+        const alpha = octx.getImageData(0, 0, tw, th).data;
+        const d = imgData.data;
+        for (let i = 3; i < alpha.length; i += 4) {
+          if (alpha[i] < 128) { d[i - 3] = d[i - 2] = d[i - 1] = 255; }
+        }
+      }
+    }
 
     // Two-color (black/white) trace — matches the binarized etch look.
     const opts = {
