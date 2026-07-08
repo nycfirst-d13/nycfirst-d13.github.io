@@ -2111,7 +2111,7 @@ function _findNearestPathSegment(sh, raw) {
 // =============== Geometry helpers ==============================
 function snapshotGeom(sh) {
   if (sh.type === 'group') {
-    return { type: 'group', rotation: sh.rotation || 0, children: sh.children.map(c => snapshotGeom(c)) };
+    return { type: 'group', rotation: sh.rotation || 0, clipRect: sh.clipRect ? { ...sh.clipRect } : null, children: sh.children.map(c => snapshotGeom(c)) };
   }
   const s = JSON.parse(JSON.stringify({ type: sh.type, attrs: sh.attrs, rotation: sh.rotation }));
   if (sh._bbox) s._bbox = { ...sh._bbox };
@@ -2137,6 +2137,10 @@ function translateShape(sh, snap, dx, dy) {
   if (sh.type === 'group') {
     for (let i = 0; i < sh.children.length; i++) {
       translateShape(sh.children[i], snap.children[i], dx, dy);
+    }
+    if (sh.clipRect && snap.clipRect) {
+      sh.clipRect.x = snap.clipRect.x + dx;
+      sh.clipRect.y = snap.clipRect.y + dy;
     }
     return;
   }
@@ -2185,6 +2189,7 @@ function translatePathD(d, dx, dy) {
 export function nudgeShape(sh, dx, dy) {
   if (sh.type === 'group') {
     for (const child of sh.children) nudgeShape(child, dx, dy);
+    if (sh.clipRect) { sh.clipRect.x += dx; sh.clipRect.y += dy; }
     return;
   }
   switch (sh.type) {

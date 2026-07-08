@@ -582,6 +582,14 @@ async function buildTextOutline(sh) {
 
     if (!letterPaths.length) return null;
 
+    // Frame text with a fixed height clips overflow on canvas — bake that clip
+    // onto the converted group so the outline matches the 1:1 view (and the SVG
+    // export, which emits <clipPath> for clipRect). Moves with the group via the
+    // clipRect cases in translateShape/nudgeShape.
+    const clipRect = (frameW && sh.attrs.height != null)
+      ? { x: sh.attrs.x, y: sh.attrs.y, w: frameW, h: sh.attrs.height }
+      : null;
+
     const groupId = uid('g');
     const children = letterPaths.map(({ name, d }) => ({
       id: uid('p'),
@@ -597,12 +605,11 @@ async function buildTextOutline(sh) {
       _bbox: null,
     }));
 
-    // ponytail: single glyph → bare path, no pointless 1-child group.
-    // ponytail: no clipRect — glyph paths are the visible ink, clipping to the
-    // old frame is pointless and froze in absolute coords (broke on group move).
-    return children.length === 1
+    // ponytail: single glyph → bare path, no pointless 1-child group — unless a
+    // clipRect is needed, which must live on a group container.
+    return (children.length === 1 && !clipRect)
       ? { ...children[0], name: sh.name + ' outline', visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0 }
-      : { id: groupId, type: 'group', textOutline: true, name: sh.name + ' outline', children, visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0, _bbox: null };
+      : { id: groupId, type: 'group', textOutline: true, name: sh.name + ' outline', children, clipRect, visible: sh.visible, locked: sh.locked, rotation: sh.rotation || 0, _bbox: null };
 }
 
 // Recursively convert every text descendant to outlines, preserving group

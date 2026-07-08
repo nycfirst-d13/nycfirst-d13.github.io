@@ -342,12 +342,13 @@ class Artboard {
       const clipId = `clip-${sh.id}`;
       let defs = this.svg.querySelector('defs');
       if (!defs) { defs = svgNS('defs'); this.svg.insertBefore(defs, this.svg.firstChild); }
-      if (!defs.querySelector(`#${CSS.escape(clipId)}`)) {
-        const cp = svgNS('clipPath'); cp.id = clipId;
-        const r = svgNS('rect');
-        setAttrs(r, { x: sh.clipRect.x, y: sh.clipRect.y, width: sh.clipRect.w, height: sh.clipRect.h });
-        cp.appendChild(r); defs.appendChild(cp);
+      let cp = defs.querySelector(`#${CSS.escape(clipId)}`);
+      if (!cp) {
+        cp = svgNS('clipPath'); cp.id = clipId;
+        cp.appendChild(svgNS('rect')); defs.appendChild(cp);
       }
+      // Always refresh coords — clipRect follows group moves/edits.
+      setAttrs(cp.firstChild, { x: sh.clipRect.x, y: sh.clipRect.y, width: sh.clipRect.w, height: sh.clipRect.h });
       g.setAttribute('clip-path', `url(#${clipId})`);
     }
 
