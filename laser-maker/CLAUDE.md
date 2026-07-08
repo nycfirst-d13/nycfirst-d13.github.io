@@ -145,6 +145,10 @@ ImageTracer emits **one `<path>` per palette color**, so all dark pixels land in
 
 **Ceiling:** containment is bbox-only, not true point-in-polygon (`ponytail:` comment in `subpathsToRegions`). Fine for cleanly-nested line art; upgrade to `path.contains()` if side-by-side shapes with overlapping bboxes misgroup.
 
+#### Compound path → contour group on process change
+
+Even-odd is right for etch (holes read as see-through) but wrong for a **cut**: a cut has no fill, so a region's outer + inner edges are two independent cut lines the student needs to select separately. `setProcessType()` in `properties.js` handles this: switching a shape to a **stroke-only process** (`mainCut`/`fold`/`finalCut`/`free`, in `STROKE_ONLY_PROCESSES`) auto-explodes any compound (multi-contour) `path` into a `group` of single-contour paths via `_explodeCompounds()` → `_contourGroup()`. Each child inherits the already-normalized appearance + process; selection remaps old id → new group id. Skips rotated / corner-rounded paths (splitting would desync their geometry) and relative-`m` paths (`splitAbsSubpaths` only splits absolute `M`). Applies to selected paths and paths inside a selected group. Switching *back* to etch does not re-merge — that's a one-way convenience, not a round-trip.
+
 ### Key Module Roles
 
 | Module | Role |
