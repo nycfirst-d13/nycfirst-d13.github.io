@@ -32,6 +32,12 @@ let lockAspect = false; // panel-level, session-only (ponytail: not per-shape, n
 const qrBtns = document.querySelectorAll('.qr-btn');
 
 const textPanel = document.getElementById('text-panel');
+const convertPanel = document.getElementById('convert-panel');
+
+// True when a shape is text, or a group with any text descendant.
+function _hasTextDeep(sh) {
+  return sh?.type === 'text' || (sh?.type === 'group' && sh.children.some(_hasTextDeep));
+}
 const polygonPanel      = document.getElementById('polygon-panel');
 const polygonSidesInput = document.getElementById('polygon-sides');
 const cornerPanel       = document.getElementById('corner-panel');
@@ -298,6 +304,7 @@ function syncFromState() {
   const isSingleText = sel.length === 1 && sel[0].type === 'text';
   const isTextTool = s.activeTool === 'text';
   if (textPanel) textPanel.style.display = (isSingleText || isTextTool) ? '' : 'none';
+  if (convertPanel) convertPanel.style.display = sel.some(_hasTextDeep) ? '' : 'none';
 
   const isSinglePolygon = sel.length === 1 && sel[0].type === 'polygon';
   if (polygonPanel) {
