@@ -3,7 +3,7 @@
 // =============================================================================
 import { store } from './state.js';
 import { artboard } from './artboard.js';
-import { inToPx, pxToIn, round, rotatedCorners, scalePathD } from './utils.js';
+import { inToPx, pxToIn, round, rotatedCorners, scalePathD, uid } from './utils.js';
 import { PROCESS_DEFINITIONS, normalizeForProcess } from './process-registry.js';
 import { quickFlip } from './reflect.js';
 import { defaultEtchParams } from './image-filters.js';
@@ -496,11 +496,60 @@ function _ensureImageEtch(sel) {
   }
 }
 
+// Processes where fill isn't the point — so a compound (multi-contour) path's
+// even-odd holes are irrelevant and each contour is more useful as its own
+// selectable cut line.
+const STROKE_ONLY_PROCESSES = new Set(['mainCut', 'fold', 'finalCut', 'free']);
+
+// Split an absolute-coordinate compound d into one string per contour. Traced
+// region paths are always absolute (from applyMatrixToD), so every contour
+// starts with a capital M. (Relative-m paths aren't split — their coords would
+// break when detached; they're single-contour in practice anyway.)
+function splitAbsSubpaths(d) {
+  if (!d) return [];
+  return d.split(/(?=M)/).map(s => s.trim()).filter(s => /[LCQAHVZ]/.test(s));
+}
+
+// Replace a compound path with a group of single-contour paths, each inheriting
+// the (already-normalized) appearance + process type.
+function _contourGroup(sh, subs, pt) {
+  let n = 0;
+  const children = subs.map(d => ({
+    id: uid('p'), type: 'path', name: `${sh.name || 'Path'} ${++n}`,
+    attrs: { d },
+    fill: sh.fill, stroke: sh.stroke, strokeWidth: sh.strokeWidth,
+    processType: pt, rotation: 0, visible: true, locked: false,
+  }));
+  return { id: uid('g'), type: 'group', name: sh.name || 'Contours',
+           children, visible: sh.visible !== false, locked: false, rotation: 0 };
+}
+
+// Walk the tree; explode selected (or descendant-of-selected) compound paths
+// into contour groups. Records old-id → new-group-id so selection can follow.
+// Skips rotated / corner-rounded paths (splitting would desync their geometry).
+function _explodeCompounds(arr, sel, pt, active, remap) {
+  for (let i = 0; i < arr.length; i++) {
+    const sh = arr[i];
+    const on = active || sel.has(sh.id);
+    if (sh.type === 'group') {
+      _explodeCompounds(sh.children, sel, pt, on, remap);
+    } else if (on && sh.type === 'path' && !sh.rotation && !sh.attrs?.corners) {
+      const subs = splitAbsSubpaths(sh.attrs?.d);
+      if (subs.length > 1) {
+        const g = _contourGroup(sh, subs, pt);
+        arr[i] = g;
+        remap.set(sh.id, g.id);
+      }
+    }
+  }
+}
+
 function setProcessType(pt) {
   if (syncing) return;
   store.commit(s => {
     s.activeProcess = pt;
-    for (const id of store.get().selection) {
+    const sel = store.get().selection;
+    for (const id of sel) {
       const sh = store.findShape(id);
       if (!sh) continue;
       if (sh.type === 'group') {
@@ -512,6 +561,13 @@ function setProcessType(pt) {
           sh.attrs.etch = defaultEtchParams();
         }
       }
+    }
+    // Converting to a stroke-only process (a cut): explode any compound paths
+    // into groups of individually-selectable contour paths.
+    if (STROKE_ONLY_PROCESSES.has(pt)) {
+      const remap = new Map();
+      _explodeCompounds(s.shapes, new Set(sel), pt, false, remap);
+      if (remap.size) s.selection = sel.map(id => remap.get(id) || id);
     }
   }, 'process-type');
 }
