@@ -251,7 +251,26 @@ function _offsetShape(sh, amount) {
   if (!paperPaths.length) { for (const p of paperPaths) p.remove(); return null; }
   const d = _clipperOffsetFromPaths(paperPaths, amount);
   if (!d) return null;
-  return { ...base, type: 'path', name: 'Offset Path', rotation: 0, attrs: { d, fillRule: 'evenodd' } };
+  return _offsetResult(base, d);
+}
+
+// Clipper returns an all-absolute-M compound d. For a cut each contour is an
+// independent line the student must select on its own, so a multi-contour
+// result becomes a group of single-contour paths (mirrors the etch-fill→cut
+// contour-group scheme in properties.js). Single contour stays a bare path.
+function _offsetResult(base, d) {
+  const subs = d.split(/(?=M)/).map(s => s.trim()).filter(Boolean);
+  if (subs.length <= 1) {
+    return { ...base, type: 'path', name: 'Offset Path', rotation: 0, attrs: { d, fillRule: 'evenodd' } };
+  }
+  let n = 0;
+  const children = subs.map(sd => ({
+    id: uid('op'), type: 'path', name: `Offset Path ${++n}`,
+    fill: base.fill, stroke: base.stroke, strokeWidth: base.strokeWidth,
+    visible: true, locked: false, rotation: 0, attrs: { d: sd },
+  }));
+  return { id: uid('g'), type: 'group', name: 'Offset Path', children,
+           visible: true, locked: false, rotation: 0 };
 }
 
 // Async twin of _offsetShape: same logic, but routes clipper work through the
@@ -276,7 +295,7 @@ async function _offsetShapeAsync(sh, amount, report, onFinishing) {
   if (!paperPaths.length) { for (const p of paperPaths) p.remove(); report(countLeaves(sh)); return null; }
   const d = await _clipperOffsetFromPathsAsync(paperPaths, amount, report, onFinishing);
   if (!d) return null;
-  return { ...base, type: 'path', name: 'Offset Path', rotation: 0, attrs: { d, fillRule: 'evenodd' } };
+  return _offsetResult(base, d);
 }
 
 // Recursively gather paper paths in world coords. Group children store absolute
