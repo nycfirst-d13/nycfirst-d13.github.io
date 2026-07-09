@@ -1,6 +1,6 @@
 /* Bed Maker — page-specific styles.
    Tokens, chrome (.topbar/.shell/.tools/.inspector/.statusbar/.panel), and input
-   components come from ../styles.css.
+   components come from ../laser-maker/styles.css.
    ponytail: coupled to that file. If it drifts and breaks the chrome, copy the
    :root token block + the handful of chrome rules here. */
 

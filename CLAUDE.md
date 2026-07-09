@@ -15,6 +15,7 @@ Each child directory is a self-contained app or page. Current children:
 | Directory | Purpose |
 |-----------|---------|
 | `laser-maker/` | Browser-based vector design tool for laser cutting |
+| `bed-maker/` | Merges a day's Laser Maker SVGs onto one 36×24 laser bed |
 | `game-gallery/` | 8-bit arcade gallery for student MakeCode games (Next.js static export) |
 | `stem-stations/` | STEM stations landing page |
 | `bird-bingo/` | Bird bingo game |

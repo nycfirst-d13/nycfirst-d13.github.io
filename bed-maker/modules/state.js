@@ -2,7 +2,7 @@
 // No undo/history: this is a layout tool, not an editor. Mutate then render().
 
 // 96 CSS px = 1 inch (same real-world scale as laser-maker). Copied (3 lines)
-// rather than importing ../modules/utils.js to avoid its transitive
+// rather than importing ../laser-maker/modules/utils.js to avoid its transitive
 // imports. ponytail: keep in sync with laser-maker if PX_PER_INCH ever changes.
 export const PX_PER_INCH = 96;
 export const inToPx = (i) => i * PX_PER_INCH;

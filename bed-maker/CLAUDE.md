@@ -17,7 +17,7 @@ HTTP** (`npx live-server`). No runtime dependencies.
 
 | File | Role |
 |------|------|
-| `index.html` | Layout + all inspector markup. Loads `../styles.css` (shared design system) then `./styles.css`. |
+| `index.html` | Layout + all inspector markup. Loads `../laser-maker/styles.css` (shared design system) then `./styles.css`. |
 | `styles.css` | Page-specific only: `.bed`, `.bed-stage`, `.piece`, drop-hint. |
 | `app.js` | Entry: wires inspector controls, inits modules, status bar. |
 | `modules/state.js` | Plain store (`state`, `subscribe`, `render`) + `PX_PER_INCH`/`inToPx`/`pxToIn`. No undo. |
@@ -41,13 +41,13 @@ HTTP** (`npx live-server`). No runtime dependencies.
 - **ponytail ceilings**: `compact` is shelf/next-fit packing by bbox, not true irregular
   nesting (upgrade to a polygon nester only if scrap matters); `raster.js` can't load
   external resources (fine — laser-maker exports are self-contained); this dir's CSS is
-  coupled to `../styles.css`.
+  coupled to `../laser-maker/styles.css`.
 
 ### Deferred (Phase 2)
 
 Google Drive integration — auto-load a day's SVGs by date + upload the merged bed back —
-is planned separately. Reuses `../modules/drive-upload.js` and the Apps Script in
-`../docs/apps-script-uploader.js` (needs a `doGet` list/fetch endpoint added).
+is planned separately. Reuses `laser-maker/modules/drive-upload.js` and the Apps Script in
+`laser-maker/docs/apps-script-uploader.js` (needs a `doGet` list/fetch endpoint added).
 
 ## Git & Commits
 
@@ -55,7 +55,7 @@ Repo root is the parent `/Users/avigoldman/Desktop/nycfirst-d13.github.io`. **Al
 from the parent**, scope to `bed-maker/` only:
 
 ```bash
-git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add laser-maker/bed-maker/
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add bed-maker/
 git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(bed-maker): ..."
 ```
 
