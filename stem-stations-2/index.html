@@ -35,7 +35,7 @@
     header { background: transparent; position: relative; overflow: hidden; }
 
     .header-inner {
-      max-width: 1040px;
+      max-width: 1360px;
       margin: 0 auto;
       padding: 44px 24px 38px;
       display: flex;
@@ -68,17 +68,16 @@
     .symbol-strip span { font-family: 'Work Sans', sans-serif; font-size: 24px; font-weight: 800; line-height: 1; }
 
     /* ── VIEW SWITCH ─────────────────────────────────────── */
-    .viewswitch-inner { max-width: 1040px; margin: 0 auto; padding: 4px 24px 0; }
-    .seg {
-      display: inline-flex; background: var(--surface); border: 1px solid var(--border);
-      border-radius: 999px; padding: 3px; gap: 2px; box-shadow: var(--shadow-sm);
-    }
+    .viewswitch-inner { max-width: 1360px; margin: 0 auto; padding: 4px 24px 0; }
+    .seg { display: inline-flex; gap: 24px; }
     .seg button {
-      border: none; background: none; cursor: pointer; font-family: inherit;
-      font-size: 13px; font-weight: 600; color: var(--muted);
-      padding: 7px 16px; border-radius: 999px; transition: background 0.15s, color 0.15s;
+      cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600;
+      color: var(--muted); background: none; border: none;
+      padding: 6px 0 8px; border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
     }
-    .seg button.active { background: var(--text); color: #fff; }
+    .seg button:hover { color: var(--text); }
+    .seg button.active { color: var(--text); border-bottom-color: var(--text); }
 
     /* ── TAB BAR (sections view) ─────────────────────────── */
     .tab-bar, .chip-bar {
@@ -86,8 +85,20 @@
       background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
       background-attachment: fixed;
     }
+    /* soft fade so cards dissolve into the bg as they scroll under the bar.
+       Same fixed gradient as the bar (seamless), masked to transparent. */
+    .tab-bar::after, .chip-bar::after {
+      content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 120px;
+      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+      background-attachment: fixed;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.86) 28%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.18) 80%, transparent 100%);
+              mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.86) 28%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.18) 80%, transparent 100%);
+      pointer-events: none;
+      opacity: 0; transition: opacity 0.2s ease;
+    }
+    body.scrolled .tab-bar::after, body.scrolled .chip-bar::after { opacity: 1; }
     .tab-bar-inner {
-      max-width: 1040px; margin: 0 auto; padding: 0 16px;
+      max-width: 1360px; margin: 0 auto; padding: 0 16px;
       display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
     }
     .tab-bar-inner::-webkit-scrollbar { display: none; }
@@ -105,7 +116,7 @@
 
     /* ── CHIP BAR (filter view) ──────────────────────────── */
     .chip-bar-inner {
-      max-width: 1040px; margin: 0 auto; padding: 12px 24px;
+      max-width: 1360px; margin: 0 auto; padding: 12px 24px;
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
     }
     .chip {
@@ -122,7 +133,7 @@
     }
 
     /* ── MAIN ────────────────────────────────────────────── */
-    main { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    main { max-width: 1360px; margin: 0 auto; padding: 0 24px; }
     section { scroll-margin-top: 128px; padding-top: 40px; }
 
     .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
@@ -130,11 +141,14 @@
     .section-header h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
     .section-header .sec-rule { flex: 1; height: 3px; border-radius: 3px; background: var(--cat-color); opacity: 0.25; }
 
-    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
     #filter-view .grid { padding-top: 24px; }
 
     #status { padding: 48px 0; text-align: center; color: var(--muted); font-size: 15px; }
 
+    @media (max-width: 1080px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
+    }
     @media (max-width: 780px) {
       .header-inner { padding: 32px 24px 28px; }
       main { padding: 0 16px; }
@@ -410,6 +424,7 @@
     document.getElementById('filter-view').hidden = sections;
     document.getElementById('chip-nav').hidden = sections;
     window.scrollTo({ top: 0 });
+    onScroll();
   });
 
   // ── LOAD (live sheet, fall back to baked CSV) ────────────
@@ -434,7 +449,21 @@
     renderSections(ITEMS);
     renderChips(ITEMS);
     renderFilterGrid();
+    onScroll();
   })();
+
+  // show the bar fade only once a card actually slides up under the bar
+  // (self-correcting for both views: title can scroll under first, no fade yet)
+  function onScroll(){
+    const filterOn = !document.getElementById('filter-view').hidden;
+    const nav = document.getElementById(filterOn ? 'chip-nav' : 'tab-nav');
+    const view = document.getElementById(filterOn ? 'filter-view' : 'sections-view');
+    const card = view.querySelector('.card');
+    const on = !!card && card.getBoundingClientRect().top < nav.getBoundingClientRect().bottom + 4;
+    document.body.classList.toggle('scrolled', on);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
   // ── Animated symbol strip (NYC FIRST style) ──
   (function() {
