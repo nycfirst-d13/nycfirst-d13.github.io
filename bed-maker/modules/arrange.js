@@ -10,41 +10,34 @@ function fit(p, cfg) {
   return { scale: s, w: p.natWIn * s, h: p.natHIn * s };
 }
 
-function layoutGrid(pieces, cfg, bed) {
+// Variable-height row packing. Pieces are height-sorted, then greedily flowed
+// into rows by width; each row's height is its OWN tallest piece — so one tall
+// part never inflates the gaps of every other row. Height-sort makes similar
+// heights share rows and pushes tall outliers to the last row(s) automatically,
+// no threshold to tune (LIVE: re-runs on every size/spacing change).
+//   sortAsc  — short-first (grid/brick, tall falls to end) vs tall-first (compact, tighter).
+//   brick    — stagger odd rows by half a cell for interlocking parts.
+function layoutRows(pieces, cfg, bed, sortAsc, brick) {
   const gap = cfg.gapIn;
   const dims = pieces.map(p => fit(p, cfg));
-  const cellW = Math.max(...dims.map(d => d.w)) + gap;
-  const cellH = Math.max(...dims.map(d => d.h)) + gap;
-  const cols = Math.max(1, Math.floor((bed.wIn + gap) / cellW));
+  const order = pieces.map((_, i) => i)
+    .sort((a, b) => sortAsc ? dims[a].h - dims[b].h : dims[b].h - dims[a].h);
 
-  pieces.forEach((p, i) => {
-    const d = dims[i];
-    const col = i % cols, row = Math.floor(i / cols);
-    let x = col * cellW;
-    if (cfg.tiling === 'brick' && row % 2 === 1) x += cellW / 2;
+  const brickOffset = brick ? (Math.max(...dims.map(d => d.w)) + gap) / 2 : 0;
+  let row = 0;
+  const startX = () => (brick && row % 2 === 1) ? brickOffset : 0;
+
+  let x = startX(), y = 0, rowH = 0;
+  for (const i of order) {
+    const d = dims[i], p = pieces[i];
+    if (x > startX() && x + d.w > bed.wIn) {   // wrap to next row
+      y += rowH + gap; row++; rowH = 0; x = startX();
+    }
     p.scale = d.scale;
-    p.xIn = x;
-    p.yIn = row * cellH;
+    p.xIn = x; p.yIn = y;
     p.flipY = cfg.rowFlip && row % 2 === 1;
-  });
-}
-
-function layoutCompact(pieces, cfg, bed) {
-  const gap = cfg.gapIn;
-  // Tallest first packs shelves tighter (next-fit decreasing height).
-  const order = pieces
-    .map(p => ({ p, d: fit(p, cfg) }))
-    .sort((a, b) => b.d.h - a.d.h);
-
-  let x = 0, y = 0, shelfH = 0, shelf = 0;
-  for (const { p, d } of order) {
-    if (x > 0 && x + d.w > bed.wIn) { y += shelfH + gap; x = 0; shelfH = 0; shelf++; }
-    p.scale = d.scale;
-    p.xIn = x;
-    p.yIn = y;
-    p.flipY = cfg.rowFlip && shelf % 2 === 1;
     x += d.w + gap;
-    shelfH = Math.max(shelfH, d.h);
+    rowH = Math.max(rowH, d.h);
   }
 }
 
@@ -52,8 +45,9 @@ export function arrange() {
   const { pieces, cfg, bed } = state;
   if (!pieces.length) { state.overflow = 0; render(); return; }
 
-  if (cfg.tiling === 'compact') layoutCompact(pieces, cfg, bed);
-  else layoutGrid(pieces, cfg, bed);
+  // grid/brick: short-first so tall parts sink to the last rows.
+  // compact: tall-first (decreasing-height shelf) for the tightest fill.
+  layoutRows(pieces, cfg, bed, cfg.tiling !== 'compact', cfg.tiling === 'brick');
 
   // Overflow: anything spilling past the bed (placed anyway, flagged red).
   const eps = 1e-6;
@@ -65,31 +59,39 @@ export function arrange() {
   render();
 }
 
-// ponytail: shelf-pack by bounding box, not true irregular nesting. Upgrade to a
-// polygon nester (e.g. SVGnest) only if scrap material actually matters.
+// ponytail: variable-height row/shelf packing by bounding box, not true irregular
+// nesting. Upgrade to a polygon nester (e.g. SVGnest) only if scrap matters.
 
 // Runnable self-check — call arrange.demo() from the console.
 export function demo() {
   const mk = (w, h) => ({ natWIn: w, natHIn: h, scale: 1, xIn: 0, yIn: 0, flipY: false });
   const pieces = [mk(4, 3), mk(2, 6), mk(5, 5), mk(3, 3), mk(6, 2), mk(1, 1)];
-  const cfg = { maxWIn: 6, maxHIn: 6, gapIn: 0.25, tiling: 'compact', rowFlip: false };
+  const cfg = { maxWIn: 6, maxHIn: 6, gapIn: 0.25, tiling: 'grid', rowFlip: false };
   const bed = { wIn: 36, hIn: 24 };
-  layoutCompact(pieces, cfg, bed);
+  layoutRows(pieces, cfg, bed, true, false);
 
   // 1) every piece stays within bed width
   for (const p of pieces) {
     const w = p.natWIn * p.scale;
     console.assert(p.xIn + w <= bed.wIn + 1e-6, 'piece exceeds bed width', p);
   }
-  // 2) no two pieces on the same shelf (same yIn) overlap in x
+  // 2) no two pieces on the same row (same yIn) overlap in x
   const byY = {};
   for (const p of pieces) (byY[p.yIn] ||= []).push(p);
   for (const row of Object.values(byY)) {
     row.sort((a, b) => a.xIn - b.xIn);
     for (let i = 1; i < row.length; i++) {
       const prev = row[i - 1], w = prev.natWIn * prev.scale;
-      console.assert(row[i].xIn + 1e-6 >= prev.xIn + w, 'overlap on shelf', prev, row[i]);
+      console.assert(row[i].xIn + 1e-6 >= prev.xIn + w, 'overlap on row', prev, row[i]);
     }
+  }
+  // 3) rows are height-sorted: each row's max height >= previous row's (short first)
+  const ys = [...Object.keys(byY)].map(Number).sort((a, b) => a - b);
+  let prevMax = 0;
+  for (const y of ys) {
+    const rowMax = Math.max(...byY[y].map(p => p.natHIn * p.scale));
+    console.assert(rowMax + 1e-6 >= prevMax, 'rows not height-sorted', y);
+    prevMax = rowMax;
   }
   console.log('arrange.demo: ok');
 }

@@ -11,18 +11,18 @@ const $ = id => document.getElementById(id);
 
 function initInspector() {
   // Layout config — numeric fields re-arrange on change.
-  const num = (id, key) => {
+  const num = (id, key, min) => {
     const el = $(id);
     el.value = state.cfg[key];
     el.addEventListener('change', () => {
       const v = parseFloat(el.value);
-      if (isFinite(v) && v > 0) { state.cfg[key] = v; arrange(); }
+      if (isFinite(v) && v >= min) { state.cfg[key] = v; arrange(); }
       else el.value = state.cfg[key];
     });
   };
-  num('cfg-maxw', 'maxWIn');
-  num('cfg-maxh', 'maxHIn');
-  num('cfg-gap', 'gapIn');
+  num('cfg-maxw', 'maxWIn', 0.25);   // dimensions must be positive
+  num('cfg-maxh', 'maxHIn', 0.25);
+  num('cfg-gap', 'gapIn', 0);        // gap may be zero (parts touching)
 
   $('cfg-tiling').value = state.cfg.tiling;
   $('cfg-tiling').addEventListener('change', e => { state.cfg.tiling = e.target.value; arrange(); });
