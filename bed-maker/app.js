@@ -5,6 +5,7 @@ import { initImport, retrimPiece } from './modules/import.js';
 import { arrange } from './modules/arrange.js';
 import { initBed, fitView, deleteSelected, rotateSelected, flipSelected } from './modules/bed.js';
 import { initExport } from './modules/export.js';
+import { initRulers } from './modules/rulers.js';
 
 const $ = id => document.getElementById(id);
 
@@ -76,6 +77,7 @@ function initCursorReadout() {
 initInspector();
 initImport();
 initBed();
+initRulers();
 initExport();
 initCursorReadout();
 subscribe(syncStatus);

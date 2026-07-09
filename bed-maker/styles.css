@@ -4,11 +4,21 @@
    ponytail: coupled to that file. If it drifts and breaks the chrome, copy the
    :root token block + the handful of chrome rules here. */
 
-/* Workspace: laser-maker makes this a ruler grid — we have no rulers, so reset
-   it to a plain positioning context filled by the canvas. */
-.workspace { display: block; position: relative; overflow: hidden; }
+/* An author display rule (e.g. .drop-hint{display:flex}) outranks the UA
+   [hidden]{display:none}, so the hidden attribute silently stops working. Restore
+   it globally for anything we toggle via el.hidden. */
+[hidden] { display: none !important; }
+
+/* Workspace: ruler grid (corner / h-ruler / v-ruler / canvas), same as
+   laser-maker. .ruler/.ruler-h/.ruler-v/.ruler-corner styling comes from the
+   shared sheet. */
+.workspace {
+  display: grid; position: relative; overflow: hidden;
+  grid-template-columns: var(--ruler-sz) 1fr;
+  grid-template-rows: var(--ruler-sz) 1fr;
+}
 .canvas-area {
-  position: absolute; inset: 0; overflow: hidden;
+  position: relative; overflow: hidden;
   background: var(--paper); cursor: default;
 }
 .canvas-area.tool-hand, .canvas-area.hand { cursor: grab; }

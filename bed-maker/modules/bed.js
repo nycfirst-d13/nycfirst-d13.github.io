@@ -13,6 +13,8 @@ let spaceDown = false;
 function applyViewport() {
   const { zoom, panX, panY } = state.viewport;
   stage.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+  // pan/zoom bypass render() — tell the rulers to redraw
+  window.dispatchEvent(new CustomEvent('bm-viewport'));
 }
 
 export function fitView() {
