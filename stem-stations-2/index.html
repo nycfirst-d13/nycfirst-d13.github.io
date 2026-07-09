@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital STEM Stations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Work+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-gradient-start: #eef2f7;
+      --bg-gradient-end:   #f7fafc;
+      --surface: #FFFFFF;
+      --border: #e2e8f0;
+      --text: #1e2a38;
+      --muted: #5a6b80;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 6px 20px rgba(30,42,56,0.10), 0 1px 4px rgba(0,0,0,0.05);
+      --radius: 18px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+      background-attachment: fixed;
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 64px;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header { background: transparent; position: relative; overflow: hidden; }
+
+    .header-inner {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 44px 24px 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      position: relative;
+      z-index: 1;
+    }
+
+    h1 { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--text); }
+
+    .subtitle {
+      font-size: 16px; font-weight: 400; color: var(--muted);
+      margin-top: 10px; max-width: 560px; line-height: 1.5; margin-left: auto;
+    }
+
+    .header-images { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .header-images img { display: block; object-fit: contain; }
+
+    /* ── ANIMATED SYMBOL STRIP ───────────────────────────── */
+    .symbol-strip {
+      position: sticky; top: 0; z-index: 101; height: 70px; padding-bottom: 24px;
+      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+      background-attachment: fixed; overflow: hidden;
+      display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column;
+      grid-auto-columns: 20px; align-items: center; justify-items: center;
+      user-select: none; pointer-events: none;
+    }
+    .symbol-strip span { font-family: 'Work Sans', sans-serif; font-size: 24px; font-weight: 800; line-height: 1; }
+
+    /* ── VIEW SWITCH ─────────────────────────────────────── */
+    .viewswitch-inner { max-width: 1040px; margin: 0 auto; padding: 4px 24px 0; }
+    .seg {
+      display: inline-flex; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; padding: 3px; gap: 2px; box-shadow: var(--shadow-sm);
+    }
+    .seg button {
+      border: none; background: none; cursor: pointer; font-family: inherit;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      padding: 7px 16px; border-radius: 999px; transition: background 0.15s, color 0.15s;
+    }
+    .seg button.active { background: var(--text); color: #fff; }
+
+    /* ── TAB BAR (sections view) ─────────────────────────── */
+    .tab-bar, .chip-bar {
+      position: sticky; top: 70px; z-index: 100;
+      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+      background-attachment: fixed;
+    }
+    .tab-bar-inner {
+      max-width: 1040px; margin: 0 auto; padding: 0 16px;
+      display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
+    }
+    .tab-bar-inner::-webkit-scrollbar { display: none; }
+
+    .tab {
+      flex-shrink: 0; border: none; background: none; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 600; color: var(--muted);
+      padding: 14px 14px 12px; border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .tab:hover { color: var(--text); }
+    .tab.active { color: var(--cat-color, var(--text)); border-bottom-color: var(--cat-color, var(--text)); }
+    .tab .tab-emoji { font-size: 16px; }
+
+    /* ── CHIP BAR (filter view) ──────────────────────────── */
+    .chip-bar-inner {
+      max-width: 1040px; margin: 0 auto; padding: 12px 24px;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .chip {
+      border: 1px solid var(--cat-color); background: var(--surface); cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--cat-color);
+      padding: 6px 13px; border-radius: 999px; transition: background 0.15s, color 0.15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .chip.active { background: var(--cat-color); color: #fff; }
+    .chip-clear {
+      border: none; background: none; cursor: pointer; font-family: inherit;
+      font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: underline;
+      padding: 6px 4px;
+    }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    main { max-width: 1040px; margin: 0 auto; padding: 0 24px; }
+    section { scroll-margin-top: 128px; padding-top: 40px; }
+
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .section-header .sec-emoji { font-size: 28px; line-height: 1; }
+    .section-header h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+    .section-header .sec-rule { flex: 1; height: 3px; border-radius: 3px; background: var(--cat-color); opacity: 0.25; }
+
+    .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    #filter-view .grid { padding-top: 24px; }
+
+    #status { padding: 48px 0; text-align: center; color: var(--muted); font-size: 15px; }
+
+    @media (max-width: 780px) {
+      .header-inner { padding: 32px 24px 28px; }
+      main { padding: 0 16px; }
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      h1 { font-size: 32px; }
+    }
+    @media (max-width: 480px) {
+      .grid { grid-template-columns: 1fr; }
+      .header-images { display: none; }
+    }
+
+    /* ── CARD (no icon) ──────────────────────────────────── */
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px 20px 18px; box-shadow: var(--shadow-sm);
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+      display: flex; flex-direction: column; gap: 8px; position: relative;
+      text-decoration: none; color: inherit; cursor: pointer; min-height: 168px;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--cat-color); }
+    .card.card-static { cursor: default; }
+
+    .card-title { font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--cat-color); }
+    .card-desc { font-size: 13px; font-weight: 400; color: var(--muted); line-height: 1.55; flex: 1; }
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 3px 9px; line-height: 1.4; }
+    .pill.tag { color: var(--pill-color); background: var(--pill-light); }
+    .pill.diff { color: var(--muted); background: #f1f5f9; border: 1px solid var(--border); }
+
+    /* hover preview overlay — from the sheet's screenshot column */
+    .card-hover-preview {
+      position: absolute; inset: 0; border-radius: var(--radius); overflow: hidden;
+      pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+    }
+    .card-hover-preview img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
+    /* only reveal preview when an image actually loaded */
+    .card:hover .card-hover-preview:has(img[src]:not([src=""])) { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="header-images">
+      <img src="images/image1.png" width="90" height="90" alt="NYC FIRST logo">
+      <img src="images/image2.png" width="93" height="93" alt="District 13 logo">
+    </div>
+    <div class="header-text" style="text-align:right;">
+      <h1>Digital STEM Stations</h1>
+      <p class="subtitle">Choose a station that looks interesting to you! Hover a card to preview it, then click to explore. Browse by section or filter by tag.</p>
+    </div>
+  </div>
+</header>
+
+<div class="symbol-strip" id="symbol-strip" aria-hidden="true"></div>
+
+<div class="viewswitch">
+  <div class="viewswitch-inner">
+    <div class="seg" id="view-toggle" role="tablist">
+      <button data-view="sections" class="active" role="tab">Browse by section</button>
+      <button data-view="filter" role="tab">Filter by tag</button>
+    </div>
+  </div>
+</div>
+
+<nav class="tab-bar" id="tab-nav"><div class="tab-bar-inner" id="tab-bar"></div></nav>
+<nav class="chip-bar" id="chip-nav" hidden><div class="chip-bar-inner" id="chip-bar"></div></nav>
+
+<main>
+  <div id="sections-view"></div>
+  <div id="filter-view" hidden><div class="grid" id="filter-grid"></div></div>
+  <p id="status">Loading stations…</p>
+</main>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────
+  const SHEET_ID = '1xclY-0sWt70mZ_jQxMDWOr8XtwgaZivqhDlD2_hnBs0';
+  const GVIZ_CSV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+  const FALLBACK_CSV = 'stations.csv';
+
+  // Tag display order + color + emoji. Unknown tags fall back to a hashed color.
+  const TAG_ORDER = ['Coding','Game Design','Physical Computing','Electronics','Robotics','2D Design','3D Design','Art','Physics','Science','Math','Music','Needs Supplies*'];
+  const TAG_COLOR = {
+    'Coding':'#8B5CF6', 'Game Design':'#6366F1', 'Physical Computing':'#F97316',
+    'Electronics':'#EF4444', 'Robotics':'#14B8A6', '2D Design':'#EC4899',
+    '3D Design':'#10B981', 'Art':'#D946EF', 'Physics':'#0EA5E9',
+    'Science':'#06B6D4', 'Math':'#F59E0B', 'Music':'#DB2777', 'Needs Supplies*':'#64748B'
+  };
+  const TAG_EMOJI = {
+    'Coding':'🖥', 'Game Design':'🎮', 'Physical Computing':'🔌', 'Electronics':'⚡',
+    'Robotics':'🤖', '2D Design':'🎨', '3D Design':'🧱', 'Art':'🖌', 'Physics':'⚛',
+    'Science':'🔬', 'Math':'➗', 'Music':'🎵', 'Needs Supplies*':'🧰'
+  };
+  const FALLBACK_COLORS = ['#8B5CF6','#F97316','#10B981','#EC4899','#06B6D4','#F59E0B','#EF4444','#14B8A6'];
+
+  function tagColor(t){
+    if (TAG_COLOR[t]) return TAG_COLOR[t];
+    let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
+  }
+  function rgba(hex, a){
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const splitList = s => (s || '').split(',').map(x => x.trim()).filter(Boolean);
+  const previewSrc = s => !s ? '' : (/^https?:\/\//.test(s) ? s : 'images/' + s);
+
+  // ── CSV PARSER (quotes, escaped "", newlines inside fields) ──
+  function parseCSV(text){
+    const rows = []; let row = [], field = '', q = false;
+    for (let i = 0; i < text.length; i++){
+      const c = text[i];
+      if (q){
+        if (c === '"'){ if (text[i+1] === '"'){ field += '"'; i++; } else q = false; }
+        else field += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+    if (field.length || row.length){ row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function toItems(csv){
+    const rows = parseCSV(csv).filter(r => r.some(c => c.trim() !== ''));
+    if (!rows.length) return [];
+    const head = rows[0].map(h => h.trim().toLowerCase());
+    const [iT, iD, iU, iTags, iDiff, iA, iS] =
+      ['title','description','url','tags','difficulty','active','screenshot'].map(n => head.indexOf(n));
+    const map = new Map(); // dedupe by title, last row wins
+    for (const r of rows.slice(1)){
+      const title = (r[iT] || '').trim();
+      if (!title) continue;
+      const active = (r[iA] || '').trim().toUpperCase();
+      if (active && active !== 'TRUE') { map.delete(title); continue; }
+      map.set(title, {
+        title,
+        description: (r[iD] || '').trim(),
+        url: (r[iU] || '').trim(),
+        tags: splitList(r[iTags]),
+        difficulty: splitList(r[iDiff]),
+        screenshot: (r[iS] || '').trim()
+      });
+    }
+    return [...map.values()];
+  }
+
+  // ── CARD ────────────────────────────────────────────────
+  function buildCard(item){
+    const primary = tagColor(item.tags[0] || 'Coding');
+    const hasUrl = !!item.url;
+    const el = document.createElement(hasUrl ? 'a' : 'div');
+    el.className = 'card' + (hasUrl ? '' : ' card-static');
+    el.style.setProperty('--cat-color', primary);
+    if (hasUrl){ el.href = item.url; el.target = '_blank'; el.rel = 'noopener'; }
+    const prev = previewSrc(item.screenshot);
+    const diffPills = item.difficulty.map(d => `<span class="pill diff">${esc(d)}</span>`).join('');
+    const tagPills = item.tags.map(t => {
+      const c = tagColor(t);
+      return `<span class="pill tag" style="--pill-color:${c};--pill-light:${rgba(c,0.12)}">${esc(t)}</span>`;
+    }).join('');
+    el.innerHTML =
+      `<div class="card-title">${esc(item.title)}</div>` +
+      `<div class="card-desc">${esc(item.description)}</div>` +
+      (diffPills ? `<div class="pill-row">${diffPills}</div>` : '') +
+      (tagPills ? `<div class="pill-row">${tagPills}</div>` : '') +
+      `<div class="card-hover-preview">${prev ? `<img src="${esc(prev)}" alt="${esc(item.title)} preview" loading="lazy">` : ''}</div>`;
+    return el;
+  }
+
+  // ── RENDER ──────────────────────────────────────────────
+  let ITEMS = [], ACTIVE_TAGS = new Set(), tabObserver = null;
+
+  function orderedTags(items){
+    const present = new Set();
+    items.forEach(i => i.tags.forEach(t => present.add(t)));
+    const known = TAG_ORDER.filter(t => present.has(t));
+    const extra = [...present].filter(t => !TAG_ORDER.includes(t)).sort();
+    return [...known, ...extra];
+  }
+  const slug = t => 'sec-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  function renderSections(items){
+    const tags = orderedTags(items);
+    const tabBar = document.getElementById('tab-bar');
+    const view = document.getElementById('sections-view');
+    tabBar.innerHTML = ''; view.innerHTML = '';
+    tags.forEach(tag => {
+      const color = tagColor(tag), id = slug(tag), emoji = TAG_EMOJI[tag] || '•';
+      const btn = document.createElement('button');
+      btn.className = 'tab'; btn.dataset.target = id; btn.style.setProperty('--cat-color', color);
+      btn.innerHTML = `<span class="tab-emoji">${emoji}</span>${esc(tag)}`;
+      tabBar.appendChild(btn);
+
+      const sec = document.createElement('section');
+      sec.id = id; sec.style.setProperty('--cat-color', color);
+      sec.innerHTML = `<div class="section-header"><span class="sec-emoji">${emoji}</span><h2>${esc(tag)}</h2><span class="sec-rule"></span></div>`;
+      const grid = document.createElement('div'); grid.className = 'grid';
+      items.filter(i => i.tags.includes(tag)).forEach(i => grid.appendChild(buildCard(i)));
+      sec.appendChild(grid);
+      view.appendChild(sec);
+    });
+    wireTabs(tags);
+  }
+
+  function wireTabs(tags){
+    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const tabBar = document.querySelector('.tab-bar');
+    const sections = tags.map(t => document.getElementById(slug(t)));
+    function setActive(id){
+      tabs.forEach(t => {
+        const on = t.dataset.target === id;
+        t.classList.toggle('active', on);
+        if (on) tabBar.style.setProperty('--cat-color', getComputedStyle(t).getPropertyValue('--cat-color'));
+      });
+    }
+    tabs.forEach(t => t.addEventListener('click', () => {
+      document.getElementById(t.dataset.target).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActive(t.dataset.target);
+    }));
+    if (tabObserver) tabObserver.disconnect();
+    tabObserver = new IntersectionObserver(entries => {
+      const vis = entries.filter(e => e.isIntersecting).sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (vis.length) setActive(vis[0].target.id);
+    }, { rootMargin: '-128px 0px -55% 0px', threshold: 0 });
+    sections.forEach(s => tabObserver.observe(s));
+    if (tabs[0]) setActive(tabs[0].dataset.target);
+  }
+
+  function renderChips(items){
+    const bar = document.getElementById('chip-bar');
+    bar.innerHTML = '';
+    orderedTags(items).forEach(tag => {
+      const chip = document.createElement('button');
+      chip.className = 'chip'; chip.style.setProperty('--cat-color', tagColor(tag));
+      chip.innerHTML = `<span>${TAG_EMOJI[tag] || '•'}</span>${esc(tag)}`;
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        if (ACTIVE_TAGS.has(tag)) ACTIVE_TAGS.delete(tag); else ACTIVE_TAGS.add(tag);
+        renderFilterGrid();
+      });
+      bar.appendChild(chip);
+    });
+    const clear = document.createElement('button');
+    clear.className = 'chip-clear'; clear.textContent = 'Clear';
+    clear.addEventListener('click', () => {
+      ACTIVE_TAGS.clear();
+      bar.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+      renderFilterGrid();
+    });
+    bar.appendChild(clear);
+  }
+
+  function renderFilterGrid(){
+    const grid = document.getElementById('filter-grid');
+    grid.innerHTML = '';
+    const shown = ACTIVE_TAGS.size === 0
+      ? ITEMS
+      : ITEMS.filter(i => i.tags.some(t => ACTIVE_TAGS.has(t)));
+    shown.forEach(i => grid.appendChild(buildCard(i)));
+  }
+
+  // ── VIEW TOGGLE ─────────────────────────────────────────
+  document.getElementById('view-toggle').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    const sections = btn.dataset.view === 'sections';
+    document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('sections-view').hidden = !sections;
+    document.getElementById('tab-nav').hidden = !sections;
+    document.getElementById('filter-view').hidden = sections;
+    document.getElementById('chip-nav').hidden = sections;
+    window.scrollTo({ top: 0 });
+  });
+
+  // ── LOAD (live sheet, fall back to baked CSV) ────────────
+  async function loadCSV(){
+    try {
+      const r = await fetch(GVIZ_CSV);
+      if (r.ok) return await r.text();
+    } catch (e) { /* CORS/offline → fall through */ }
+    return (await fetch(FALLBACK_CSV)).text();
+  }
+
+  (async function init(){
+    const status = document.getElementById('status');
+    try {
+      ITEMS = toItems(await loadCSV());
+    } catch (e) {
+      status.textContent = 'Could not load stations. Please try again later.';
+      return;
+    }
+    if (!ITEMS.length){ status.textContent = 'No stations found.'; return; }
+    status.remove();
+    renderSections(ITEMS);
+    renderChips(ITEMS);
+    renderFilterGrid();
+  })();
+
+  // ── Animated symbol strip (NYC FIRST style) ──
+  (function() {
+    const strip = document.getElementById('symbol-strip');
+    const SYMBOLS = ['#', ')', '{', '•', '*', '[', '<', '!', '-', '}', '(', ']', '>', '=', '/', '+', ';', ':', '~', '?'];
+    const PALETTE = ['#8B5CF6', '#F97316', '#10B981', '#EC4899', '#06B6D4', '#F59E0B'];
+    const rand = arr => arr[Math.floor(Math.random() * arr.length)];
+    let cells = [];
+    function build() {
+      const cols = Math.ceil(strip.offsetWidth / 20) + 1;
+      const total = cols * 2;
+      strip.innerHTML = ''; cells = [];
+      for (let i = 0; i < total; i++) {
+        const s = document.createElement('span');
+        s.textContent = rand(SYMBOLS);
+        s.style.color = PALETTE[Math.floor(i / 2) % PALETTE.length];
+        s.style.opacity = '0.6'; s._busy = false;
+        strip.appendChild(s); cells.push(s);
+      }
+    }
+    const easeInOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    function masterScale() {
+      const phase = (performance.now() / 2600) % (Math.PI * 2);
+      return 0.6 + 0.9 * (0.5 + 0.5 * Math.sin(phase));
+    }
+    function scramble(s) {
+      if (s._busy) return; s._busy = true;
+      const iterations = 10 + Math.floor(Math.random() * 12);
+      const fast = 22 + Math.random() * 14, slow = 90 + Math.random() * 70;
+      const jitter = 0.75 + Math.random() * 0.5;
+      let n = 0;
+      const tick = () => {
+        s.textContent = rand(SYMBOLS);
+        if (++n < iterations) {
+          const t = n / iterations, speed = Math.abs(t - 0.5) * 2;
+          let delay = fast + (slow - fast) * easeInOut(speed);
+          delay *= jitter * masterScale();
+          setTimeout(tick, delay);
+        } else s._busy = false;
+      };
+      tick();
+    }
+    function scrambleAll() { cells.forEach(s => setTimeout(() => scramble(s), Math.random() * 450)); }
+    build();
+    window.addEventListener('resize', build);
+    scrambleAll();
+    let scrollTick = false;
+    window.addEventListener('scroll', () => {
+      if (scrollTick) return; scrollTick = true;
+      scrambleAll(); setTimeout(() => { scrollTick = false; }, 160);
+    }, { passive: true });
+  })();
+</script>
+
+</body>
+</html>
