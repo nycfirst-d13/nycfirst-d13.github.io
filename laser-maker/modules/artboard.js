@@ -449,6 +449,14 @@ class Artboard {
         }
       }
       if (minX !== Infinity) sh._bbox = { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+      // Clipped group: overflow is masked, so bbox/hit-area match the visible clip.
+      if (sh._bbox && sh.clipRect) {
+        const c = sh.clipRect;
+        const x1 = Math.max(sh._bbox.x, c.x), y1 = Math.max(sh._bbox.y, c.y);
+        const x2 = Math.min(sh._bbox.x + sh._bbox.w, c.x + c.w);
+        const y2 = Math.min(sh._bbox.y + sh._bbox.h, c.y + c.h);
+        sh._bbox = { x: x1, y: y1, w: Math.max(0, x2 - x1), h: Math.max(0, y2 - y1) };
+      }
       // Apply group-level rotation and add background catcher for hit-testing
       const groupNode = this.layerRoot.querySelector(`[data-id="${sh.id}"]`);
       if (groupNode) {
