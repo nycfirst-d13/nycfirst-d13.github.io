@@ -262,7 +262,9 @@ function buildSVG(pathMap = new Map(), tight = false) {
      viewBox="${vx.toFixed(3)} ${vy.toFixed(3)} ${wPx.toFixed(3)} ${hPx.toFixed(3)}">
   <title>Laser Maker Export</title>
   <desc>${wIn.toFixed(3)} × ${hIn.toFixed(3)} inches</desc>
-  ${defsBlock}${body}
+  ${defsBlock}<g>
+  ${body}
+  </g>
 </svg>
 `;
 }
