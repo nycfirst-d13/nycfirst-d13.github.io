@@ -1,6 +1,7 @@
 // app.js — entry point. Wire inspector controls, init modules, status bar.
 
 import { state, subscribe, render, getPiece, pxToIn } from './modules/state.js';
+import './modules/cache.js';  // restores saved board at import time; wires Clear button
 import { initImport, retrimPiece } from './modules/import.js';
 import { arrange } from './modules/arrange.js';
 import { initBed, fitView, deleteSelected, rotateSelected, flipSelected } from './modules/bed.js';
