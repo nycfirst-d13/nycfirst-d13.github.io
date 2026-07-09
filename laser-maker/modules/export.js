@@ -296,14 +296,26 @@ function _contentBBox() {
     if (y > maxY) maxY = y;
   }
 
-  function processShape(sh) {
+  // ponytail: clip clamp treats clipRect as axis-aligned in artboard space,
+  // matching this function's existing blind spot to group rotation.
+  function clampToClip(b, clip) {
+    if (!clip) return b;
+    const x1 = Math.max(b.x, clip.x), y1 = Math.max(b.y, clip.y);
+    const x2 = Math.min(b.x + b.w, clip.x + clip.w);
+    const y2 = Math.min(b.y + b.h, clip.y + clip.h);
+    return { x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+  }
+
+  function processShape(sh, clip) {
     if (sh.visible === false) return;
     if (sh.type === 'group') {
-      (sh.children || []).forEach(processShape);
+      const childClip = sh.clipRect ? clampToClip(sh.clipRect, clip) : clip;
+      (sh.children || []).forEach(c => processShape(c, childClip));
       return;
     }
-    const b = artboard.getShapeBBox(sh);
+    let b = artboard.getShapeBBox(sh);
     if (!b || (b.w === 0 && b.h === 0)) return;
+    if (clip) { b = clampToClip(b, clip); if (b.w <= 0 || b.h <= 0) return; }
     const resolved = resolveAppearance(sh);
     const half = (resolved.strokeWidth ?? 0) / 2;
     const x1 = b.x - half, y1 = b.y - half;
@@ -323,7 +335,7 @@ function _contentBBox() {
     }
   }
 
-  s.shapes.forEach(processShape);
+  s.shapes.forEach(sh => processShape(sh, null));
   if (minX === Infinity) return null;
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
 }
