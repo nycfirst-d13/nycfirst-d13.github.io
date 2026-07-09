@@ -67,9 +67,12 @@ function cleanTree(el, aggressive) {
   }
 }
 
-// Clean a set of nodes off-screen, then measure the tight content bbox as the
-// union of each surviving element's box, skipping zero-area ones (A2). Returns
-// { bbox, innerSVG } — innerSVG is the cleaned markup for display + export.
+// Clean a set of nodes off-screen, then measure the tight content bbox. Measured
+// once on the wrapping <g> so descendant transforms are honored — a per-element
+// union would use each element's LOCAL box and ignore its own transform, shifting
+// transformed groups out of the crop and clipping them. Empty/invisible strays
+// (A1/A2) are handled by cleanTree above, not by skipping boxes here.
+// Returns { bbox, innerSVG } — innerSVG is the cleaned markup for display + export.
 function fitContent(childNodes, aggressive) {
   const svg = document.createElementNS(NS, 'svg');
   svg.style.cssText = 'position:absolute;left:-99999px;top:-99999px;visibility:hidden';
@@ -80,29 +83,18 @@ function fitContent(childNodes, aggressive) {
 
   cleanTree(g, aggressive);
 
-  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-  const walk = node => {
-    for (const child of node.children) {
-      let b;
-      try { b = child.getBBox(); } catch { continue; }
-      if (b && isFinite(b.width) && isFinite(b.height) && b.width > 0 && b.height > 0) {
-        x0 = Math.min(x0, b.x); y0 = Math.min(y0, b.y);
-        x1 = Math.max(x1, b.x + b.width); y1 = Math.max(y1, b.y + b.height);
-      }
-      // descend into groups so a wrapping <g> doesn't hide a stray child's box
-      if (child.tagName.toLowerCase() === 'g') walk(child);
+  let bb = null;
+  try {
+    const b = g.getBBox();
+    if (b && isFinite(b.width) && isFinite(b.height) && b.width > 0 && b.height > 0) {
+      const pad = 1; // ~half of a 1pt stroke, which getBBox excludes
+      bb = { x: b.x - pad, y: b.y - pad, w: b.width + 2 * pad, h: b.height + 2 * pad };
     }
-  };
-  walk(g);
+  } catch { /* no renderable content — caller falls back to declared size */ }
 
   const innerSVG = g.innerHTML;
   svg.remove();
-
-  if (x1 > x0 && y1 > y0) {
-    const pad = 1; // ~half of a 1pt stroke, which getBBox excludes
-    return { bbox: { x: x0 - pad, y: y0 - pad, w: (x1 - x0) + 2 * pad, h: (y1 - y0) + 2 * pad }, innerSVG };
-  }
-  return { bbox: null, innerSVG };
+  return { bbox: bb, innerSVG };
 }
 
 function canonicalSVG(viewBox, natWIn, natHIn, innerSVG) {
