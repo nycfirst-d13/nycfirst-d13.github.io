@@ -112,6 +112,7 @@ const appearanceLocked   = document.getElementById('appearance-locked');
 const appearanceEtch     = document.getElementById('appearance-etch');
 const appearanceMixed    = document.getElementById('appearance-mixed');
 const appearanceImageEtch = document.getElementById('appearance-image-etch');
+const imageActions = document.getElementById('image-actions');
 const lockedStrokeSwatch = document.getElementById('locked-stroke-swatch');
 const lockedStrokeLabel  = document.getElementById('locked-stroke-label');
 const etchStrokeToggle   = document.getElementById('etch-stroke-toggle');
@@ -336,6 +337,8 @@ function syncFromState() {
     }
   }
 
+  if (imageActions) imageActions.style.display = 'none';
+
   if (!sel.length) {
     // No selection — show activeProcess (default for next shape)
     const ap = s.activeProcess ?? 'free';
@@ -401,6 +404,10 @@ function syncFromState() {
     if (opt) opt.hidden = onlyImages;
   }
   if (onlyImages) _ensureImageEtch(sel);
+
+  // "Convert to vector" — available for any single image, any process.
+  if (imageActions) imageActions.style.display =
+    (sel.length === 1 && sel[0].type === 'image') ? '' : 'none';
 
   // Show correct appearance section
   if (isMixed) {

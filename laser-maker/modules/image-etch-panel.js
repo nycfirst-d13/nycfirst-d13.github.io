@@ -268,8 +268,17 @@ function subpathsToRegions(subs) {
   return regions;
 }
 
+// Trace works on any single image (any process) — the two-color trace binarizes
+// regardless, and it reads etchHref if present else the raw href.
+function selectedImage() {
+  const s = store.get();
+  if (s.selection.length !== 1) return null;
+  const sh = store.findShape(s.selection[0]);
+  return (sh && sh.type === 'image') ? sh : null;
+}
+
 function traceSelected() {
-  const sh = selectedEtchImage();
+  const sh = selectedImage();
   if (!sh) return;
   if (typeof ImageTracer === 'undefined') { toast('Tracer not loaded'); return; }
   const src = sh.attrs.etchHref || sh.attrs.href;
