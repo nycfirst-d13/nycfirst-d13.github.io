@@ -1,0 +1,66 @@
+/* Bed Maker — page-specific styles.
+   Tokens, chrome (.topbar/.shell/.tools/.inspector/.statusbar/.panel), and input
+   components come from ../laser-maker/styles.css.
+   ponytail: coupled to that file. If it drifts and breaks the chrome, copy the
+   :root token block + the handful of chrome rules here. */
+
+/* Workspace: laser-maker makes this a ruler grid — we have no rulers, so reset
+   it to a plain positioning context filled by the canvas. */
+.workspace { display: block; position: relative; overflow: hidden; }
+.canvas-area {
+  position: absolute; inset: 0; overflow: hidden;
+  background: var(--paper); cursor: default;
+}
+.canvas-area.tool-hand, .canvas-area.hand { cursor: grab; }
+.canvas-area.panning { cursor: grabbing; }
+.workspace.drag-over::after {
+  content: ""; position: absolute; inset: 8px; z-index: 5; pointer-events: none;
+  border: 2px dashed var(--blue); border-radius: var(--r-md);
+  background: rgba(37, 99, 235, 0.06);
+}
+
+/* Zoom/pan container — one CSS transform, no per-frame redraw. */
+.bed-stage {
+  position: absolute; top: 0; left: 0;
+  transform-origin: 0 0; will-change: transform;
+}
+
+/* The 36×24 bed: white paper + 1-inch grid. */
+.bed {
+  position: relative; background: #fff; box-shadow: var(--sh-2);
+  border: 1px solid var(--rule-2);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 96px 96px;
+}
+
+/* Each imported part is a raster snapshot (fast to drag). */
+.piece {
+  position: absolute; user-select: none; -webkit-user-drag: none;
+  cursor: move; transform-origin: center center;
+}
+.piece.selected { outline: 2px solid var(--blue); outline-offset: 0; }
+.piece.overflow { box-shadow: 0 0 0 2px var(--accent); }
+
+/* Empty-state drop hint. */
+.drop-hint {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; pointer-events: none; color: var(--ink-3);
+}
+.drop-hint-inner { text-align: center; }
+.drop-hint-inner svg { color: var(--muted); margin-bottom: 6px; }
+.drop-hint-inner p { margin: 2px 0; font-size: 13px; }
+.drop-hint-sub { color: var(--muted); font-size: 12px; }
+
+/* Inspector bits not in the shared sheet. */
+.hint { margin: 8px 0 0; font-size: 11px; color: var(--ink-3); line-height: 1.4; }
+.bed-size, .sel-val { font-size: 12px; color: var(--ink-2); }
+.check-row {
+  display: flex; align-items: center; gap: 8px; margin-top: 10px;
+  font-size: 12px; color: var(--ink-2); cursor: pointer;
+}
+.check-row input { accent-color: var(--blue); }
+.btn-row { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+.btn-row .btn { flex: 1; justify-content: center; }
+.status-warn { color: var(--accent); font-weight: 500; }

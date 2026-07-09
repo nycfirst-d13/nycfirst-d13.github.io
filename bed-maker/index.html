@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Bed Maker — NYC FIRST</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Shared design system (tokens + chrome + input components) from Laser Maker. -->
+  <link rel="stylesheet" href="../laser-maker/styles.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+
+  <!-- ============== TOP BAR ============== -->
+  <header class="topbar" role="banner">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <img src="./assets/horizontal-logo.svg" width="100" height="50" />
+      </div>
+      <div class="brand-text">
+        <span class="brand-title">Bed Maker <span class="brand-beta">[BETA]</span></span>
+        <span class="brand-sub">Lay out a day of parts · 36 × 24 in</span>
+      </div>
+    </div>
+    <div class="topbar-center"></div>
+    <div class="topbar-right">
+      <label class="btn" id="import-btn" for="file-input" style="cursor:pointer">
+        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 14 V5 M6 8 L10 4 L14 8 M4 16 H16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Add SVGs</span>
+      </label>
+      <input type="file" id="file-input" accept=".svg,image/svg+xml" multiple style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" />
+      <button class="btn primary" id="export-btn">
+        <svg viewBox="0 0 20 20" width="14" height="14"><path d="M10 3 V12 M6 9 L10 13 L14 9 M4 16 H16" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Export Bed SVG</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============== APP SHELL ============== -->
+  <main class="shell">
+
+    <!-- LEFT: Tool palette -->
+    <aside class="tools" role="toolbar" aria-label="Tools">
+      <button class="tool" data-tool="select" title="Select (V)"></button>
+      <button class="tool" data-tool="hand" title="Hand · pan (H)"></button>
+    </aside>
+
+    <!-- CENTER: Workspace -->
+    <section class="workspace" id="workspace">
+      <div class="canvas-area" id="canvas-area">
+        <div class="bed-stage" id="bed-stage">
+          <div class="bed" id="bed"></div>
+        </div>
+        <div class="drop-hint" id="drop-hint">
+          <div class="drop-hint-inner">
+            <svg viewBox="0 0 48 48" width="40" height="40" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 32 V12 M16 20 L24 12 L32 20"/><path d="M10 36 H38"/></svg>
+            <p><strong>Drop SVG files here</strong></p>
+            <p class="drop-hint-sub">or use <em>Add SVGs</em> — a whole day's exported parts</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Inspector -->
+    <aside class="inspector" aria-label="Controls">
+
+      <!-- Bed -->
+      <div class="panel">
+        <header class="panel-h"><span>Bed</span></header>
+        <div class="prop-row"><label class="prop-label">Size</label><span class="bed-size">36 × 24 in</span></div>
+        <div class="prop-row"><label class="prop-label">Machine</label><span class="bed-size">Epilog Fusion Edge 36</span></div>
+      </div>
+
+      <!-- Sizing -->
+      <div class="panel">
+        <header class="panel-h"><span>Part size limit</span></header>
+        <div class="grid-2">
+          <div class="numeric"><label>Max W</label><input type="number" id="cfg-maxw" step="0.25" min="0.25" /><span class="suffix">in</span></div>
+          <div class="numeric"><label>Max H</label><input type="number" id="cfg-maxh" step="0.25" min="0.25" /><span class="suffix">in</span></div>
+        </div>
+        <p class="hint">Parts scale down to fit; never enlarged.</p>
+      </div>
+
+      <!-- Layout -->
+      <div class="panel">
+        <header class="panel-h"><span>Layout</span></header>
+        <div class="prop-row">
+          <label class="prop-label">Spacing</label>
+          <div class="numeric"><label>Gap</label><input type="number" id="cfg-gap" step="0.0625" min="0" /><span class="suffix">in</span></div>
+        </div>
+        <div class="prop-row">
+          <label class="prop-label">Tiling</label>
+          <select id="cfg-tiling" class="prop-select">
+            <option value="grid">Grid</option>
+            <option value="brick">Brick</option>
+            <option value="compact">Compact</option>
+          </select>
+        </div>
+        <label class="check-row"><input type="checkbox" id="cfg-rowflip" /> <span>Flip alternating rows</span></label>
+        <label class="check-row"><input type="checkbox" id="cfg-snap" /> <span>Snap to ⅛ in when dragging</span></label>
+        <div class="btn-row">
+          <button class="btn" id="arrange-btn">Auto-arrange</button>
+          <button class="btn ghost" id="fit-btn">Fit view</button>
+        </div>
+      </div>
+
+      <!-- Selected piece -->
+      <div class="panel" id="panel-selected" hidden>
+        <header class="panel-h"><span>Selected part</span></header>
+        <div class="prop-row"><label class="prop-label">Name</label><span class="sel-val" id="sel-name">—</span></div>
+        <div class="prop-row"><label class="prop-label">Size</label><span class="sel-val" id="sel-size">—</span></div>
+        <div class="btn-row">
+          <button class="btn" id="sel-rotate" title="Rotate 90° (R)">Rotate</button>
+          <button class="btn" id="sel-flip" title="Flip (F)">Flip</button>
+          <button class="btn danger" id="sel-delete" title="Delete (⌫)">Delete</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="sel-trim" title="Re-crop to visible artwork, dropping stray/blank elements">Trim to art</button>
+        </div>
+      </div>
+
+      <!-- Export -->
+      <div class="panel panel-fixed-bottom">
+        <header class="panel-h"><span>Export</span></header>
+        <div class="prop-row">
+          <label class="prop-label">Day</label>
+          <input type="date" id="export-date" class="prop-select" />
+        </div>
+        <p class="hint">Downloads one 36 × 24 in SVG — real vectors, process colors intact.</p>
+      </div>
+
+    </aside>
+  </main>
+
+  <!-- ============== STATUS BAR ============== -->
+  <footer class="statusbar">
+    <span class="status-cell" id="status-count">0 parts</span>
+    <span class="status-cell status-warn" id="status-overflow" hidden></span>
+    <span class="status-cell push" id="status-cursor">0.00, 0.00 in</span>
+  </footer>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
