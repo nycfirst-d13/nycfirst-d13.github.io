@@ -117,14 +117,13 @@
     /* ── CHIP BAR (filter view) ──────────────────────────── */
     .chip-bar-inner {
       max-width: 1360px; margin: 0 auto; padding: 12px 24px;
-      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center;
     }
     .chip {
       border: 1px solid var(--cat-color); background: var(--surface); cursor: pointer;
       font-family: inherit; font-size: 13px; font-weight: 600; color: var(--cat-color);
       padding: 6px 13px; border-radius: 999px; transition: background 0.15s, color 0.15s;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-      flex: 1 1 auto;  /* grow to fill each row so rows are always full width */
+      display: flex; align-items: center; gap: 6px;
     }
     .chip.active { background: var(--cat-color); color: #fff; }
     .chip-clear {
