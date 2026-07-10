@@ -50,7 +50,7 @@
 
     .subtitle {
       font-size: 16px; font-weight: 400; color: var(--muted);
-      margin-top: 10px; max-width: 720px; line-height: 1.5; margin-left: auto;
+      margin-top: 10px; max-width: 720px; line-height: 1.5;
     }
 
     .header-images { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -204,8 +204,8 @@
     .rail {
       flex-shrink: 0; width: 248px; align-self: flex-start;
       position: sticky; top: 82px; height: calc(100vh - 94px);
-      border-left: 1px solid var(--border);
-      display: flex; flex-direction: column; padding: 4px 0 12px 20px;
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; padding: 4px 20px 12px 0;
     }
     .rail-head {
       flex-shrink: 0; display: flex; align-items: center; justify-content: space-between;
@@ -261,7 +261,7 @@
       .body-cols { flex-direction: column; gap: 16px; }
       .rail {
         position: static; width: auto; height: auto; order: -1;
-        border-left: none; border-bottom: 1px solid var(--border);
+        border-right: none; border-bottom: 1px solid var(--border);
         padding: 0 0 16px;
       }
       .rail-scroll { overflow: visible; padding-bottom: 4px; -webkit-mask-image: none; mask-image: none; }
@@ -368,13 +368,13 @@
 
 <header>
   <div class="header-inner">
+    <div class="header-text">
+      <h1>Digital STEM Stations</h1>
+      <p class="subtitle">Choose a station that looks interesting to you!<br>Hover a card to preview it, then click to explore. Filter by tag to narrow things down.</p>
+    </div>
     <div class="header-images">
       <img src="images/image1.png" width="90" height="90" alt="NYC FIRST logo">
       <img src="images/image2.png" width="93" height="93" alt="District 13 logo">
-    </div>
-    <div class="header-text" style="text-align:right;">
-      <h1>Digital STEM Stations</h1>
-      <p class="subtitle">Choose a station that looks interesting to you!<br>Hover a card to preview it, then click to explore. Filter by tag to narrow things down.</p>
     </div>
   </div>
 </header>
@@ -382,13 +382,7 @@
 <div class="symbol-strip" id="symbol-strip" aria-hidden="true"></div>
 
 <div class="body-cols">
-  <main>
-    <div class="scroll-fade" aria-hidden="true"></div>
-    <div id="sections-view"></div>
-    <p id="status">Loading stations…</p>
-  </main>
-
-  <!-- Right rail (sticky below the symbol strip): tag filters + add button -->
+  <!-- Left rail (sticky below the symbol strip): tag filters + add button -->
   <aside class="rail" id="rail">
     <div class="rail-head">
       <div class="rail-title">Filter by tag</div>
@@ -404,6 +398,12 @@
       </button>
     </div>
   </aside>
+
+  <main>
+    <div class="scroll-fade" aria-hidden="true"></div>
+    <div id="sections-view"></div>
+    <p id="status">Loading stations…</p>
+  </main>
 </div>
 
 <!-- Submission modal -->
@@ -664,11 +664,13 @@
     const rail = document.getElementById('rail');
     const footer = document.querySelector('.rail-footer');
     if (!rail || !footer) return;
-    if (getComputedStyle(rail).position === 'sticky') {
+    const cs = getComputedStyle(rail);
+    if (cs.position === 'sticky') {
       const r = rail.getBoundingClientRect();
+      const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
       footer.style.position = 'fixed';
-      footer.style.left = (r.left + 20) + 'px';   // rail has 20px left padding
-      footer.style.width = (r.width - 20) + 'px';
+      footer.style.left = (r.left + pl) + 'px';
+      footer.style.width = (r.width - pl - pr) + 'px';
       footer.style.bottom = '12px';
     } else {
       footer.style.position = footer.style.left = footer.style.width = footer.style.bottom = '';
