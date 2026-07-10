@@ -21,6 +21,8 @@
   position: relative; overflow: hidden;
   background: var(--paper); cursor: default;
 }
+/* Empty board (drop-hint visible): whole canvas is a click-to-import target. */
+.canvas-area:has(#drop-hint:not([hidden])) { cursor: pointer; }
 .canvas-area.tool-hand, .canvas-area.hand { cursor: grab; }
 .canvas-area.panning { cursor: grabbing; }
 .workspace.drag-over::after {

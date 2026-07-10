@@ -185,4 +185,9 @@ export function initImport() {
     stage.classList.remove('drag-over');
   }));
   stage.addEventListener('drop', e => { stop(e); addFiles(e.dataTransfer.files); });
+
+  // Empty board: click anywhere on the canvas to open the file picker.
+  document.getElementById('canvas-area').addEventListener('click', () => {
+    if (!state.pieces.length) input.click();
+  });
 }
