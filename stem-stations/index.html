@@ -320,28 +320,17 @@
     </div>
     <div class="header-text" style="text-align:right;">
       <h1>Digital STEM Stations</h1>
-      <p class="subtitle">Choose a station that looks interesting to you!<br>Hover a card to preview it, then click to explore. Browse by section or filter by tag.</p>
+      <p class="subtitle">Choose a station that looks interesting to you!<br>Hover a card to preview it, then click to explore. Filter by tag to narrow things down.</p>
     </div>
   </div>
 </header>
 
 <div class="symbol-strip" id="symbol-strip" aria-hidden="true"></div>
 
-<div class="viewswitch">
-  <div class="viewswitch-inner">
-    <div class="seg" id="view-toggle" role="tablist">
-      <button data-view="sections" class="active" role="tab">Browse by section</button>
-      <button data-view="filter" role="tab">Filter by tag</button>
-    </div>
-  </div>
-</div>
-
-<nav class="tab-bar" id="tab-nav"><div class="tab-bar-inner" id="tab-bar"></div></nav>
-<nav class="chip-bar" id="chip-nav" hidden><div class="chip-bar-inner" id="chip-bar"></div></nav>
+<nav class="chip-bar" id="chip-nav"><div class="chip-bar-inner" id="chip-bar"></div></nav>
 
 <main>
   <div id="sections-view"></div>
-  <div id="filter-view" hidden><div class="grid" id="filter-grid"></div></div>
   <p id="status">Loading stations…</p>
 </main>
 
@@ -512,7 +501,7 @@
   }
 
   // ── RENDER ──────────────────────────────────────────────
-  let ITEMS = [], ACTIVE_TAGS = new Set(), tabObserver = null;
+  let ITEMS = [], ACTIVE_TAGS = new Set();
 
   function orderedTags(items){
     const present = new Set();
@@ -523,51 +512,23 @@
   }
   const slug = t => 'sec-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-  function renderSections(items){
-    const tags = orderedTags(items);
-    const tabBar = document.getElementById('tab-bar');
+  // One section (with header) per tag. No active chips → all tags; active chips → those tags only.
+  function renderSections(){
+    const all = orderedTags(ITEMS);
+    const tags = ACTIVE_TAGS.size ? all.filter(t => ACTIVE_TAGS.has(t)) : all;
     const view = document.getElementById('sections-view');
-    tabBar.innerHTML = ''; view.innerHTML = '';
+    view.innerHTML = '';
     tags.forEach(tag => {
       const color = tagColor(tag), id = slug(tag), emoji = TAG_EMOJI[tag] || '•';
-      const btn = document.createElement('button');
-      btn.className = 'tab'; btn.dataset.target = id; btn.style.setProperty('--cat-color', color);
-      btn.innerHTML = `<span class="tab-emoji">${emoji}</span>${esc(tag)}`;
-      tabBar.appendChild(btn);
-
       const sec = document.createElement('section');
       sec.id = id; sec.style.setProperty('--cat-color', color);
       sec.innerHTML = `<div class="section-header"><span class="sec-emoji">${emoji}</span><h2>${esc(tag)}</h2><span class="sec-rule"></span></div>`;
       const grid = document.createElement('div'); grid.className = 'grid';
-      items.filter(i => i.tags.includes(tag)).forEach(i => grid.appendChild(buildCard(i)));
+      ITEMS.filter(i => i.tags.includes(tag)).forEach(i => grid.appendChild(buildCard(i)));
       sec.appendChild(grid);
       view.appendChild(sec);
     });
-    wireTabs(tags);
-  }
-
-  function wireTabs(tags){
-    const tabs = Array.from(document.querySelectorAll('.tab'));
-    const tabBar = document.querySelector('.tab-bar');
-    const sections = tags.map(t => document.getElementById(slug(t)));
-    function setActive(id){
-      tabs.forEach(t => {
-        const on = t.dataset.target === id;
-        t.classList.toggle('active', on);
-        if (on) tabBar.style.setProperty('--cat-color', getComputedStyle(t).getPropertyValue('--cat-color'));
-      });
-    }
-    tabs.forEach(t => t.addEventListener('click', () => {
-      document.getElementById(t.dataset.target).scrollIntoView({ behavior: 'smooth', block: 'start' });
-      setActive(t.dataset.target);
-    }));
-    if (tabObserver) tabObserver.disconnect();
-    tabObserver = new IntersectionObserver(entries => {
-      const vis = entries.filter(e => e.isIntersecting).sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
-      if (vis.length) setActive(vis[0].target.id);
-    }, { rootMargin: '-128px 0px -55% 0px', threshold: 0 });
-    sections.forEach(s => tabObserver.observe(s));
-    if (tabs[0]) setActive(tabs[0].dataset.target);
+    onScroll();
   }
 
   function renderChips(items){
@@ -580,7 +541,8 @@
       chip.addEventListener('click', () => {
         chip.classList.toggle('active');
         if (ACTIVE_TAGS.has(tag)) ACTIVE_TAGS.delete(tag); else ACTIVE_TAGS.add(tag);
-        renderFilterGrid();
+        renderSections();
+        window.scrollTo({ top: 0 });
       });
       bar.appendChild(chip);
     });
@@ -589,32 +551,11 @@
     clear.addEventListener('click', () => {
       ACTIVE_TAGS.clear();
       bar.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
-      renderFilterGrid();
+      renderSections();
+      window.scrollTo({ top: 0 });
     });
     bar.appendChild(clear);
   }
-
-  function renderFilterGrid(){
-    const grid = document.getElementById('filter-grid');
-    grid.innerHTML = '';
-    const shown = ACTIVE_TAGS.size === 0
-      ? ITEMS
-      : ITEMS.filter(i => i.tags.some(t => ACTIVE_TAGS.has(t)));
-    shown.forEach(i => grid.appendChild(buildCard(i)));
-  }
-
-  // ── VIEW TOGGLE ─────────────────────────────────────────
-  document.getElementById('view-toggle').addEventListener('click', e => {
-    const btn = e.target.closest('button'); if (!btn) return;
-    const sections = btn.dataset.view === 'sections';
-    document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b === btn));
-    document.getElementById('sections-view').hidden = !sections;
-    document.getElementById('tab-nav').hidden = !sections;
-    document.getElementById('filter-view').hidden = sections;
-    document.getElementById('chip-nav').hidden = sections;
-    window.scrollTo({ top: 0 });
-    onScroll();
-  });
 
   // ── LOAD (live sheet, fall back to baked CSV) ────────────
   async function loadCSV(){
@@ -635,19 +576,14 @@
     }
     if (!ITEMS.length){ status.textContent = 'No stations found.'; return; }
     status.remove();
-    renderSections(ITEMS);
     renderChips(ITEMS);
-    renderFilterGrid();
-    onScroll();
+    renderSections();
   })();
 
-  // show the bar fade only once a card actually slides up under the bar
-  // (self-correcting for both views: title can scroll under first, no fade yet)
+  // show the bar fade only once a card actually slides up under the chip bar
   function onScroll(){
-    const filterOn = !document.getElementById('filter-view').hidden;
-    const nav = document.getElementById(filterOn ? 'chip-nav' : 'tab-nav');
-    const view = document.getElementById(filterOn ? 'filter-view' : 'sections-view');
-    const card = view.querySelector('.card');
+    const nav = document.getElementById('chip-nav');
+    const card = document.getElementById('sections-view').querySelector('.card');
     const on = !!card && card.getBoundingClientRect().top < nav.getBoundingClientRect().bottom + 4;
     document.body.classList.toggle('scrolled', on);
   }
