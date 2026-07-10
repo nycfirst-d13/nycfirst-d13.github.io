@@ -32,14 +32,10 @@
     }
 
     /* ── HEADER ─────────────────────────────────────────── */
-    header {
-      background: transparent;
-      position: relative;
-      overflow: hidden;
-    }
+    header { background: transparent; position: relative; overflow: hidden; }
 
     .header-inner {
-      max-width: 1040px;
+      max-width: 1360px;
       margin: 0 auto;
       padding: 44px 24px 38px;
       display: flex;
@@ -50,256 +46,267 @@
       z-index: 1;
     }
 
-    h1 {
-      font-size: 44px;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      line-height: 1.1;
-      color: var(--text);
-    }
+    h1 { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--text); }
 
     .subtitle {
-      font-size: 16px;
-      font-weight: 400;
-      color: var(--muted);
-      margin-top: 10px;
-      max-width: 560px;
-      line-height: 1.5;
-      margin-left: auto;
+      font-size: 16px; font-weight: 400; color: var(--muted);
+      margin-top: 10px; max-width: 560px; line-height: 1.5; margin-left: auto;
     }
 
-    .header-images {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .header-images img {
-      display: block;
-      object-fit: contain;
-    }
+    .header-images { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .header-images img { display: block; object-fit: contain; }
 
     /* ── ANIMATED SYMBOL STRIP ───────────────────────────── */
     .symbol-strip {
-      position: sticky;
-      top: 0;
-      z-index: 101;
-      height: 70px;
-      padding-bottom: 24px;
+      position: sticky; top: 0; z-index: 101; height: 70px; padding-bottom: 24px;
+      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+      background-attachment: fixed; overflow: hidden;
+      display: grid; grid-template-rows: repeat(2, 1fr); grid-auto-flow: column;
+      grid-auto-columns: 20px; align-items: center; justify-items: center;
+      user-select: none; pointer-events: none;
+    }
+    .symbol-strip span { font-family: 'Work Sans', sans-serif; font-size: 24px; font-weight: 800; line-height: 1; }
+
+    /* ── VIEW SWITCH ─────────────────────────────────────── */
+    .viewswitch-inner { max-width: 1360px; margin: 0 auto; padding: 4px 24px 0; }
+    .seg { display: inline-flex; gap: 24px; }
+    .seg button {
+      cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600;
+      color: var(--muted); background: none; border: none;
+      padding: 6px 0 8px; border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .seg button:hover { color: var(--text); }
+    .seg button.active { color: var(--text); border-bottom-color: var(--text); }
+
+    /* ── TAB BAR (sections view) ─────────────────────────── */
+    .tab-bar, .chip-bar {
+      position: sticky; top: 70px; z-index: 100;
       background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
       background-attachment: fixed;
-      overflow: hidden;
-      display: grid;
-      grid-template-rows: repeat(2, 1fr);
-      grid-auto-flow: column;
-      grid-auto-columns: 20px;
-      align-items: center;
-      justify-items: center;
-      user-select: none;
+    }
+    /* soft fade so cards dissolve into the bg as they scroll under the bar.
+       Same fixed gradient as the bar (seamless), masked to transparent. */
+    .tab-bar::after, .chip-bar::after {
+      content: ''; position: absolute; left: 0; right: 0; top: 100%; height: 120px;
+      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+      background-attachment: fixed;
+      -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.86) 28%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.18) 80%, transparent 100%);
+              mask-image: linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.86) 28%, rgba(0,0,0,0.5) 58%, rgba(0,0,0,0.18) 80%, transparent 100%);
       pointer-events: none;
+      opacity: 0; transition: opacity 0.2s ease;
     }
-
-    .symbol-strip span {
-      font-family: 'Work Sans', sans-serif;
-      font-size: 24px;
-      font-weight: 800;
-      line-height: 1;
-    }
-
-    /* ── TAB BAR ─────────────────────────────────────────── */
-    .tab-bar {
-      position: sticky;
-      top: 70px;
-      z-index: 100;
-      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
-      background-attachment: fixed;
-    }
-
+    body.scrolled .tab-bar::after, body.scrolled .chip-bar::after { opacity: 1; }
     .tab-bar-inner {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 0 16px;
-      display: flex;
-      gap: 4px;
-      overflow-x: auto;
-      scrollbar-width: none;
+      max-width: 1360px; margin: 0 auto; padding: 0 16px;
+      display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
     }
     .tab-bar-inner::-webkit-scrollbar { display: none; }
 
     .tab {
-      flex-shrink: 0;
-      border: none;
-      background: none;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--muted);
-      padding: 14px 14px 12px;
-      border-bottom: 3px solid transparent;
-      transition: color 0.15s, border-color 0.15s;
-      white-space: nowrap;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      flex-shrink: 0; border: none; background: none; cursor: pointer;
+      font-family: inherit; font-size: 14px; font-weight: 600; color: var(--muted);
+      padding: 14px 14px 12px; border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s; white-space: nowrap;
+      display: flex; align-items: center; gap: 6px;
     }
-
     .tab:hover { color: var(--text); }
-
-    .tab.active {
-      color: var(--cat-color, var(--text));
-      border-bottom-color: var(--cat-color, var(--text));
-    }
-
+    .tab.active { color: var(--cat-color, var(--text)); border-bottom-color: var(--cat-color, var(--text)); }
     .tab .tab-emoji { font-size: 16px; }
 
-    /* ── MAIN ────────────────────────────────────────────── */
-    main {
-      max-width: 1040px;
-      margin: 0 auto;
-      padding: 0 24px;
+    /* ── CHIP BAR (filter view) ──────────────────────────── */
+    .chip-bar-inner {
+      max-width: 1360px; margin: 0 auto; padding: 12px 24px;
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    }
+    .chip {
+      border: 1px solid var(--cat-color); background: var(--surface); cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--cat-color);
+      padding: 6px 13px; border-radius: 999px; transition: background 0.15s, color 0.15s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .chip.active { background: var(--cat-color); color: #fff; }
+    .chip-clear {
+      border: none; background: none; cursor: pointer; font-family: inherit;
+      font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: underline;
+      padding: 6px 4px;
     }
 
+    /* ── MAIN ────────────────────────────────────────────── */
+    main { max-width: 1360px; margin: 0 auto; padding: 0 24px; }
     section { scroll-margin-top: 128px; padding-top: 40px; }
 
-    .section-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 18px;
-    }
+    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    .section-header .sec-emoji { font-size: 28px; line-height: 1; }
+    .section-header h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
+    .section-header .sec-rule { flex: 1; height: 3px; border-radius: 3px; background: var(--cat-color); opacity: 0.25; }
 
-    .section-header .sec-emoji {
-      font-size: 28px;
-      line-height: 1;
-    }
+    .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    #filter-view .grid { padding-top: 24px; }
 
-    .section-header h2 {
-      font-size: 24px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-      color: var(--text);
-    }
+    #status { padding: 48px 0; text-align: center; color: var(--muted); font-size: 15px; }
 
-    .section-header .sec-rule {
-      flex: 1;
-      height: 3px;
-      border-radius: 3px;
-      background: var(--cat-color);
-      opacity: 0.25;
+    @media (max-width: 1080px) {
+      .grid { grid-template-columns: repeat(3, 1fr); }
     }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 18px;
-    }
-
     @media (max-width: 780px) {
       .header-inner { padding: 32px 24px 28px; }
       main { padding: 0 16px; }
       .grid { grid-template-columns: repeat(2, 1fr); }
       h1 { font-size: 32px; }
     }
-
     @media (max-width: 480px) {
       .grid { grid-template-columns: 1fr; }
       .header-images { display: none; }
     }
 
-    /* ── CARD ────────────────────────────────────────────── */
+    /* ── CARD (no icon) ──────────────────────────────────── */
     .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px 20px 18px;
-      box-shadow: var(--shadow-sm);
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px 20px 18px; box-shadow: var(--shadow-sm);
       transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      position: relative;
-      text-decoration: none;
-      color: inherit;
-      cursor: pointer;
-      min-height: 168px;
+      display: flex; flex-direction: column; gap: 8px; position: relative;
+      text-decoration: none; color: inherit; cursor: pointer; min-height: 168px;
     }
+    .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--cat-color); }
+    .card.card-static { cursor: default; }
 
-    .card:hover {
-      transform: translateY(-3px);
-      box-shadow: var(--shadow-md);
-      border-color: var(--cat-color);
-    }
+    .card-title { font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--cat-color); }
+    .card-desc { font-size: 13px; font-weight: 400; color: var(--muted); line-height: 1.55; flex: 1; }
 
-    .card-icon {
-      width: 36px;
-      height: 36px;
-      background: var(--cat-light);
-      border-radius: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      margin-bottom: 2px;
-    }
+    .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 3px 9px; line-height: 1.4; }
+    .pill.tag { color: var(--pill-color); background: var(--pill-light); }
+    .pill.diff { color: var(--muted); background: #f1f5f9; border: 1px solid var(--border); }
 
-    .card-icon svg {
-      width: 19px;
-      height: 19px;
-      stroke: var(--cat-color);
-      fill: none;
-      stroke-width: 1.8;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 700;
-      line-height: 1.3;
-      color: var(--cat-color);
-    }
-
-    .card-desc {
-      font-size: 13px;
-      font-weight: 400;
-      color: var(--muted);
-      line-height: 1.55;
-      flex: 1;
-    }
-
-    .badge {
-      align-self: flex-start;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--cat-color);
-      background: var(--cat-light);
-      border-radius: 999px;
-      padding: 3px 9px;
-      margin-top: auto;
-    }
-
-    /* hover preview overlay — image src filled in later */
+    /* hover preview overlay — from the sheet's screenshot column */
     .card-hover-preview {
-      position: absolute;
-      inset: 0;
-      border-radius: var(--radius);
-      overflow: hidden;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.4s ease;
+      position: absolute; inset: 0; border-radius: var(--radius); overflow: hidden;
+      pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
     }
-    .card-hover-preview img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center;
-      display: block;
-    }
+    .card-hover-preview img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
     /* only reveal preview when an image actually loaded */
-    .card:hover .card-hover-preview:has(img[src]:not([src=""])) {
-      opacity: 1;
+    .card:hover .card-hover-preview:has(img[src]:not([src=""])) { opacity: 1; }
+
+    /* ── FLOATING "ADD YOUR OWN" BUTTON ──────────────────── */
+    .fab {
+      position: fixed; right: 28px; bottom: 28px; z-index: 200;
+      height: 64px; min-width: 64px; padding: 0; border: none; cursor: pointer;
+      border-radius: 999px; color: #fff; font-family: 'Work Sans', sans-serif;
+      /* conic gradient of all tag colors — set from JS to stay in sync */
+      background: conic-gradient(#8B5CF6, #6366F1, #F97316, #EF4444, #14B8A6, #EC4899, #10B981, #D946EF, #0EA5E9, #06B6D4, #F59E0B, #DB2777, #64748B, #8B5CF6);
+      box-shadow: 0 8px 26px rgba(30,42,56,0.28), 0 2px 6px rgba(0,0,0,0.18);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      transition: min-width 0.35s cubic-bezier(.2,.8,.2,1), transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .fab:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(30,42,56,0.34), 0 3px 8px rgba(0,0,0,0.2); }
+    .fab::before {
+      content: ''; position: absolute; inset: 3px; border-radius: 999px;
+      background: rgba(30,42,56,0.82); z-index: 0;
+    }
+    .fab-plus, .fab-label {
+      position: relative; z-index: 1; font-weight: 800; white-space: nowrap;
+      transition: opacity 0.2s ease;
+    }
+    .fab-plus { font-size: 34px; line-height: 1; }
+    .fab-label {
+      font-size: 16px; letter-spacing: 0.01em; opacity: 0;
+      width: 0; overflow: hidden; text-align: center;
+    }
+    .fab:hover, .fab:focus-visible { min-width: 190px; outline: none; }
+    .fab:hover .fab-plus, .fab:focus-visible .fab-plus { opacity: 0; width: 0; position: absolute; }
+    .fab:hover .fab-label, .fab:focus-visible .fab-label { opacity: 1; width: auto; padding: 0 22px; }
+
+    /* ── SUBMISSION MODAL ────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 300; background: rgba(15,23,42,0.55);
+      backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center;
+      padding: 40px 16px; overflow-y: auto;
+    }
+    .modal-backdrop[hidden] { display: none; }
+    .modal {
+      background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-md);
+      width: 100%; max-width: 560px; padding: 32px 30px 30px; position: relative;
+      animation: modal-in 0.25s cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes modal-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; width: 34px; height: 34px;
+      border: none; background: #f1f5f9; color: var(--muted); border-radius: 999px;
+      font-size: 16px; cursor: pointer; line-height: 1; transition: background 0.15s, color 0.15s;
+    }
+    .modal-close:hover { background: #e2e8f0; color: var(--text); }
+    .modal h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
+    .modal-sub { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 22px; }
+
+    #submit-form { display: flex; flex-direction: column; gap: 18px; }
+    #submit-form label, #submit-form fieldset {
+      display: flex; flex-direction: column; gap: 7px; border: none;
+      font-size: 13px; font-weight: 700; color: var(--text);
+    }
+    #submit-form legend { font-size: 13px; font-weight: 700; margin-bottom: 7px; padding: 0; }
+    #submit-form .opt, #submit-form .field-note { font-weight: 400; color: var(--muted); font-size: 12px; }
+    #submit-form input[type=text], #submit-form input[type=url], #submit-form textarea, #submit-form input:not([type]) {
+      font-family: inherit; font-size: 14px; font-weight: 400; color: var(--text);
+      border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; width: 100%;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #submit-form textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
+    #submit-form input:focus, #submit-form textarea:focus {
+      outline: none; border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+    #submit-form input[type=file] { border: 1px dashed var(--border); background: #f8fafc; padding: 10px; cursor: pointer; }
+
+    .chip-select { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sel-chip {
+      border: 1.5px solid var(--chip-c, var(--border)); background: var(--surface); cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--chip-c, var(--muted));
+      padding: 6px 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px;
+      transition: background 0.14s, color 0.14s; user-select: none;
+    }
+    .sel-chip[aria-pressed="true"] { background: var(--chip-c, var(--text)); color: #fff; }
+    .sel-chip.chip-disabled { opacity: 0.4; cursor: not-allowed; }
+    .sel-chip .rm { font-weight: 800; opacity: 0.7; }
+    .addown { display: flex; gap: 8px; margin-top: 10px; }
+    .addown input { flex: 1; }
+    .addown button {
+      font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
+      border: none; border-radius: 12px; padding: 0 16px; background: #6366F1;
+    }
+    .addown button:hover { background: #4f46e5; }
+
+    .approval-note {
+      font-size: 12.5px; color: var(--muted); line-height: 1.5; font-weight: 400;
+      background: #f1f5f9; border-radius: 12px; padding: 11px 13px; border: 1px solid var(--border);
+    }
+    #submit-btn {
+      font-family: inherit; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer;
+      border: none; border-radius: 12px; padding: 13px; margin-top: 2px;
+      background: linear-gradient(90deg, #6366F1, #8B5CF6); transition: opacity 0.15s, filter 0.15s;
+    }
+    #submit-btn:hover:not(:disabled) { filter: brightness(1.06); }
+    #submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .form-error { color: #EF4444; font-size: 13px; font-weight: 600; }
+
+    #submit-success { text-align: center; padding: 20px 6px 8px; }
+    .success-check {
+      width: 62px; height: 62px; border-radius: 999px; margin: 0 auto 18px;
+      background: #10B981; color: #fff; font-size: 34px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #submit-success h2 { font-size: 22px; }
+    #submit-success p { font-size: 14px; color: var(--muted); line-height: 1.55; margin: 8px auto 22px; max-width: 380px; }
+    #success-close {
+      font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+      border: none; border-radius: 12px; padding: 11px 28px; background: #6366F1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fab, .modal { transition: none; animation: none; }
+    }
+    @media (max-width: 480px) {
+      .fab { right: 16px; bottom: 16px; }
+      .modal { padding: 26px 20px 22px; }
     }
   </style>
 </head>
@@ -313,419 +320,570 @@
     </div>
     <div class="header-text" style="text-align:right;">
       <h1>Digital STEM Stations</h1>
-      <p class="subtitle">Choose a station that looks interesting to you! Click a card to explore, create, build, and learn. Use the tabs to jump to a category.</p>
+      <p class="subtitle">Choose a station that looks interesting to you! Hover a card to preview it, then click to explore. Browse by section or filter by tag.</p>
     </div>
   </div>
 </header>
 
 <div class="symbol-strip" id="symbol-strip" aria-hidden="true"></div>
 
-<nav class="tab-bar">
-  <div class="tab-bar-inner" id="tab-bar">
-    <button class="tab" data-target="robotics" style="--cat-color:#F97316;"><span class="tab-emoji">🤖</span>Robotics</button>
-    <button class="tab" data-target="coding"   style="--cat-color:#8B5CF6;"><span class="tab-emoji">🖥</span>Coding</button>
-    <button class="tab" data-target="design"   style="--cat-color:#EC4899;"><span class="tab-emoji">🎨</span>2D Design</button>
-    <button class="tab" data-target="modeling" style="--cat-color:#10B981;"><span class="tab-emoji">🧱</span>3D Design</button>
-    <button class="tab" data-target="science"  style="--cat-color:#06B6D4;"><span class="tab-emoji">🔬</span>Science</button>
-    <button class="tab" data-target="math"     style="--cat-color:#F59E0B;"><span class="tab-emoji">➗</span>Math</button>
-    <button class="tab" data-target="creative" style="--cat-color:#D946EF;"><span class="tab-emoji">🎵</span>Creative</button>
+<div class="viewswitch">
+  <div class="viewswitch-inner">
+    <div class="seg" id="view-toggle" role="tablist">
+      <button data-view="sections" class="active" role="tab">Browse by section</button>
+      <button data-view="filter" role="tab">Filter by tag</button>
+    </div>
   </div>
-</nav>
+</div>
+
+<nav class="tab-bar" id="tab-nav"><div class="tab-bar-inner" id="tab-bar"></div></nav>
+<nav class="chip-bar" id="chip-nav" hidden><div class="chip-bar-inner" id="chip-bar"></div></nav>
 
 <main>
-
-  <!-- ── ROBOTICS & ENGINEERING ──────────────────────────── -->
-  <section id="robotics" style="--cat-color:#F97316; --cat-light:#FFF7ED;">
-    <div class="section-header">
-      <span class="sec-emoji">🤖</span>
-      <h2>Robotics &amp; Engineering</h2>
-      <span class="sec-rule"></span>
-    </div>
-    <div class="grid">
-
-      <a class="card" href="https://makecode.microbit.org/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="3"/><circle cx="9" cy="12" r="1.4"/><circle cx="15" cy="12" r="1.4"/></svg></div>
-        <div class="card-title">micro:bit MakeCode</div>
-        <div class="card-desc">Code games, sensors, and mini inventions. Click "New Project" to begin.</div>
-        <span class="badge">⭐⭐ Beginner–Intermediate</span>
-        <div class="card-hover-preview"><img src="" alt="micro:bit MakeCode preview"></div>
-      </a>
-
-      <a class="card" href="https://spike.legoeducation.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="5" y="9" width="14" height="10" rx="2"/><path d="M8 9V7a1 1 0 011-1h0a1 1 0 011 1v2M14 9V7a1 1 0 011-1h0a1 1 0 011 1v2"/></svg></div>
-        <div class="card-title">LEGO SPIKE Prime</div>
-        <div class="card-desc">Build and code LEGO robots right in your browser. Try the Getting Started tutorials.</div>
-        <span class="badge">⭐⭐ Beginner–Intermediate</span>
-        <div class="card-hover-preview"><img src="" alt="LEGO SPIKE Prime preview"></div>
-      </a>
-
-      <a class="card" href="https://spike.ahardy.za.net/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M12 4v3M12 17v3"/></svg></div>
-        <div class="card-title">FLL Robot Simulator</div>
-        <div class="card-desc">Simulate FIRST LEGO League missions and test your robot on a virtual field.</div>
-        <span class="badge">⭐⭐ Beginner–Intermediate</span>
-        <div class="card-hover-preview"><img src="" alt="FLL Robot Simulator preview"></div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- ── CODING & CS ─────────────────────────────────────── -->
-  <section id="coding" style="--cat-color:#8B5CF6; --cat-light:#F5F3FF;">
-    <div class="section-header">
-      <span class="sec-emoji">🖥</span>
-      <h2>Coding &amp; Computer Science</h2>
-      <span class="sec-rule"></span>
-    </div>
-    <div class="grid">
-
-      <a class="card" href="https://arcade.makecode.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 11v2M6 12h2"/><circle cx="16" cy="11" r="0.6"/><circle cx="18" cy="13" r="0.6"/></svg></div>
-        <div class="card-title">MakeCode Arcade</div>
-        <div class="card-desc">Make games, animations, and stories using drag-and-drop coding. Sign in with your DOE email first.</div>
-        <span class="badge">⭐ Beginner–Advanced</span>
-        <div class="card-hover-preview"><img src="" alt="MakeCode Arcade preview"></div>
-      </a>
-
-      <a class="card" href="https://code.org/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M14 6l-4 12"/></svg></div>
-        <div class="card-title">Code.org</div>
-        <div class="card-desc">Learn coding through games and puzzles. Choose an Hour of Code activity to begin.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Code.org preview"></div>
-      </a>
-
-      <a class="card" href="https://blockly.games/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/><path d="M11 7h4v6"/></svg></div>
-        <div class="card-title">Blockly Games</div>
-        <div class="card-desc">Solve coding puzzles and challenges. Start with the Maze game.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Blockly Games preview"></div>
-      </a>
-
-      <a class="card" href="https://projects.raspberrypi.org/en/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9c0 1.5 6 1.5 6 0M9 15c0-1.5 6-1.5 6 0M12 3v18"/></svg></div>
-        <div class="card-title">Raspberry Pi Code Clubs</div>
-        <div class="card-desc">All kinds of coding projects. Try Crafty Critters — collage a creepy critter in Python.</div>
-        <span class="badge">⭐ Beginner–Advanced</span>
-        <div class="card-hover-preview"><img src="" alt="Raspberry Pi Code Clubs preview"></div>
-      </a>
-
-      <a class="card" href="https://www.codemonkey.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="6"/><path d="M8 9h.01M16 9h.01M9 13c1.5 1.5 4.5 1.5 6 0M12 16v4"/></svg></div>
-        <div class="card-title">CodeMonkey</div>
-        <div class="card-desc">A coding game with a strong emphasis on fundamentals. Start at Level 1.</div>
-        <span class="badge">⭐ Beginner–Intermediate</span>
-        <div class="card-hover-preview"><img src="" alt="CodeMonkey preview"></div>
-      </a>
-
-      <a class="card" href="https://www.rodocodo.com/free-coding-game-for-kids/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM4 14h6v6H4zM14 14h6v6h-6z"/><path d="M10 7h4M7 10v4"/></svg></div>
-        <div class="card-title">RoboCodo</div>
-        <div class="card-desc">A sequence-based coding maze game. Start with Level 1, the basic maze.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="RoboCodo preview"></div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- ── 2D DESIGN ───────────────────────────────────────── -->
-  <section id="design" style="--cat-color:#EC4899; --cat-light:#FDF2F8;">
-    <div class="section-header">
-      <span class="sec-emoji">🎨</span>
-      <h2>2D Design</h2>
-      <span class="sec-rule"></span>
-    </div>
-    <div class="grid">
-
-      <a class="card" href="https://www.canva.com/education/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9c-1-1.5-3.5-1.5-5 0s-1.5 4 0 5.5"/></svg></div>
-        <div class="card-title">Canva for Education</div>
-        <div class="card-desc">Create posters, slides, and infographics. Choose a template and edit it.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Canva for Education preview"></div>
-      </a>
-
-      <a class="card" href="https://idpcloud.nycenet.edu/authsvc/mtfim/sps/authsvc?PolicyId=urn:ibm:security:authentication:asf:basicldapuser&themeId=27897595-206f-432b-9166-813fa5e0bbe0&Target=https%3A%2F%2Fidpcloud.nycenet.edu%2Foauth2%2Fauthorize%3Fclient_id%3Df76efe74-8ee9-4799-831a-20458b2c09d0%26stateId%3Dbd16f752-4d03-4794-90c7-c29e36a3e7d2%26themeId%3D27897595-206f-432b-9166-813fa5e0bbe0" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 4l7 16h-4l-3-7-3 7H5l7-16z"/></svg></div>
-        <div class="card-title">Adobe Express</div>
-        <div class="card-desc">Create graphics, photos, presentations, and videos with free templates and AI tools. Log in through TeachHub.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Adobe Express preview"></div>
-      </a>
-
-      <a class="card" href="https://www.pixilart.com/draw" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6"/><rect x="14" y="4" width="6" height="6"/><rect x="9" y="14" width="6" height="6"/></svg></div>
-        <div class="card-title">Pixilart</div>
-        <div class="card-desc">Create pixel art and retro game designs. Start drawing with the pixel tools.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Pixilart preview"></div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- ── 3D DESIGN ───────────────────────────────────────── -->
-  <section id="modeling" style="--cat-color:#10B981; --cat-light:#ECFDF5;">
-    <div class="section-header">
-      <span class="sec-emoji">🧱</span>
-      <h2>3D Design</h2>
-      <span class="sec-rule"></span>
-    </div>
-    <div class="grid">
-
-      <a class="card" href="https://www.tinkercad.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3zM12 3v18M4 7.5l8 4.5 8-4.5"/></svg></div>
-        <div class="card-title">Tinkercad</div>
-        <div class="card-desc">Design 3D models and inventions. Choose "3D Design" to get started.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Tinkercad preview"></div>
-      </a>
-
-      <a class="card" href="https://www.tinkercad.com/codeblocks" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M9 11l-2 2 2 2M15 11l2 2-2 2"/></svg></div>
-        <div class="card-title">Tinkercad Codeblocks</div>
-        <div class="card-desc">Use code to create 3D shapes and patterns. Open "Codeblocks" to try it.</div>
-        <span class="badge">⭐⭐ Beginner–Intermediate</span>
-        <div class="card-hover-preview"><img src="" alt="Tinkercad Codeblocks preview"></div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- ── SCIENCE & PHYSICS ───────────────────────────────── -->
-  <section id="science" style="--cat-color:#06B6D4; --cat-light:#ECFEFF;">
-    <div class="section-header">
-      <span class="sec-emoji">🔬</span>
-      <h2>Science &amp; Physics</h2>
-      <span class="sec-rule"></span>
-    </div>
-    <div class="grid">
-
-      <a class="card" href="https://phet.colorado.edu/en/simulations/filter?levels=elementary-school" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/></svg></div>
-        <div class="card-title">PhET Simulations</div>
-        <div class="card-desc">Explore electricity, motion, chemistry, and more. Choose a simulation and experiment.</div>
-        <span class="badge">⭐⭐ Beginner–Intermediate</span>
-        <div class="card-hover-preview"><img src="" alt="PhET Simulations preview"></div>
-      </a>
-
-      <a class="card" href="https://climatekids.nasa.gov/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
-        <div class="card-title">NASA Climate Kids</div>
-        <div class="card-desc">Learn about space, weather, and Earth science. Pick a science topic or game.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="NASA Climate Kids preview"></div>
-      </a>
-
-      <a class="card" href="https://earth.google.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 010 18M12 3a14 14 0 000 18"/></svg></div>
-        <div class="card-title">Google Earth</div>
-        <div class="card-desc">Explore the world in 3D. Search for a place and fly there.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Google Earth preview"></div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- ── LEARNING MATH ───────────────────────────────────── -->
-  <section id="math" style="--cat-color:#F59E0B; --cat-light:#FFFBEB;">
-    <div class="section-header">
-      <span class="sec-emoji">➗</span>
-      <h2>Learning Math</h2>
-      <span class="sec-rule"></span>
-    </div>
-    <div class="grid">
-
-      <a class="card" href="https://www.geogebra.org/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M4 20L20 4M4 14l6 6M14 4l6 6"/><circle cx="6" cy="18" r="1.4"/><circle cx="18" cy="6" r="1.4"/></svg></div>
-        <div class="card-title">GeoGebra</div>
-        <div class="card-desc">Explore geometry, graphing, and math art. Open the Geometry or Graphing tools.</div>
-        <span class="badge">⭐⭐ Beginner–Intermediate</span>
-        <div class="card-hover-preview"><img src="" alt="GeoGebra preview"></div>
-      </a>
-
-      <a class="card" href="https://www.prodigygame.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3z"/></svg></div>
-        <div class="card-title">Prodigy Math</div>
-        <div class="card-desc">Practice math through adventure games. Create a player and start exploring.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Prodigy Math preview"></div>
-      </a>
-
-    </div>
-  </section>
-
-  <!-- ── CREATIVE & MUSIC ────────────────────────────────── -->
-  <section id="creative" style="--cat-color:#D946EF; --cat-light:#FDF4FF;">
-    <div class="section-header">
-      <span class="sec-emoji">🎵</span>
-      <h2>Creative &amp; Music</h2>
-      <span class="sec-rule"></span>
-    </div>
-    <div class="grid">
-
-      <a class="card" href="https://musiclab.chromeexperiments.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg></div>
-        <div class="card-title">Chrome Music Lab</div>
-        <div class="card-desc">Explore music, sound, and patterns. Choose a music experiment to try.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Chrome Music Lab preview"></div>
-      </a>
-
-      <a class="card" href="https://learningmusic.ableton.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M4 14h3v6H4zM10 8h3v12h-3zM16 11h3v9h-3z"/></svg></div>
-        <div class="card-title">Ableton Learning Music</div>
-        <div class="card-desc">Learn beats, melodies, chords, and songs right in your browser — no installation.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Ableton Learning Music preview"></div>
-      </a>
-
-      <a class="card" href="https://learningsynths.ableton.com/" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M2 12h3l2-7 3 14 3-10 2 5h7"/></svg></div>
-        <div class="card-title">Ableton Learning Synths</div>
-        <div class="card-desc">Play and explore synthesizers right in your browser to learn how electronic sounds are made.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Ableton Learning Synths preview"></div>
-      </a>
-
-      <a class="card" href="http://nycfirst-d13.github.io/hello-waves" target="_blank" rel="noopener">
-        <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M2 12 C5 6, 9 18, 12 12 S17 6, 22 12"/></svg></div>
-        <div class="card-title">Hello Waves Activities</div>
-        <div class="card-desc">Explore waves and sound through hands-on interactive activities.</div>
-        <span class="badge">⭐ Beginner</span>
-        <div class="card-hover-preview"><img src="" alt="Hello Waves Activities preview"></div>
-      </a>
-
-    </div>
-  </section>
-
+  <div id="sections-view"></div>
+  <div id="filter-view" hidden><div class="grid" id="filter-grid"></div></div>
+  <p id="status">Loading stations…</p>
 </main>
 
+<!-- Floating "add your own" launcher -->
+<button class="fab" id="fab" aria-label="Add your own station">
+  <span class="fab-plus" aria-hidden="true">+</span>
+  <span class="fab-label" id="fab-label" aria-hidden="true"></span>
+</button>
+
+<!-- Submission modal -->
+<div class="modal-backdrop" id="submit-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="submit-title">
+    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+
+    <div id="submit-form-wrap">
+      <h2 id="submit-title">Add your own station</h2>
+      <p class="modal-sub">Found something fun? Suggest it! A staff member reviews every submission before it shows up on the site.</p>
+
+      <form id="submit-form" novalidate>
+        <label>Name of station *
+          <input type="text" name="title" id="f-title" required maxlength="80"
+                 placeholder="e.g. LEGO Spike Prime, Micro:bit, Scratch Jr.">
+        </label>
+
+        <label>Describe what you can do! *
+          <textarea name="description" id="f-desc" required maxlength="400"
+                    placeholder="e.g. Build and code LEGO robots right in your browser.  •  Make games, animations, and stories using drag-and-drop coding."></textarea>
+        </label>
+
+        <label>Link / URL
+          <input type="url" name="url" id="f-url" placeholder="https://…">
+          <span class="field-note" id="url-note">Required if it's a website or app.</span>
+        </label>
+
+        <fieldset>
+          <legend>Choose up to 3 tags *</legend>
+          <div class="chip-select" id="tag-select"></div>
+          <div class="addown">
+            <input type="text" id="custom-tag" maxlength="30" placeholder="+ add your own tag">
+            <button type="button" id="add-tag-btn">Add</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Difficulty * <span class="opt">(pick one or more)</span></legend>
+          <div class="chip-select" id="diff-select"></div>
+        </fieldset>
+
+        <label>Screenshot or picture <span class="opt">(optional — helps show a preview)</span>
+          <input type="file" name="image" id="f-image" accept="image/*">
+          <input type="url" id="f-image-url" placeholder="…or paste an image URL">
+        </label>
+
+        <p class="approval-note">📋 New stations are added as <strong>not active</strong> and stay hidden until a staff member approves them. They'll get an email about your submission.</p>
+
+        <button type="submit" id="submit-btn" disabled>Send for review</button>
+        <p class="form-error" id="form-error" hidden></p>
+      </form>
+    </div>
+
+    <div id="submit-success" hidden>
+      <div class="success-check">✓</div>
+      <h2>Thanks!</h2>
+      <p>Your station was sent for review. A staff member will approve it before it appears on the site.</p>
+      <button type="button" id="success-close">Done</button>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ── Tab bar: click to scroll, IntersectionObserver to highlight ──
-  (function() {
+  // ── CONFIG ──────────────────────────────────────────────
+  const SHEET_ID = '1xclY-0sWt70mZ_jQxMDWOr8XtwgaZivqhDlD2_hnBs0';
+  const GVIZ_CSV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+  const FALLBACK_CSV = 'stations.csv';
+  // Apps Script Web App /exec URL — paste after deploying submit.gs (see submit.gs).
+  const SUBMIT_URL = '';
+
+  // Tag display order + color + emoji. Unknown tags fall back to a hashed color.
+  const TAG_ORDER = ['Coding','Game Design','Physical Computing','Electronics','Robotics','2D Design','3D Design','Art','Physics','Science','Math','Music','Needs Supplies*'];
+  const TAG_COLOR = {
+    'Coding':'#8B5CF6', 'Game Design':'#6366F1', 'Physical Computing':'#F97316',
+    'Electronics':'#EF4444', 'Robotics':'#14B8A6', '2D Design':'#EC4899',
+    '3D Design':'#10B981', 'Art':'#D946EF', 'Physics':'#0EA5E9',
+    'Science':'#06B6D4', 'Math':'#F59E0B', 'Music':'#DB2777', 'Needs Supplies*':'#64748B'
+  };
+  const TAG_EMOJI = {
+    'Coding':'🖥', 'Game Design':'🎮', 'Physical Computing':'🔌', 'Electronics':'⚡',
+    'Robotics':'🤖', '2D Design':'🎨', '3D Design':'🧱', 'Art':'🖌', 'Physics':'⚛',
+    'Science':'🔬', 'Math':'➗', 'Music':'🎵', 'Needs Supplies*':'🧰'
+  };
+  const FALLBACK_COLORS = ['#8B5CF6','#F97316','#10B981','#EC4899','#06B6D4','#F59E0B','#EF4444','#14B8A6'];
+
+  function tagColor(t){
+    if (TAG_COLOR[t]) return TAG_COLOR[t];
+    let h = 0; for (const c of t) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return FALLBACK_COLORS[h % FALLBACK_COLORS.length];
+  }
+  function rgba(hex, a){
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const splitList = s => (s || '').split(',').map(x => x.trim()).filter(Boolean);
+  const previewSrc = s => !s ? '' : (/^https?:\/\//.test(s) ? s : 'images/' + s);
+
+  // ── CSV PARSER (quotes, escaped "", newlines inside fields) ──
+  function parseCSV(text){
+    const rows = []; let row = [], field = '', q = false;
+    for (let i = 0; i < text.length; i++){
+      const c = text[i];
+      if (q){
+        if (c === '"'){ if (text[i+1] === '"'){ field += '"'; i++; } else q = false; }
+        else field += c;
+      } else if (c === '"') q = true;
+      else if (c === ',') { row.push(field); field = ''; }
+      else if (c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else if (c !== '\r') field += c;
+    }
+    if (field.length || row.length){ row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function toItems(csv){
+    const rows = parseCSV(csv).filter(r => r.some(c => c.trim() !== ''));
+    if (!rows.length) return [];
+    const head = rows[0].map(h => h.trim().toLowerCase());
+    const [iT, iD, iU, iTags, iDiff, iA, iS] =
+      ['title','description','url','tags','difficulty','active','screenshot'].map(n => head.indexOf(n));
+    const map = new Map(); // dedupe by title, last row wins
+    for (const r of rows.slice(1)){
+      const title = (r[iT] || '').trim();
+      if (!title) continue;
+      const active = (r[iA] || '').trim().toUpperCase();
+      if (active && active !== 'TRUE') { map.delete(title); continue; }
+      map.set(title, {
+        title,
+        description: (r[iD] || '').trim(),
+        url: (r[iU] || '').trim(),
+        tags: splitList(r[iTags]),
+        difficulty: splitList(r[iDiff]),
+        screenshot: (r[iS] || '').trim()
+      });
+    }
+    return [...map.values()];
+  }
+
+  // ── CARD ────────────────────────────────────────────────
+  function buildCard(item){
+    const primary = tagColor(item.tags[0] || 'Coding');
+    const hasUrl = !!item.url;
+    const el = document.createElement(hasUrl ? 'a' : 'div');
+    el.className = 'card' + (hasUrl ? '' : ' card-static');
+    el.style.setProperty('--cat-color', primary);
+    if (hasUrl){ el.href = item.url; el.target = '_blank'; el.rel = 'noopener'; }
+    const prev = previewSrc(item.screenshot);
+    const diffPills = item.difficulty.map(d => `<span class="pill diff">${esc(d)}</span>`).join('');
+    const tagPills = item.tags.map(t => {
+      const c = tagColor(t);
+      return `<span class="pill tag" style="--pill-color:${c};--pill-light:${rgba(c,0.12)}">${esc(t)}</span>`;
+    }).join('');
+    el.innerHTML =
+      `<div class="card-title">${esc(item.title)}</div>` +
+      `<div class="card-desc">${esc(item.description)}</div>` +
+      (diffPills ? `<div class="pill-row">${diffPills}</div>` : '') +
+      (tagPills ? `<div class="pill-row">${tagPills}</div>` : '') +
+      `<div class="card-hover-preview">${prev ? `<img src="${esc(prev)}" alt="${esc(item.title)} preview" loading="lazy">` : ''}</div>`;
+    return el;
+  }
+
+  // ── RENDER ──────────────────────────────────────────────
+  let ITEMS = [], ACTIVE_TAGS = new Set(), tabObserver = null;
+
+  function orderedTags(items){
+    const present = new Set();
+    items.forEach(i => i.tags.forEach(t => present.add(t)));
+    const known = TAG_ORDER.filter(t => present.has(t));
+    const extra = [...present].filter(t => !TAG_ORDER.includes(t)).sort();
+    return [...known, ...extra];
+  }
+  const slug = t => 'sec-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+  function renderSections(items){
+    const tags = orderedTags(items);
+    const tabBar = document.getElementById('tab-bar');
+    const view = document.getElementById('sections-view');
+    tabBar.innerHTML = ''; view.innerHTML = '';
+    tags.forEach(tag => {
+      const color = tagColor(tag), id = slug(tag), emoji = TAG_EMOJI[tag] || '•';
+      const btn = document.createElement('button');
+      btn.className = 'tab'; btn.dataset.target = id; btn.style.setProperty('--cat-color', color);
+      btn.innerHTML = `<span class="tab-emoji">${emoji}</span>${esc(tag)}`;
+      tabBar.appendChild(btn);
+
+      const sec = document.createElement('section');
+      sec.id = id; sec.style.setProperty('--cat-color', color);
+      sec.innerHTML = `<div class="section-header"><span class="sec-emoji">${emoji}</span><h2>${esc(tag)}</h2><span class="sec-rule"></span></div>`;
+      const grid = document.createElement('div'); grid.className = 'grid';
+      items.filter(i => i.tags.includes(tag)).forEach(i => grid.appendChild(buildCard(i)));
+      sec.appendChild(grid);
+      view.appendChild(sec);
+    });
+    wireTabs(tags);
+  }
+
+  function wireTabs(tags){
     const tabs = Array.from(document.querySelectorAll('.tab'));
     const tabBar = document.querySelector('.tab-bar');
-    const sections = tabs.map(t => document.getElementById(t.dataset.target));
-
-    function setActive(id) {
+    const sections = tags.map(t => document.getElementById(slug(t)));
+    function setActive(id){
       tabs.forEach(t => {
         const on = t.dataset.target === id;
         t.classList.toggle('active', on);
-        if (on) {
-          // propagate active tab color to bar for the underline var
-          tabBar.style.setProperty('--cat-color', getComputedStyle(t).getPropertyValue('--cat-color'));
-        }
+        if (on) tabBar.style.setProperty('--cat-color', getComputedStyle(t).getPropertyValue('--cat-color'));
       });
     }
-
-    tabs.forEach(t => {
-      t.addEventListener('click', () => {
-        document.getElementById(t.dataset.target).scrollIntoView({ behavior: 'smooth', block: 'start' });
-        setActive(t.dataset.target);
-      });
-    });
-
-    const observer = new IntersectionObserver((entries) => {
-      // pick the entry nearest the top that is intersecting
-      const visible = entries.filter(e => e.isIntersecting)
-        .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-      if (visible.length) setActive(visible[0].target.id);
+    tabs.forEach(t => t.addEventListener('click', () => {
+      document.getElementById(t.dataset.target).scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setActive(t.dataset.target);
+    }));
+    if (tabObserver) tabObserver.disconnect();
+    tabObserver = new IntersectionObserver(entries => {
+      const vis = entries.filter(e => e.isIntersecting).sort((a,b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      if (vis.length) setActive(vis[0].target.id);
     }, { rootMargin: '-128px 0px -55% 0px', threshold: 0 });
+    sections.forEach(s => tabObserver.observe(s));
+    if (tabs[0]) setActive(tabs[0].dataset.target);
+  }
 
-    sections.forEach(s => observer.observe(s));
-    setActive('robotics');
+  function renderChips(items){
+    const bar = document.getElementById('chip-bar');
+    bar.innerHTML = '';
+    orderedTags(items).forEach(tag => {
+      const chip = document.createElement('button');
+      chip.className = 'chip'; chip.style.setProperty('--cat-color', tagColor(tag));
+      chip.innerHTML = `<span>${TAG_EMOJI[tag] || '•'}</span>${esc(tag)}`;
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('active');
+        if (ACTIVE_TAGS.has(tag)) ACTIVE_TAGS.delete(tag); else ACTIVE_TAGS.add(tag);
+        renderFilterGrid();
+      });
+      bar.appendChild(chip);
+    });
+    const clear = document.createElement('button');
+    clear.className = 'chip-clear'; clear.textContent = 'Clear';
+    clear.addEventListener('click', () => {
+      ACTIVE_TAGS.clear();
+      bar.querySelectorAll('.chip.active').forEach(c => c.classList.remove('active'));
+      renderFilterGrid();
+    });
+    bar.appendChild(clear);
+  }
+
+  function renderFilterGrid(){
+    const grid = document.getElementById('filter-grid');
+    grid.innerHTML = '';
+    const shown = ACTIVE_TAGS.size === 0
+      ? ITEMS
+      : ITEMS.filter(i => i.tags.some(t => ACTIVE_TAGS.has(t)));
+    shown.forEach(i => grid.appendChild(buildCard(i)));
+  }
+
+  // ── VIEW TOGGLE ─────────────────────────────────────────
+  document.getElementById('view-toggle').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if (!btn) return;
+    const sections = btn.dataset.view === 'sections';
+    document.querySelectorAll('#view-toggle button').forEach(b => b.classList.toggle('active', b === btn));
+    document.getElementById('sections-view').hidden = !sections;
+    document.getElementById('tab-nav').hidden = !sections;
+    document.getElementById('filter-view').hidden = sections;
+    document.getElementById('chip-nav').hidden = sections;
+    window.scrollTo({ top: 0 });
+    onScroll();
+  });
+
+  // ── LOAD (live sheet, fall back to baked CSV) ────────────
+  async function loadCSV(){
+    try {
+      const r = await fetch(GVIZ_CSV);
+      if (r.ok) return await r.text();
+    } catch (e) { /* CORS/offline → fall through */ }
+    return (await fetch(FALLBACK_CSV)).text();
+  }
+
+  (async function init(){
+    const status = document.getElementById('status');
+    try {
+      ITEMS = toItems(await loadCSV());
+    } catch (e) {
+      status.textContent = 'Could not load stations. Please try again later.';
+      return;
+    }
+    if (!ITEMS.length){ status.textContent = 'No stations found.'; return; }
+    status.remove();
+    renderSections(ITEMS);
+    renderChips(ITEMS);
+    renderFilterGrid();
+    onScroll();
   })();
+
+  // show the bar fade only once a card actually slides up under the bar
+  // (self-correcting for both views: title can scroll under first, no fade yet)
+  function onScroll(){
+    const filterOn = !document.getElementById('filter-view').hidden;
+    const nav = document.getElementById(filterOn ? 'chip-nav' : 'tab-nav');
+    const view = document.getElementById(filterOn ? 'filter-view' : 'sections-view');
+    const card = view.querySelector('.card');
+    const on = !!card && card.getBoundingClientRect().top < nav.getBoundingClientRect().bottom + 4;
+    document.body.classList.toggle('scrolled', on);
+  }
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
 
   // ── Animated symbol strip (NYC FIRST style) ──
   (function() {
     const strip = document.getElementById('symbol-strip');
     const SYMBOLS = ['#', ')', '{', '•', '*', '[', '<', '!', '-', '}', '(', ']', '>', '=', '/', '+', ';', ':', '~', '?'];
-    // category accent colors, used at reduced opacity on the navy strip
     const PALETTE = ['#8B5CF6', '#F97316', '#10B981', '#EC4899', '#06B6D4', '#F59E0B'];
-
     const rand = arr => arr[Math.floor(Math.random() * arr.length)];
-
     let cells = [];
-
     function build() {
       const cols = Math.ceil(strip.offsetWidth / 20) + 1;
-      const total = cols * 2; // 2 rows
-      strip.innerHTML = '';
-      cells = [];
+      const total = cols * 2;
+      strip.innerHTML = ''; cells = [];
       for (let i = 0; i < total; i++) {
         const s = document.createElement('span');
         s.textContent = rand(SYMBOLS);
-        // tint by column so colors sweep left-to-right across the gradient
         s.style.color = PALETTE[Math.floor(i / 2) % PALETTE.length];
-        s.style.opacity = '0.6';
-        s._busy = false;
-        strip.appendChild(s);
-        cells.push(s);
+        s.style.opacity = '0.6'; s._busy = false;
+        strip.appendChild(s); cells.push(s);
       }
     }
-
-    // ease-in-out: slow start, fast middle, slow settle
     const easeInOut = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-
-    // master ease multiplier: global breathe that all cells share.
-    // sine over wall-clock — whole strip speeds up and slows down together.
     function masterScale() {
       const phase = (performance.now() / 2600) % (Math.PI * 2);
-      // oscillate 0.6 (fast) ↔ 1.5 (slow), eased
       return 0.6 + 0.9 * (0.5 + 0.5 * Math.sin(phase));
     }
-
-    // glitch-scramble a single cell: spin fast in the middle, ease at ends
     function scramble(s) {
-      if (s._busy) return;
-      s._busy = true;
-      // per-cell speed deviation: total cycle count + min/max tick delay
+      if (s._busy) return; s._busy = true;
       const iterations = 10 + Math.floor(Math.random() * 12);
-      const fast = 22 + Math.random() * 14;   // peak speed (ms) — varies per cell
-      const slow = 90 + Math.random() * 70;   // edge speed (ms) — varies per cell
-      // per-cell jitter: fixed scale offset so cells stay slightly off each other
+      const fast = 22 + Math.random() * 14, slow = 90 + Math.random() * 70;
       const jitter = 0.75 + Math.random() * 0.5;
       let n = 0;
       const tick = () => {
         s.textContent = rand(SYMBOLS);
         if (++n < iterations) {
-          // map progress to a slow→fast→slow curve via inverted ease
-          const t = n / iterations;
-          const speed = Math.abs(t - 0.5) * 2;        // 1 at ends, 0 mid
+          const t = n / iterations, speed = Math.abs(t - 0.5) * 2;
           let delay = fast + (slow - fast) * easeInOut(speed);
-          // scale by per-cell jitter AND shared master ease
           delay *= jitter * masterScale();
           setTimeout(tick, delay);
-        } else {
-          s._busy = false;
-        }
+        } else s._busy = false;
       };
       tick();
     }
-
-    function scrambleAll() {
-      cells.forEach(s => {
-        // wide random stagger for gradual rolling wave (varied start times)
-        setTimeout(() => scramble(s), Math.random() * 450);
-      });
-    }
-
+    function scrambleAll() { cells.forEach(s => setTimeout(() => scramble(s), Math.random() * 450)); }
     build();
     window.addEventListener('resize', build);
-
-    // scramble on load, then on every scroll (throttled)
     scrambleAll();
     let scrollTick = false;
     window.addEventListener('scroll', () => {
-      if (scrollTick) return;
-      scrollTick = true;
-      scrambleAll();
-      setTimeout(() => { scrollTick = false; }, 160);
+      if (scrollTick) return; scrollTick = true;
+      scrambleAll(); setTimeout(() => { scrollTick = false; }, 160);
     }, { passive: true });
+  })();
+
+  // ── FLOATING BUTTON + SUBMISSION FORM ────────────────────
+  (function() {
+    const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const SYM = ['#',')','{','•','*','[','<','!','-','}','(',']','>','=','/','+',';',':','~','?'];
+    const rnd = () => SYM[Math.floor(Math.random() * SYM.length)];
+    // Tags that make a URL required (digital / website activities)
+    const DIGITAL_TAGS = ['Coding', 'Game Design'];
+    const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'];
+
+    // Scramble-reveal "add your own" left→right, then lock each letter.
+    function scrambleTo(el, text, done) {
+      if (el._raf) cancelAnimationFrame(el._raf);
+      if (REDUCE) { el.textContent = text; if (done) done(); return; }
+      const chars = [...text];
+      const ends = chars.map((_, i) => i * 2 + 8 + Math.floor(Math.random() * 8));
+      let frame = 0;
+      (function tick() {
+        let out = '', locked = 0;
+        chars.forEach((ch, i) => {
+          if (frame >= ends[i]) { out += ch; locked++; }
+          else if (frame >= i * 2) out += (ch === ' ' ? ' ' : rnd());
+        });
+        el.textContent = out;
+        if (locked === chars.length) { if (done) done(); return; }
+        frame++; el._raf = requestAnimationFrame(tick);
+      })();
+    }
+
+    // Sync the FAB gradient with the live tag palette.
+    const colors = Object.values(TAG_COLOR);
+    document.getElementById('fab').style.background =
+      `conic-gradient(${colors.concat(colors[0]).join(',')})`;
+
+    // Hover / focus → scramble into "add your own"; leave → clear.
+    const fab = document.getElementById('fab'), fabLabel = document.getElementById('fab-label');
+    const reveal = () => scrambleTo(fabLabel, 'add your own');
+    const clear = () => { if (fabLabel._raf) cancelAnimationFrame(fabLabel._raf); fabLabel.textContent = ''; };
+    fab.addEventListener('mouseenter', reveal);
+    fab.addEventListener('focus', reveal);
+    fab.addEventListener('mouseleave', clear);
+    fab.addEventListener('blur', clear);
+
+    // ── Modal open/close ──
+    const modal = document.getElementById('submit-modal');
+    const form = document.getElementById('submit-form');
+    const formWrap = document.getElementById('submit-form-wrap');
+    const success = document.getElementById('submit-success');
+    function openModal() {
+      formWrap.hidden = false; success.hidden = true;
+      modal.hidden = false; document.body.style.overflow = 'hidden';
+      document.getElementById('f-title').focus();
+    }
+    function closeModal() { modal.hidden = true; document.body.style.overflow = ''; }
+    fab.addEventListener('click', openModal);
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('success-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+    // ── Tag chips (1–3) ──
+    const tagSel = document.getElementById('tag-select');
+    const chosenTags = new Set();
+    function addTagChip(tag, color, removable) {
+      const chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'sel-chip';
+      chip.style.setProperty('--chip-c', color);
+      chip.setAttribute('aria-pressed', 'false');
+      chip.innerHTML = `<span>${TAG_EMOJI[tag] || '•'}</span>${esc(tag)}` + (removable ? ' <span class="rm">✕</span>' : '');
+      chip.addEventListener('click', () => {
+        const on = chip.getAttribute('aria-pressed') === 'true';
+        if (removable && on) { chosenTags.delete(tag); chip.remove(); validate(); return; }
+        if (!on && chosenTags.size >= 3) return; // cap at 3
+        chip.setAttribute('aria-pressed', on ? 'false' : 'true');
+        if (on) chosenTags.delete(tag); else chosenTags.add(tag);
+        refreshTagCaps(); validate();
+      });
+      tagSel.appendChild(chip);
+      return chip;
+    }
+    TAG_ORDER.forEach(t => addTagChip(t, tagColor(t), false));
+    function refreshTagCaps() {
+      const full = chosenTags.size >= 3;
+      tagSel.querySelectorAll('.sel-chip').forEach(c => {
+        c.classList.toggle('chip-disabled', full && c.getAttribute('aria-pressed') !== 'true');
+      });
+    }
+    // add-your-own custom tag
+    const customInput = document.getElementById('custom-tag');
+    function addCustom() {
+      const t = customInput.value.trim();
+      if (!t || chosenTags.size >= 3 || chosenTags.has(t)) return;
+      const chip = addTagChip(t, tagColor(t), true);
+      chip.click(); // select it immediately
+      customInput.value = '';
+    }
+    document.getElementById('add-tag-btn').addEventListener('click', addCustom);
+    customInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
+
+    // ── Difficulty chips (multi) ──
+    const diffSel = document.getElementById('diff-select');
+    const chosenDiff = new Set();
+    DIFFICULTIES.forEach(d => {
+      const chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'sel-chip';
+      chip.style.setProperty('--chip-c', '#64748B');
+      chip.setAttribute('aria-pressed', 'false');
+      chip.textContent = d;
+      chip.addEventListener('click', () => {
+        const on = chip.getAttribute('aria-pressed') === 'true';
+        chip.setAttribute('aria-pressed', on ? 'false' : 'true');
+        if (on) chosenDiff.delete(d); else chosenDiff.add(d);
+        validate();
+      });
+      diffSel.appendChild(chip);
+    });
+
+    // ── Validation ──
+    const title = document.getElementById('f-title');
+    const desc = document.getElementById('f-desc');
+    const url = document.getElementById('f-url');
+    const urlNote = document.getElementById('url-note');
+    const submitBtn = document.getElementById('submit-btn');
+    const isDigital = () => [...chosenTags].some(t => DIGITAL_TAGS.includes(t));
+    const urlOk = () => { const v = url.value.trim(); return v ? /^https?:\/\/.+/i.test(v) : true; };
+    function validate() {
+      const digital = isDigital();
+      urlNote.style.color = (digital && !url.value.trim()) ? '#EF4444' : '';
+      const ok = title.value.trim() && desc.value.trim() &&
+                 chosenTags.size >= 1 && chosenDiff.size >= 1 &&
+                 urlOk() && !(digital && !url.value.trim());
+      submitBtn.disabled = !ok;
+    }
+    [title, desc, url].forEach(el => el.addEventListener('input', validate));
+
+    // ── Submit ──
+    function fileToB64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(',')[1]);
+        r.onerror = rej; r.readAsDataURL(file);
+      });
+    }
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = document.getElementById('form-error');
+      err.hidden = true;
+      if (!SUBMIT_URL) { err.textContent = 'Submissions aren’t set up yet — ask a staff member.'; err.hidden = false; return; }
+      submitBtn.disabled = true; submitBtn.textContent = 'Sending…';
+
+      const fd = new FormData();
+      fd.append('title', title.value.trim());
+      fd.append('description', desc.value.trim());
+      fd.append('url', url.value.trim());
+      fd.append('tags', [...chosenTags].join(', '));
+      fd.append('difficulty', [...chosenDiff].join(', '));
+      const file = document.getElementById('f-image').files[0];
+      const imgUrl = document.getElementById('f-image-url').value.trim();
+      if (file) { fd.append('imageData', await fileToB64(file)); fd.append('imageName', file.name); fd.append('imageType', file.type); }
+      else if (imgUrl) fd.append('imageUrl', imgUrl);
+
+      try {
+        const r = await fetch(SUBMIT_URL, { method: 'POST', body: fd });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || 'error');
+        formWrap.hidden = true; success.hidden = false;
+      } catch (e) {
+        // ponytail: cross-origin read of the Apps Script response can be blocked;
+        // retry fire-and-forget (no-cors) and treat as sent. Ceiling: can't confirm
+        // server-side failures — upgrade to a CORS-enabled JSONP/redirect handler if that matters.
+        try {
+          await fetch(SUBMIT_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+          formWrap.hidden = true; success.hidden = false;
+        } catch (e2) {
+          err.textContent = 'Couldn’t send — check your connection and try again.'; err.hidden = false;
+          submitBtn.disabled = false; submitBtn.textContent = 'Send for review';
+        }
+      }
+    });
   })();
 </script>
 
