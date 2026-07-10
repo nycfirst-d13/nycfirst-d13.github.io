@@ -435,6 +435,25 @@ async function _domVisualLines(shapeId, content, frameW, family, size, weight, l
   return result.length ? result : [''];
 }
 
+// Variable fonts (e.g. Geist) build a glyph from overlapping contours — stem +
+// crossbar + hook on an "f", etc. Fill-rule:nonzero hides the overlaps when the
+// glyph is filled (etch), but a stroke-only process (a cut) draws every internal
+// edge, so the crossbar shows as its own rectangle. Boolean-union each glyph's
+// contours into one clean silhouette so it reads right filled AND stroked.
+// resolveCrossings() merges the overlaps; reorient(true) keeps holes (d/o bowls)
+// as holes under nonzero. Degrades to the raw d if paper isn't loaded.
+function _uniteGlyph(d) {
+  if (typeof paper === 'undefined' || !d) return d;
+  if (!paper.project) paper.setup(new paper.Size(1, 1));
+  try {
+    const cp = new paper.CompoundPath(d);
+    const res = cp.resolveCrossings().reorient(true, true);
+    const out = res.pathData || d;
+    cp.remove(); if (res !== cp) res.remove();
+    return out;
+  } catch { return d; }
+}
+
 // Build the outline replacement (path or text-outline group) for one text shape.
 // Returns null for blank/empty text. Does not touch the store — caller commits.
 async function buildTextOutline(sh) {
@@ -595,7 +614,7 @@ async function buildTextOutline(sh) {
       id: uid('p'),
       type: 'path',
       name,
-      attrs: { d, fillRule: 'nonzero' },
+      attrs: { d: _uniteGlyph(d), fillRule: 'nonzero' },
       fill: sh.fill || '#0F1419',
       stroke: 'none',
       strokeWidth: 0,

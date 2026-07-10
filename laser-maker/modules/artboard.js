@@ -362,11 +362,16 @@ class Artboard {
         const combinedD = visiblePaths.map(c => c.attrs.d || '').join(' ');
         const firstChild = visiblePaths[0];
         const resolved = resolveAppearance(firstChild);
+        // Cut processes (mainCut/fold/finalCut) resolve to fill:none + a stroke color;
+        // etch/free keep fill. Honor the resolved stroke so a text outline switched to
+        // a cut renders as stroked letters instead of vanishing (fill none + stroke none).
         const visual = svgNS('path');
         setAttrs(visual, {
           d: combinedD,
           fill: resolved.fill ?? firstChild.fill ?? '#0F1419',
-          stroke: 'none',
+          stroke: resolved.stroke ?? 'none',
+          ...(resolved.stroke && resolved.stroke !== 'none'
+            ? { 'stroke-width': resolved.strokeWidth ?? 1 } : {}),
           'fill-rule': firstChild.attrs?.fillRule ?? 'nonzero',
         });
         g.appendChild(visual);

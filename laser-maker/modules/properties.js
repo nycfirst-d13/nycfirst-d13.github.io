@@ -546,6 +546,11 @@ function _explodeCompounds(arr, sel, pt, active, remap) {
     const sh = arr[i];
     const on = active || sel.has(sh.id);
     if (sh.type === 'group') {
+      // Skip text-outline groups: their glyph children are compound paths rendered
+      // as one combined <path> (see artboard.js). Exploding them into nested contour
+      // groups drops them out of that combined render — letters vanish. Stroking the
+      // compound glyph already draws every contour, so explosion buys nothing here.
+      if (sh.textOutline) continue;
       _explodeCompounds(sh.children, sel, pt, on, remap);
     } else if (on && sh.type === 'path' && !sh.rotation && !sh.attrs?.corners) {
       const subs = splitAbsSubpaths(sh.attrs?.d);
