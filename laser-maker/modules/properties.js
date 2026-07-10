@@ -552,7 +552,16 @@ function _explodeCompounds(arr, sel, pt, active, remap) {
       // compound glyph already draws every contour, so explosion buys nothing here.
       if (sh.textOutline) continue;
       _explodeCompounds(sh.children, sel, pt, on, remap);
-    } else if (on && sh.type === 'path' && !sh.rotation && !sh.attrs?.corners) {
+    } else if (on && sh.type === 'path' && !sh.rotation && !sh.attrs?.corners
+               && sh.attrs?.fillRule !== 'evenodd') {
+      // Skip evenodd compounds (traced image regions): their holes exist ONLY as
+      // the even-odd relationship between contours. Exploding into separate
+      // single-contour paths drops that relationship, so switching back to etch
+      // fills the holes solid black — a lossy, one-way transform. The cut still
+      // renders every contour via stroke (fill-rule is irrelevant to stroking),
+      // so keeping the compound loses nothing for the cut and preserves the
+      // etch round-trip. (Per-contour hole selectability was already declined —
+      // see the trace tradeoff note in CLAUDE.md.)
       const subs = splitAbsSubpaths(sh.attrs?.d);
       if (subs.length > 1) {
         const g = _contourGroup(sh, subs, pt);
