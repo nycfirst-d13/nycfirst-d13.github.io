@@ -187,6 +187,127 @@
     .card-hover-preview img { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
     /* only reveal preview when an image actually loaded */
     .card:hover .card-hover-preview:has(img[src]:not([src=""])) { opacity: 1; }
+
+    /* ── FLOATING "ADD YOUR OWN" BUTTON ──────────────────── */
+    .fab {
+      position: fixed; right: 28px; bottom: 28px; z-index: 200;
+      height: 64px; min-width: 64px; padding: 0; border: none; cursor: pointer;
+      border-radius: 999px; color: #fff; font-family: 'Work Sans', sans-serif;
+      /* conic gradient of all tag colors — set from JS to stay in sync */
+      background: conic-gradient(#8B5CF6, #6366F1, #F97316, #EF4444, #14B8A6, #EC4899, #10B981, #D946EF, #0EA5E9, #06B6D4, #F59E0B, #DB2777, #64748B, #8B5CF6);
+      box-shadow: 0 8px 26px rgba(30,42,56,0.28), 0 2px 6px rgba(0,0,0,0.18);
+      display: flex; align-items: center; justify-content: center; overflow: hidden;
+      transition: min-width 0.35s cubic-bezier(.2,.8,.2,1), transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .fab:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(30,42,56,0.34), 0 3px 8px rgba(0,0,0,0.2); }
+    .fab::before {
+      content: ''; position: absolute; inset: 3px; border-radius: 999px;
+      background: rgba(30,42,56,0.82); z-index: 0;
+    }
+    .fab-plus, .fab-label {
+      position: relative; z-index: 1; font-weight: 800; white-space: nowrap;
+      transition: opacity 0.2s ease;
+    }
+    .fab-plus { font-size: 34px; line-height: 1; }
+    .fab-label {
+      font-size: 16px; letter-spacing: 0.01em; opacity: 0;
+      width: 0; overflow: hidden; text-align: center;
+    }
+    .fab:hover, .fab:focus-visible { min-width: 190px; outline: none; }
+    .fab:hover .fab-plus, .fab:focus-visible .fab-plus { opacity: 0; width: 0; position: absolute; }
+    .fab:hover .fab-label, .fab:focus-visible .fab-label { opacity: 1; width: auto; padding: 0 22px; }
+
+    /* ── SUBMISSION MODAL ────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed; inset: 0; z-index: 300; background: rgba(15,23,42,0.55);
+      backdrop-filter: blur(3px); display: flex; align-items: flex-start; justify-content: center;
+      padding: 40px 16px; overflow-y: auto;
+    }
+    .modal-backdrop[hidden] { display: none; }
+    .modal {
+      background: var(--surface); border-radius: 22px; box-shadow: var(--shadow-md);
+      width: 100%; max-width: 560px; padding: 32px 30px 30px; position: relative;
+      animation: modal-in 0.25s cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes modal-in { from { opacity: 0; transform: translateY(16px) scale(0.98); } to { opacity: 1; transform: none; } }
+    .modal-close {
+      position: absolute; top: 16px; right: 16px; width: 34px; height: 34px;
+      border: none; background: #f1f5f9; color: var(--muted); border-radius: 999px;
+      font-size: 16px; cursor: pointer; line-height: 1; transition: background 0.15s, color 0.15s;
+    }
+    .modal-close:hover { background: #e2e8f0; color: var(--text); }
+    .modal h2 { font-size: 24px; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 6px; }
+    .modal-sub { font-size: 14px; color: var(--muted); line-height: 1.5; margin-bottom: 22px; }
+
+    #submit-form { display: flex; flex-direction: column; gap: 18px; }
+    #submit-form label, #submit-form fieldset {
+      display: flex; flex-direction: column; gap: 7px; border: none;
+      font-size: 13px; font-weight: 700; color: var(--text);
+    }
+    #submit-form legend { font-size: 13px; font-weight: 700; margin-bottom: 7px; padding: 0; }
+    #submit-form .opt, #submit-form .field-note { font-weight: 400; color: var(--muted); font-size: 12px; }
+    #submit-form input[type=text], #submit-form input[type=url], #submit-form textarea, #submit-form input:not([type]) {
+      font-family: inherit; font-size: 14px; font-weight: 400; color: var(--text);
+      border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; width: 100%;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    #submit-form textarea { min-height: 84px; resize: vertical; line-height: 1.5; }
+    #submit-form input:focus, #submit-form textarea:focus {
+      outline: none; border-color: #6366F1; box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+    }
+    #submit-form input[type=file] { border: 1px dashed var(--border); background: #f8fafc; padding: 10px; cursor: pointer; }
+
+    .chip-select { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sel-chip {
+      border: 1.5px solid var(--chip-c, var(--border)); background: var(--surface); cursor: pointer;
+      font-family: inherit; font-size: 13px; font-weight: 600; color: var(--chip-c, var(--muted));
+      padding: 6px 12px; border-radius: 999px; display: flex; align-items: center; gap: 6px;
+      transition: background 0.14s, color 0.14s; user-select: none;
+    }
+    .sel-chip[aria-pressed="true"] { background: var(--chip-c, var(--text)); color: #fff; }
+    .sel-chip.chip-disabled { opacity: 0.4; cursor: not-allowed; }
+    .sel-chip .rm { font-weight: 800; opacity: 0.7; }
+    .addown { display: flex; gap: 8px; margin-top: 10px; }
+    .addown input { flex: 1; }
+    .addown button {
+      font-family: inherit; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer;
+      border: none; border-radius: 12px; padding: 0 16px; background: #6366F1;
+    }
+    .addown button:hover { background: #4f46e5; }
+
+    .approval-note {
+      font-size: 12.5px; color: var(--muted); line-height: 1.5; font-weight: 400;
+      background: #f1f5f9; border-radius: 12px; padding: 11px 13px; border: 1px solid var(--border);
+    }
+    #submit-btn {
+      font-family: inherit; font-size: 15px; font-weight: 700; color: #fff; cursor: pointer;
+      border: none; border-radius: 12px; padding: 13px; margin-top: 2px;
+      background: linear-gradient(90deg, #6366F1, #8B5CF6); transition: opacity 0.15s, filter 0.15s;
+    }
+    #submit-btn:hover:not(:disabled) { filter: brightness(1.06); }
+    #submit-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .form-error { color: #EF4444; font-size: 13px; font-weight: 600; }
+
+    #submit-success { text-align: center; padding: 20px 6px 8px; }
+    .success-check {
+      width: 62px; height: 62px; border-radius: 999px; margin: 0 auto 18px;
+      background: #10B981; color: #fff; font-size: 34px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #submit-success h2 { font-size: 22px; }
+    #submit-success p { font-size: 14px; color: var(--muted); line-height: 1.55; margin: 8px auto 22px; max-width: 380px; }
+    #success-close {
+      font-family: inherit; font-size: 14px; font-weight: 700; color: #fff; cursor: pointer;
+      border: none; border-radius: 12px; padding: 11px 28px; background: #6366F1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .fab, .modal { transition: none; animation: none; }
+    }
+    @media (max-width: 480px) {
+      .fab { right: 16px; bottom: 16px; }
+      .modal { padding: 26px 20px 22px; }
+    }
   </style>
 </head>
 <body>
@@ -224,11 +345,79 @@
   <p id="status">Loading stations…</p>
 </main>
 
+<!-- Floating "add your own" launcher -->
+<button class="fab" id="fab" aria-label="Add your own station">
+  <span class="fab-plus" aria-hidden="true">+</span>
+  <span class="fab-label" id="fab-label" aria-hidden="true"></span>
+</button>
+
+<!-- Submission modal -->
+<div class="modal-backdrop" id="submit-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="submit-title">
+    <button class="modal-close" id="modal-close" aria-label="Close">✕</button>
+
+    <div id="submit-form-wrap">
+      <h2 id="submit-title">Add your own station</h2>
+      <p class="modal-sub">Found something fun? Suggest it! A staff member reviews every submission before it shows up on the site.</p>
+
+      <form id="submit-form" novalidate>
+        <label>Name of station *
+          <input type="text" name="title" id="f-title" required maxlength="80"
+                 placeholder="e.g. LEGO Spike Prime, Micro:bit, Scratch Jr.">
+        </label>
+
+        <label>Describe what you can do! *
+          <textarea name="description" id="f-desc" required maxlength="400"
+                    placeholder="e.g. Build and code LEGO robots right in your browser.  •  Make games, animations, and stories using drag-and-drop coding."></textarea>
+        </label>
+
+        <label>Link / URL
+          <input type="url" name="url" id="f-url" placeholder="https://…">
+          <span class="field-note" id="url-note">Required if it's a website or app.</span>
+        </label>
+
+        <fieldset>
+          <legend>Choose up to 3 tags *</legend>
+          <div class="chip-select" id="tag-select"></div>
+          <div class="addown">
+            <input type="text" id="custom-tag" maxlength="30" placeholder="+ add your own tag">
+            <button type="button" id="add-tag-btn">Add</button>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Difficulty * <span class="opt">(pick one or more)</span></legend>
+          <div class="chip-select" id="diff-select"></div>
+        </fieldset>
+
+        <label>Screenshot or picture <span class="opt">(optional — helps show a preview)</span>
+          <input type="file" name="image" id="f-image" accept="image/*">
+          <input type="url" id="f-image-url" placeholder="…or paste an image URL">
+        </label>
+
+        <p class="approval-note">📋 New stations are added as <strong>not active</strong> and stay hidden until a staff member approves them. They'll get an email about your submission.</p>
+
+        <button type="submit" id="submit-btn" disabled>Send for review</button>
+        <p class="form-error" id="form-error" hidden></p>
+      </form>
+    </div>
+
+    <div id="submit-success" hidden>
+      <div class="success-check">✓</div>
+      <h2>Thanks!</h2>
+      <p>Your station was sent for review. A staff member will approve it before it appears on the site.</p>
+      <button type="button" id="success-close">Done</button>
+    </div>
+  </div>
+</div>
+
 <script>
   // ── CONFIG ──────────────────────────────────────────────
   const SHEET_ID = '1xclY-0sWt70mZ_jQxMDWOr8XtwgaZivqhDlD2_hnBs0';
   const GVIZ_CSV = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
   const FALLBACK_CSV = 'stations.csv';
+  // Apps Script Web App /exec URL — paste after deploying submit.gs (see submit.gs).
+  const SUBMIT_URL = '';
 
   // Tag display order + color + emoji. Unknown tags fall back to a hashed color.
   const TAG_ORDER = ['Coding','Game Design','Physical Computing','Electronics','Robotics','2D Design','3D Design','Art','Physics','Science','Math','Music','Needs Supplies*'];
@@ -515,6 +704,186 @@
       if (scrollTick) return; scrollTick = true;
       scrambleAll(); setTimeout(() => { scrollTick = false; }, 160);
     }, { passive: true });
+  })();
+
+  // ── FLOATING BUTTON + SUBMISSION FORM ────────────────────
+  (function() {
+    const REDUCE = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const SYM = ['#',')','{','•','*','[','<','!','-','}','(',']','>','=','/','+',';',':','~','?'];
+    const rnd = () => SYM[Math.floor(Math.random() * SYM.length)];
+    // Tags that make a URL required (digital / website activities)
+    const DIGITAL_TAGS = ['Coding', 'Game Design'];
+    const DIFFICULTIES = ['Beginner', 'Intermediate', 'Advanced'];
+
+    // Scramble-reveal "add your own" left→right, then lock each letter.
+    function scrambleTo(el, text, done) {
+      if (el._raf) cancelAnimationFrame(el._raf);
+      if (REDUCE) { el.textContent = text; if (done) done(); return; }
+      const chars = [...text];
+      const ends = chars.map((_, i) => i * 2 + 8 + Math.floor(Math.random() * 8));
+      let frame = 0;
+      (function tick() {
+        let out = '', locked = 0;
+        chars.forEach((ch, i) => {
+          if (frame >= ends[i]) { out += ch; locked++; }
+          else if (frame >= i * 2) out += (ch === ' ' ? ' ' : rnd());
+        });
+        el.textContent = out;
+        if (locked === chars.length) { if (done) done(); return; }
+        frame++; el._raf = requestAnimationFrame(tick);
+      })();
+    }
+
+    // Sync the FAB gradient with the live tag palette.
+    const colors = Object.values(TAG_COLOR);
+    document.getElementById('fab').style.background =
+      `conic-gradient(${colors.concat(colors[0]).join(',')})`;
+
+    // Hover / focus → scramble into "add your own"; leave → clear.
+    const fab = document.getElementById('fab'), fabLabel = document.getElementById('fab-label');
+    const reveal = () => scrambleTo(fabLabel, 'add your own');
+    const clear = () => { if (fabLabel._raf) cancelAnimationFrame(fabLabel._raf); fabLabel.textContent = ''; };
+    fab.addEventListener('mouseenter', reveal);
+    fab.addEventListener('focus', reveal);
+    fab.addEventListener('mouseleave', clear);
+    fab.addEventListener('blur', clear);
+
+    // ── Modal open/close ──
+    const modal = document.getElementById('submit-modal');
+    const form = document.getElementById('submit-form');
+    const formWrap = document.getElementById('submit-form-wrap');
+    const success = document.getElementById('submit-success');
+    function openModal() {
+      formWrap.hidden = false; success.hidden = true;
+      modal.hidden = false; document.body.style.overflow = 'hidden';
+      document.getElementById('f-title').focus();
+    }
+    function closeModal() { modal.hidden = true; document.body.style.overflow = ''; }
+    fab.addEventListener('click', openModal);
+    document.getElementById('modal-close').addEventListener('click', closeModal);
+    document.getElementById('success-close').addEventListener('click', closeModal);
+    modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+    // ── Tag chips (1–3) ──
+    const tagSel = document.getElementById('tag-select');
+    const chosenTags = new Set();
+    function addTagChip(tag, color, removable) {
+      const chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'sel-chip';
+      chip.style.setProperty('--chip-c', color);
+      chip.setAttribute('aria-pressed', 'false');
+      chip.innerHTML = `<span>${TAG_EMOJI[tag] || '•'}</span>${esc(tag)}` + (removable ? ' <span class="rm">✕</span>' : '');
+      chip.addEventListener('click', () => {
+        const on = chip.getAttribute('aria-pressed') === 'true';
+        if (removable && on) { chosenTags.delete(tag); chip.remove(); validate(); return; }
+        if (!on && chosenTags.size >= 3) return; // cap at 3
+        chip.setAttribute('aria-pressed', on ? 'false' : 'true');
+        if (on) chosenTags.delete(tag); else chosenTags.add(tag);
+        refreshTagCaps(); validate();
+      });
+      tagSel.appendChild(chip);
+      return chip;
+    }
+    TAG_ORDER.forEach(t => addTagChip(t, tagColor(t), false));
+    function refreshTagCaps() {
+      const full = chosenTags.size >= 3;
+      tagSel.querySelectorAll('.sel-chip').forEach(c => {
+        c.classList.toggle('chip-disabled', full && c.getAttribute('aria-pressed') !== 'true');
+      });
+    }
+    // add-your-own custom tag
+    const customInput = document.getElementById('custom-tag');
+    function addCustom() {
+      const t = customInput.value.trim();
+      if (!t || chosenTags.size >= 3 || chosenTags.has(t)) return;
+      const chip = addTagChip(t, tagColor(t), true);
+      chip.click(); // select it immediately
+      customInput.value = '';
+    }
+    document.getElementById('add-tag-btn').addEventListener('click', addCustom);
+    customInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addCustom(); } });
+
+    // ── Difficulty chips (multi) ──
+    const diffSel = document.getElementById('diff-select');
+    const chosenDiff = new Set();
+    DIFFICULTIES.forEach(d => {
+      const chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'sel-chip';
+      chip.style.setProperty('--chip-c', '#64748B');
+      chip.setAttribute('aria-pressed', 'false');
+      chip.textContent = d;
+      chip.addEventListener('click', () => {
+        const on = chip.getAttribute('aria-pressed') === 'true';
+        chip.setAttribute('aria-pressed', on ? 'false' : 'true');
+        if (on) chosenDiff.delete(d); else chosenDiff.add(d);
+        validate();
+      });
+      diffSel.appendChild(chip);
+    });
+
+    // ── Validation ──
+    const title = document.getElementById('f-title');
+    const desc = document.getElementById('f-desc');
+    const url = document.getElementById('f-url');
+    const urlNote = document.getElementById('url-note');
+    const submitBtn = document.getElementById('submit-btn');
+    const isDigital = () => [...chosenTags].some(t => DIGITAL_TAGS.includes(t));
+    const urlOk = () => { const v = url.value.trim(); return v ? /^https?:\/\/.+/i.test(v) : true; };
+    function validate() {
+      const digital = isDigital();
+      urlNote.style.color = (digital && !url.value.trim()) ? '#EF4444' : '';
+      const ok = title.value.trim() && desc.value.trim() &&
+                 chosenTags.size >= 1 && chosenDiff.size >= 1 &&
+                 urlOk() && !(digital && !url.value.trim());
+      submitBtn.disabled = !ok;
+    }
+    [title, desc, url].forEach(el => el.addEventListener('input', validate));
+
+    // ── Submit ──
+    function fileToB64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(',')[1]);
+        r.onerror = rej; r.readAsDataURL(file);
+      });
+    }
+    form.addEventListener('submit', async e => {
+      e.preventDefault();
+      const err = document.getElementById('form-error');
+      err.hidden = true;
+      if (!SUBMIT_URL) { err.textContent = 'Submissions aren’t set up yet — ask a staff member.'; err.hidden = false; return; }
+      submitBtn.disabled = true; submitBtn.textContent = 'Sending…';
+
+      const fd = new FormData();
+      fd.append('title', title.value.trim());
+      fd.append('description', desc.value.trim());
+      fd.append('url', url.value.trim());
+      fd.append('tags', [...chosenTags].join(', '));
+      fd.append('difficulty', [...chosenDiff].join(', '));
+      const file = document.getElementById('f-image').files[0];
+      const imgUrl = document.getElementById('f-image-url').value.trim();
+      if (file) { fd.append('imageData', await fileToB64(file)); fd.append('imageName', file.name); fd.append('imageType', file.type); }
+      else if (imgUrl) fd.append('imageUrl', imgUrl);
+
+      try {
+        const r = await fetch(SUBMIT_URL, { method: 'POST', body: fd });
+        const j = await r.json();
+        if (!j.ok) throw new Error(j.error || 'error');
+        formWrap.hidden = true; success.hidden = false;
+      } catch (e) {
+        // ponytail: cross-origin read of the Apps Script response can be blocked;
+        // retry fire-and-forget (no-cors) and treat as sent. Ceiling: can't confirm
+        // server-side failures — upgrade to a CORS-enabled JSONP/redirect handler if that matters.
+        try {
+          await fetch(SUBMIT_URL, { method: 'POST', body: fd, mode: 'no-cors' });
+          formWrap.hidden = true; success.hidden = false;
+        } catch (e2) {
+          err.textContent = 'Couldn’t send — check your connection and try again.'; err.hidden = false;
+          submitBtn.disabled = false; submitBtn.textContent = 'Send for review';
+        }
+      }
+    });
   })();
 </script>
 
