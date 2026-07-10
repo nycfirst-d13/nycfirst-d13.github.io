@@ -218,8 +218,8 @@
     /* scrollable tag list with a soft fade at top & bottom edges */
     .rail-scroll {
       flex: 1; min-height: 0; overflow-y: auto; padding: 4px 2px 76px;
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
-              mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 14px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 14px), transparent 100%);
+              mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 14px), transparent 100%);
     }
     .rail-scroll::-webkit-scrollbar { width: 0; }
     .rail-chips { display: flex; flex-direction: column; gap: 8px; }
