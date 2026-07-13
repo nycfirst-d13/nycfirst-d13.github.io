@@ -84,6 +84,27 @@ export function resolveAppearance(sh) {
   };
 }
 
+// Reverse lookup: detect process type from a shape's appearance.
+// Used on SVG import when no explicit data-lm-process attr is present (Free
+// exports or third-party files). Deliberately strict so a decorative shape isn't
+// misclassified: a cut color only counts as a cut when it's a hairline stroke
+// (≤1 unit), matching how locked processes always export. A solid black fill maps
+// to etch. Everything else stays Free.
+const PROCESS_STROKE_COLORS = {
+  '#0000FF': 'mainCut',
+  '#FF0000': 'fold',
+  '#00FF00': 'finalCut',
+};
+
+export function detectProcess({ fill, stroke, strokeWidth } = {}) {
+  const sw = strokeWidth ?? 1;
+  const s = (stroke || '').toUpperCase();
+  // ponytail: 1.01 epsilon absorbs float drift; "≤1pt" per the color system.
+  if (PROCESS_STROKE_COLORS[s] && sw <= 1.01) return PROCESS_STROKE_COLORS[s];
+  if ((fill || '').toUpperCase() === '#000000') return 'etch';
+  return 'free';
+}
+
 // Normalize stored fill/stroke values when switching to a new process type.
 // Ensures etch shapes always store '#000000' or 'none', never arbitrary colors.
 export function normalizeForProcess(sh, pt) {

@@ -175,7 +175,15 @@ Singleton bar (`progress.js`) anchored bottom-center. API: `show/update/crawl/se
 
 ### SVG Import (editable groups)
 
-SVGs import as editable groups (`processType: 'free'`, original colors preserved) via `parseSVGToShapes()` in `expand-svg.js` (shared with Expand to Paths). Unsupported elements trigger "Import raw" toast action → fallback to `rawsvg`. See [`docs/svg-import.md`](docs/svg-import.md) for pipeline, CSS class resolver, path tokenizer, and rendering seam notes.
+SVGs import as editable groups via `parseSVGToShapes()` in `expand-svg.js` (shared with Expand to Paths). Unsupported elements trigger "Import raw" toast action → fallback to `rawsvg`. See [`docs/svg-import.md`](docs/svg-import.md) for pipeline, CSS class resolver, path tokenizer, and rendering seam notes.
+
+**Raster `<image>` round-trip.** `walk()` handles `<image>` — recovers `type:'image'` shapes from base64 exports. Position/size/rotation come from decomposing the accumulated matrix: scale from column norms, rotation from `atan2`, x/y/w/h kept **unrotated** (export writes rotation as `rotate(θ,cx,cy)` about center, which render re-applies about center — exact for our exports, approximate for skewed foreign matrices). Etch caveat: export writes the baked grayscale `etchHref`, so a re-imported etch image is baked pixels, not a re-tunable etch (params/original not yet round-tripped).
+
+**Process-type detection.** Imported shapes get their `processType` restored, not forced to `free`:
+- **Primary — `data-lm-process` attr.** `export.js` writes `data-lm-process="<processType>"` on every leaf element (via `dp` string). `walk()` reads it back verbatim. Illustrator may strip it on re-export, hence the fallback.
+- **Fallback — `detectProcess()` in `process-registry.js`.** For Free exports / third-party SVGs with no attr, maps appearance → process: exact hairline (`≤1` stroke width) cut colors (`#0000FF`→mainCut, `#FF0000`→fold, `#00FF00`→finalCut), solid black **fill** → etch, else free. Deliberately strict (color + hairline) so decorative shapes aren't misclassified. Rasters skip color detection (fill/stroke are `none`) — attr-only.
+
+Both `parseSVGToShapes` consumers (import-svg builder + `expandSVG`) apply `p._process || 'free'`.
 
 ### Layout
 

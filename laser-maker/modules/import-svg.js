@@ -93,7 +93,7 @@ function importSVG(svgText, filename, dropPt) {
     const newShapes = extracted.map(p => {
       const base = {
         fill: p.fill, stroke: p.stroke, strokeWidth: p.strokeWidth,
-        processType: 'free', visible: true, locked: false,
+        processType: p._process || 'free', visible: true, locked: false,
         rotation: p.rotation || 0,
       };
       if (p._shapeType === 'text') {

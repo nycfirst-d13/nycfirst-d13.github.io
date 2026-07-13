@@ -4,6 +4,7 @@
 import { store } from './state.js';
 import { uid } from './utils.js';
 import { showToast } from './toast.js';
+import { detectProcess } from './process-registry.js';
 
 // ---- Matrix math: [a, b, c, d, e, f]
 // Transform: x' = a*x + c*y + e,  y' = b*x + d*y + f
@@ -446,6 +447,8 @@ function walk(nodes, m, inh, results, skipped) {
 
     const elMat = parseTfm(el.getAttribute('transform') || '');
     const curMat = mulMat(m, elMat);
+    // Primary process channel written by our own export; null for foreign SVGs.
+    const dataProc = el.getAttribute('data-lm-process');
 
     const fillVal   = getAttr(el, 'fill');
     const strokeVal = getAttr(el, 'stroke');
@@ -465,7 +468,10 @@ function walk(nodes, m, inh, results, skipped) {
       walk(el.childNodes, childMat, childInh, results, skipped);
     } else if (tag === 'text') {
       const textShape = parseTextElement(el, curMat, childInh);
-      if (textShape) results.push(textShape);
+      if (textShape) {
+        textShape._process = dataProc || detectProcess(textShape);
+        results.push(textShape);
+      }
     } else if (tag === 'image') {
       // Round-trip our own base64 <image> exports back to editable image shapes.
       const href = el.getAttribute('href') || el.getAttribute('xlink:href');
@@ -484,6 +490,7 @@ function walk(nodes, m, inh, results, skipped) {
       const [ccx, ccy] = ptMat(curMat, x + w / 2, y + h / 2);
       results.push({
         _shapeType: 'image',
+        _process: dataProc || 'free', // color detection is meaningless for rasters
         attrs: { x: ccx - w2 / 2, y: ccy - h2 / 2, w: w2, h: h2, href },
         fill: 'none', stroke: 'none', strokeWidth: 1,
         rotation: rot, visible: true, locked: false,
@@ -493,10 +500,13 @@ function walk(nodes, m, inh, results, skipped) {
       if (!d) continue;
       const td = applyMatrixToD(d, curMat);
       if (!td) continue;
+      const rFill = resolveColor(fill);
+      const rStroke = resolveColor(stroke);
       results.push({
         _shapeType: 'path',
-        fill: resolveColor(fill),
-        stroke: resolveColor(stroke),
+        _process: dataProc || detectProcess({ fill: rFill, stroke: rStroke, strokeWidth: sw }),
+        fill: rFill,
+        stroke: rStroke,
         strokeWidth: sw,
         d: td,
       });
@@ -556,10 +566,14 @@ export function expandSVG(id) {
     let pathCount = 0, textCount = 0;
     const newShapes = extracted.map(p => {
       const base = { fill: p.fill, stroke: p.stroke, strokeWidth: p.strokeWidth,
-                     visible: true, locked: false, rotation: 0 };
+                     processType: p._process || 'free',
+                     visible: true, locked: false, rotation: p.rotation || 0 };
       if (p._shapeType === 'text') {
         return { id: uid('xt'), type: 'text', name: p.name || `Text ${++textCount}`,
                  attrs: p.attrs, ...base };
+      }
+      if (p._shapeType === 'image') {
+        return { id: uid('img'), type: 'image', name: 'Image', attrs: p.attrs, ...base };
       }
       return { id: uid('xp'), type: 'path', name: `Path ${++pathCount}`,
                attrs: { d: p.d }, ...base };

@@ -129,7 +129,10 @@ function shapeToSVG(sh, pathMap = new Map(), defs = []) {
   const stroke  = resolved.stroke;
   const sw      = resolved.strokeWidth;
   const linecap = resolved.strokeLinecap ?? 'round';
-  style = ` fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="${linecap}"`;
+  // Primary process channel: an explicit attr the importer reads back verbatim.
+  // Illustrator may strip it on re-export, so import also color-detects as fallback.
+  const dp = sh.processType ? ` data-lm-process="${sh.processType}"` : '';
+  style = ` fill="${fill}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="${linecap}"${dp}`;
   if (resolved.strokeDasharray) {
     style += ` stroke-dasharray="${resolved.strokeDasharray}"`;
     if (resolved.strokeDashoffset) style += ` stroke-dashoffset="${resolved.strokeDashoffset}"`;
@@ -198,13 +201,13 @@ function shapeToSVG(sh, pathMap = new Map(), defs = []) {
       // Embed raster as base64 data URL — survives the round-trip into Illustrator.
       // Etch exports the baked grayscale version.
       const href = (sh.processType === 'etch' && a.etchHref) ? a.etchHref : a.href;
-      return `<image x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" width="${a.w.toFixed(3)}" height="${a.h.toFixed(3)}" preserveAspectRatio="none" xlink:href="${href}" href="${href}"${transform}/>`;
+      return `<image x="${a.x.toFixed(3)}" y="${a.y.toFixed(3)}" width="${a.w.toFixed(3)}" height="${a.h.toFixed(3)}" preserveAspectRatio="none" xlink:href="${href}" href="${href}"${dp}${transform}/>`;
     }
     case 'text': {
       if (pathMap.has(sh.id)) {
         const d = pathMap.get(sh.id);
         const fillStr = (!fill || fill === 'none') ? '#0F1419' : fill;
-        return `<path d="${d}" fill="${fillStr}" stroke="${stroke === 'none' ? 'none' : stroke}" stroke-width="${sw}" fill-rule="nonzero"${transform}/>`;
+        return `<path d="${d}" fill="${fillStr}" stroke="${stroke === 'none' ? 'none' : stroke}" stroke-width="${sw}" fill-rule="nonzero"${dp}${transform}/>`;
       }
       const anchorMap = { left: 'start', center: 'middle', right: 'end' };
       const al     = a.align || 'left';
@@ -216,7 +219,7 @@ function shapeToSVG(sh, pathMap = new Map(), defs = []) {
       const fillStr = (!fill || fill === 'none') ? '#0F1419' : fill;
       const baseStyle = ` font-family="${ff}" font-size="${sz}" font-weight="${fw}" ` +
         `text-anchor="${anchor}" dominant-baseline="text-before-edge" ` +
-        `fill="${fillStr}" stroke="${stroke === 'none' ? 'none' : stroke}" stroke-width="${sw}"${transform}`;
+        `fill="${fillStr}" stroke="${stroke === 'none' ? 'none' : stroke}" stroke-width="${sw}"${dp}${transform}`;
 
       if (a.width != null) {
         let textX = a.x;
