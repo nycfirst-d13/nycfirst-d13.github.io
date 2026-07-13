@@ -102,7 +102,7 @@ function importSVG(svgText, filename, dropPt) {
       if (p._shapeType === 'image') {
         return { id: uid('img'), type: 'image', name: 'Image', attrs: p.attrs, ...base };
       }
-      return { id: uid('xp'), type: 'path', name: `Path ${++pathCount}`, attrs: { d: p.d }, ...base };
+      return { id: uid('xp'), type: 'path', name: `Path ${++pathCount}`, attrs: { d: p.d, ...(p.fillRule ? { fillRule: p.fillRule } : {}) }, ...base };
     });
 
     const shape = newShapes.length === 1

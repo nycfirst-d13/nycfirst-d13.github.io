@@ -502,6 +502,9 @@ function walk(nodes, m, inh, results, skipped) {
       if (!td) continue;
       const rFill = resolveColor(fill);
       const rStroke = resolveColor(stroke);
+      // Preserve even-odd so traced-image holes stay see-through cutouts on
+      // re-import; without it a compound d renders/cuts as solid (black-on-black).
+      const fillRule = getAttr(el, 'fill-rule');
       results.push({
         _shapeType: 'path',
         _process: dataProc || detectProcess({ fill: rFill, stroke: rStroke, strokeWidth: sw }),
@@ -509,6 +512,7 @@ function walk(nodes, m, inh, results, skipped) {
         stroke: rStroke,
         strokeWidth: sw,
         d: td,
+        fillRule: fillRule === 'evenodd' ? 'evenodd' : undefined,
       });
     }
   }
@@ -576,7 +580,7 @@ export function expandSVG(id) {
         return { id: uid('img'), type: 'image', name: 'Image', attrs: p.attrs, ...base };
       }
       return { id: uid('xp'), type: 'path', name: `Path ${++pathCount}`,
-               attrs: { d: p.d }, ...base };
+               attrs: { d: p.d, ...(p.fillRule ? { fillRule: p.fillRule } : {}) }, ...base };
     });
 
     const replacement = newShapes.length === 1
