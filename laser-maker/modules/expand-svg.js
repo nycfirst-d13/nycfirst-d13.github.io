@@ -466,6 +466,28 @@ function walk(nodes, m, inh, results, skipped) {
     } else if (tag === 'text') {
       const textShape = parseTextElement(el, curMat, childInh);
       if (textShape) results.push(textShape);
+    } else if (tag === 'image') {
+      // Round-trip our own base64 <image> exports back to editable image shapes.
+      const href = el.getAttribute('href') || el.getAttribute('xlink:href');
+      const w = +(el.getAttribute('width') || 0), h = +(el.getAttribute('height') || 0);
+      if (!href || !w || !h) continue;
+      const x = +el.getAttribute('x') || 0, y = +el.getAttribute('y') || 0;
+      // Decompose curMat: scale from column norms, rotation from atan2, and keep
+      // x/y/w/h UNROTATED — our export applies rotation as rotate(θ, cx, cy) about
+      // the shape center, which the render re-applies about center too. The center
+      // is the rotation's fixed point, so transforming it recovers the true center.
+      // ponytail: approximate for skewed matrices from foreign SVGs; exact for ours.
+      const sx = Math.hypot(curMat[0], curMat[1]) || 1;
+      const sy = Math.hypot(curMat[2], curMat[3]) || 1;
+      const rot = Math.atan2(curMat[1], curMat[0]) * 180 / Math.PI;
+      const w2 = w * sx, h2 = h * sy;
+      const [ccx, ccy] = ptMat(curMat, x + w / 2, y + h / 2);
+      results.push({
+        _shapeType: 'image',
+        attrs: { x: ccx - w2 / 2, y: ccy - h2 / 2, w: w2, h: h2, href },
+        fill: 'none', stroke: 'none', strokeWidth: 1,
+        rotation: rot, visible: true, locked: false,
+      });
     } else if (SHAPE_TAGS.has(tag)) {
       const d = elementToD(el);
       if (!d) continue;

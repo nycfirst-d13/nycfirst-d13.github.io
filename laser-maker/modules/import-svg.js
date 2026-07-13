@@ -93,10 +93,14 @@ function importSVG(svgText, filename, dropPt) {
     const newShapes = extracted.map(p => {
       const base = {
         fill: p.fill, stroke: p.stroke, strokeWidth: p.strokeWidth,
-        processType: 'free', visible: true, locked: false, rotation: 0,
+        processType: 'free', visible: true, locked: false,
+        rotation: p.rotation || 0,
       };
       if (p._shapeType === 'text') {
         return { id: uid('xt'), type: 'text', name: `Text ${++textCount}`, attrs: p.attrs, ...base };
+      }
+      if (p._shapeType === 'image') {
+        return { id: uid('img'), type: 'image', name: 'Image', attrs: p.attrs, ...base };
       }
       return { id: uid('xp'), type: 'path', name: `Path ${++pathCount}`, attrs: { d: p.d }, ...base };
     });
