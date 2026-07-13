@@ -223,13 +223,19 @@ function ensurePaper() {
 
 // Group traced subpaths into filled regions. ImageTracer flattens all dark
 // pixels into one compound path; naively splitting on M makes each contour a
-// solid shape, so holes (the white interior of line art) fill black. Instead,
-// nest subpaths by containment: each outermost contour + its immediate holes
-// becomes ONE selectable shape rendered even-odd, so holes stay open. A hole's
-// own island nests recursively as its own region.
-// ponytail: containment is bbox-only, not true point-in-polygon — good enough
-// for cleanly-nested line art; may misgroup shapes whose bboxes overlap but
-// don't actually contain each other. Upgrade to path.contains() if that bites.
+// solid shape, so holes (the white interior of line art) fill black. Instead we
+// gather each connected nest of contours (an outer shape + everything inside it,
+// at any depth) into ONE selectable compound rendered even-odd. Even-odd fills a
+// point iff it sits inside an ODD number of contours, so holes, islands-in-holes,
+// and holes-in-islands all resolve correctly by crossing count alone — no need to
+// know which contour is whose parent.
+//
+// ponytail: containment is bbox-only, not true point-in-polygon. That only ever
+// OVER-merges (a bbox can contain a shape it doesn't geometrically enclose, but a
+// real container's bbox always contains the child's) — and over-merging is safe
+// under even-odd: disjoint contours in one compound each fill independently. The
+// only cost is coarser selection grouping. Upgrade to path.contains() if you need
+// tighter per-shape selection, not for correctness.
 function subpathsToRegions(subs) {
   if (!subs.length) return [];
   if (!ensurePaper()) return subs;   // no paper → fall back to raw subpaths
@@ -239,8 +245,9 @@ function subpathsToRegions(subs) {
     p.remove();
     return it;
   }).filter(x => x.area > 0);
+  if (!items.length) return [];
 
-  // parent[i] = smallest-area region strictly containing region i (or -1).
+  // parent[i] = smallest-area region whose bbox contains region i (or -1).
   const parent = items.map((it, i) => {
     let best = -1, bestArea = Infinity;
     items.forEach((o, j) => {
@@ -250,22 +257,17 @@ function subpathsToRegions(subs) {
     });
     return best;
   });
-  const depth = items.map((_, i) => {
-    let d = 0, k = parent[i];
-    while (k >= 0) { d++; k = parent[k]; }
-    return d;
-  });
 
-  // Even depth = a filled region → its own shape; its direct children (odd
-  // depth) are holes appended to the same d and painted out via even-odd.
-  const regions = [];
-  items.forEach((it, i) => {
-    if (depth[i] % 2 !== 0) return;
-    let d = it.d;
-    items.forEach((o, j) => { if (parent[j] === i) d += ' ' + o.d; });
-    regions.push(d);
+  // Walk each contour to its top-level ancestor; all contours sharing a root are
+  // one connected nest → one even-odd compound covering every depth beneath it.
+  const groups = new Map();
+  items.forEach((_, i) => {
+    let root = i;
+    while (parent[root] >= 0) root = parent[root];
+    if (!groups.has(root)) groups.set(root, []);
+    groups.get(root).push(items[i].d);
   });
-  return regions;
+  return [...groups.values()].map(ds => ds.join(' '));
 }
 
 // Trace works on any single image (any process) — the two-color trace binarizes
