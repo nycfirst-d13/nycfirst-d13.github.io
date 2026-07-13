@@ -2111,7 +2111,9 @@ function _findNearestPathSegment(sh, raw) {
 // =============== Geometry helpers ==============================
 function snapshotGeom(sh) {
   if (sh.type === 'group') {
-    return { type: 'group', rotation: sh.rotation || 0, clipRect: sh.clipRect ? { ...sh.clipRect } : null, children: sh.children.map(c => snapshotGeom(c)) };
+    const g = { type: 'group', rotation: sh.rotation || 0, clipRect: sh.clipRect ? { ...sh.clipRect } : null, children: sh.children.map(c => snapshotGeom(c)) };
+    if (sh._bbox) g._bbox = { ...sh._bbox };
+    return g;
   }
   const s = JSON.parse(JSON.stringify({ type: sh.type, attrs: sh.attrs, rotation: sh.rotation }));
   if (sh._bbox) s._bbox = { ...sh._bbox };
@@ -2275,14 +2277,21 @@ function setGeomFromBBox(sh, snap, nb) {
       break;
     }
     case 'group': {
-      // Scale children proportionally using their current bboxes relative to group bbox
-      const ob = sh._bbox || { x: 0, y: 0, w: 1, h: 1 };
+      // Scale children from the drag-start SNAPSHOT, not live state. Reading
+      // sh._bbox / live child bboxes here re-measured geometry the previous
+      // pointermove already scaled, so the scale compounded frame-to-frame
+      // (nested groups grew instead of shrank / diverged). snap is recursive
+      // (see snapshotGeom) and carries each level's original _bbox, mirroring
+      // the stable top-level group branch in _doResize.
+      const ob = snap._bbox || sh._bbox || { x: 0, y: 0, w: 1, h: 1 };
       const gsx = ob.w > 0 ? nb.w / ob.w : 1;
       const gsy = ob.h > 0 ? nb.h / ob.h : 1;
-      for (const child of sh.children) {
-        const cb = artboard.getShapeBBox(child);
-        const childSnap = snapshotGeom(child);
-        setGeomFromBBox(child, childSnap, {
+      for (let i = 0; i < sh.children.length; i++) {
+        const child = sh.children[i];
+        const csnap = snap.children && snap.children[i];
+        const cb = csnap && csnap._bbox;
+        if (!csnap || !cb) continue;
+        setGeomFromBBox(child, csnap, {
           x: nb.x + (cb.x - ob.x) * gsx,
           y: nb.y + (cb.y - ob.y) * gsy,
           w: Math.max(0.0001, cb.w * gsx),
