@@ -2171,7 +2171,22 @@ function translatePathD(d, dx, dy) {
     if (cmd === 'Z' || cmd === 'z') return cmd;
     // For each command, certain coordinate pairs need translation. For absolute, every (x,y) pair shifts.
     let out = cmd;
-    if (cmd === 'H' || cmd === 'h') {
+    if (cmd === 'A' || cmd === 'a') {
+      // Arc args are groups of 7: rx ry x-rot large-flag sweep-flag x y — NOT
+      // coordinate pairs. Only the endpoint (x,y) translates (absolute); radii,
+      // rotation, and flags are untouched. Emit flags/rotation as-is (not
+      // .toFixed) so a "1" flag never becomes "1.000" and breaks the SVG parser.
+      // ponytail: this is the same fix expand-svg.js applyMatrixToD already does
+      // via a matrix — dedup into a shared transformPathD if a 3rd copy appears.
+      const parts = [];
+      for (let i = 0; i + 6 < nums.length; i += 7) {
+        const [rx, ry, rot, la, sw] = nums.slice(i, i + 5);
+        const ex = isAbs ? nums[i + 5] + dx : nums[i + 5];
+        const ey = isAbs ? nums[i + 6] + dy : nums[i + 6];
+        parts.push(`${rx} ${ry} ${rot} ${la} ${sw} ${ex.toFixed(3)} ${ey.toFixed(3)}`);
+      }
+      out += ' ' + parts.join(' ');
+    } else if (cmd === 'H' || cmd === 'h') {
       const offset = isAbs ? dx : 0;
       out += ' ' + nums.map(n => (n + offset).toFixed(3)).join(' ');
     } else if (cmd === 'V' || cmd === 'v') {

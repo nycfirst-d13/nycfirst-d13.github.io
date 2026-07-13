@@ -144,6 +144,23 @@ export function scalePathD(d, ob, nb) {
     if (cmd === 'Z' || cmd === 'z') return cmd;
     const nums = args.trim().split(/[\s,]+/).filter(Boolean).map(Number);
     const isAbs = cmd === cmd.toUpperCase();
+    if (cmd === 'A' || cmd === 'a') {
+      // Arc args are groups of 7: rx ry x-rot large-flag sweep-flag x y — NOT
+      // coordinate pairs. Scale radii by sx/sy, map the endpoint, and leave
+      // rotation + both flags alone (emitted raw so a flag never becomes a
+      // multi-digit token that breaks the SVG path parser → collapses to a line).
+      // ponytail: mirror of expand-svg.js applyMatrixToD; dedup via a shared
+      // transformPathD if a third copy ever shows up. Rotation stays approximate
+      // under non-uniform scale, fine for the r=0-rotation shapes this hits.
+      const parts = [];
+      for (let i = 0; i + 6 < nums.length; i += 7) {
+        const [rx, ry, rot, la, sw] = nums.slice(i, i + 5);
+        const ex = isAbs ? nb.x + (nums[i + 5] - ob.x) * sx : nums[i + 5] * sx;
+        const ey = isAbs ? nb.y + (nums[i + 6] - ob.y) * sy : nums[i + 6] * sy;
+        parts.push(`${(rx * sx).toFixed(3)} ${(ry * sy).toFixed(3)} ${rot} ${la} ${sw} ${ex.toFixed(3)} ${ey.toFixed(3)}`);
+      }
+      return cmd + ' ' + parts.join(' ');
+    }
     let scaled;
     if (cmd === 'H' || cmd === 'h') scaled = nums.map(n => isAbs ? nb.x + (n - ob.x) * sx : n * sx);
     else if (cmd === 'V' || cmd === 'v') scaled = nums.map(n => isAbs ? nb.y + (n - ob.y) * sy : n * sy);
