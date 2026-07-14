@@ -66,11 +66,11 @@ function bboxIntersects(b, a) {
   return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
 }
 
-// Shift-constrain a resize to the original aspect ratio. Shared by the single-
-// shape and multi-select resize branches. `b` = original bbox, `box` = the
-// proposed {nx,ny,nw,nh}. Corner handles preserve the anchored corner; edge
-// handles grow the perpendicular dimension symmetrically about center.
-function _shiftConstrainBBox(h, b, box) {
+// Shift-constrain a resize to the original aspect ratio. `b` = original bbox,
+// `box` = proposed {nx,ny,nw,nh}. Corner handles preserve the anchored corner;
+// edge handles grow the perpendicular dimension symmetrically about center.
+// When `alt` (scale-from-center) is on, both dimensions stay centered.
+function _shiftConstrainBBox(h, b, box, alt) {
   const ratio = b.w / (b.h || 1);
   const right = b.x + b.w, bottom = b.y + b.h;
   const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
@@ -78,13 +78,43 @@ function _shiftConstrainBBox(h, b, box) {
   if (h.length === 2) {
     if (Math.abs(nw / nh) > ratio) nh = nw / ratio * Math.sign(nh || 1);
     else nw = nh * ratio * Math.sign(nw || 1);
-    if (h.includes('w')) nx = right - nw;
-    if (h.includes('n')) ny = bottom - nh;
+    if (alt) { nx = cx - nw / 2; ny = cy - nh / 2; }
+    else {
+      if (h.includes('w')) nx = right - nw;
+      if (h.includes('n')) ny = bottom - nh;
+    }
   } else if (h === 'e' || h === 'w') {
     nh = nw / ratio; ny = cy - nh / 2;
+    if (alt) nx = cx - nw / 2;
   } else {
     nw = nh * ratio; nx = cx - nw / 2;
+    if (alt) ny = cy - nh / 2;
   }
+  return { nx, ny, nw, nh };
+}
+
+// Compute a resized bbox from a handle drag. Shared by the single-shape and
+// multi-select branches (both feed the same handle names + a snapped cursor
+// point `p`). `alt` scales symmetrically about the original center (the center
+// is the fixed point, so each active axis grows to twice its center-to-cursor
+// distance); otherwise the opposite edge/corner is anchored. `shift` then
+// constrains to the original aspect ratio.
+function _resizeBBox(h, b, p, { shift, alt }) {
+  const right = b.x + b.w, bottom = b.y + b.h;
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  let nx = b.x, ny = b.y, nw = b.w, nh = b.h;
+  if (alt) {
+    if (h.includes('e') || h.includes('w')) { const hw = Math.abs(p.x - cx); nw = 2 * hw; nx = cx - hw; }
+    if (h.includes('n') || h.includes('s')) { const hh = Math.abs(p.y - cy); nh = 2 * hh; ny = cy - hh; }
+  } else {
+    if (h.includes('w')) { nx = p.x; nw = right - p.x; }
+    if (h.includes('e')) { nw = p.x - b.x; }
+    if (h.includes('n')) { ny = p.y; nh = bottom - p.y; }
+    if (h.includes('s')) { nh = p.y - b.y; }
+  }
+  if (shift) ({ nx, ny, nw, nh } = _shiftConstrainBBox(h, b, { nx, ny, nw, nh }, alt));
+  if (nw < 0) { nx = nx + nw; nw = -nw; }
+  if (nh < 0) { ny = ny + nh; nh = -nh; }
   return { nx, ny, nw, nh };
 }
 
@@ -325,7 +355,6 @@ tools.register('select', {
   _doResize(raw, event) {
     const b = this._origBBox;
     const h = this._handle;
-    const right = b.x + b.w, bottom = b.y + b.h;
     const st = store.get();
     const selSet = new Set(st.selection);
 
@@ -345,15 +374,7 @@ tools.register('select', {
         snapped = artboard.snapPoint(local);
       }
 
-      let nx = b.x, ny = b.y, nw = b.w, nh = b.h;
-      if (h.includes('w')) { nx = snapped.x; nw = right - snapped.x; }
-      if (h.includes('e')) { nw = snapped.x - b.x; }
-      if (h.includes('n')) { ny = snapped.y; nh = bottom - snapped.y; }
-      if (h.includes('s')) { nh = snapped.y - b.y; }
-
-      if (event.shiftKey) ({ nx, ny, nw, nh } = _shiftConstrainBBox(h, b, { nx, ny, nw, nh }));
-      if (nw < 0) { nx = nx + nw; nw = -nw; }
-      if (nh < 0) { ny = ny + nh; nh = -nh; }
+      const { nx, ny, nw, nh } = _resizeBBox(h, b, snapped, { shift: event.shiftKey, alt: event.altKey });
 
       if (sh.type === 'group') {
         // Scale group children proportionally using pre-captured snapshots
@@ -390,14 +411,7 @@ tools.register('select', {
         clearGuides();
         snapped = artboard.snapPoint(raw);
       }
-      let nx = b.x, ny = b.y, nw = b.w, nh = b.h;
-      if (h.includes('w')) { nx = snapped.x; nw = right - snapped.x; }
-      if (h.includes('e')) { nw = snapped.x - b.x; }
-      if (h.includes('n')) { ny = snapped.y; nh = bottom - snapped.y; }
-      if (h.includes('s')) { nh = snapped.y - b.y; }
-      if (event.shiftKey) ({ nx, ny, nw, nh } = _shiftConstrainBBox(h, b, { nx, ny, nw, nh }));
-      if (nw < 0) { nx = nx + nw; nw = -nw; }
-      if (nh < 0) { ny = ny + nh; nh = -nh; }
+      const { nx, ny, nw, nh } = _resizeBBox(h, b, snapped, { shift: event.shiftKey, alt: event.altKey });
       const nb = { x: nx, y: ny, w: nw, h: nh };
       const sx = nw / Math.max(0.0001, b.w), sy = nh / Math.max(0.0001, b.h);
 
