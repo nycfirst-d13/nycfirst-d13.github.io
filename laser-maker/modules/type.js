@@ -162,7 +162,7 @@ tools.register('text', {
     const id = uid('t');
     addShape({
       id, type: 'text', name: nextName('text'),
-      attrs: { x: tx, y: ty, width: tw, height: th, content: '', size: 100,
+      attrs: { x: tx, y: ty, width: tw, height: th, content: '', size: 60,
                family: 'Geist, sans-serif', weight: 600, align: 'left', lineHeight: 1.2 },
       ...SHAPE_DEFAULTS(),
       fill: store.get().defaults.fill || '#0F1419',
