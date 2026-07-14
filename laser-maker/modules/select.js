@@ -66,6 +66,28 @@ function bboxIntersects(b, a) {
   return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
 }
 
+// Shift-constrain a resize to the original aspect ratio. Shared by the single-
+// shape and multi-select resize branches. `b` = original bbox, `box` = the
+// proposed {nx,ny,nw,nh}. Corner handles preserve the anchored corner; edge
+// handles grow the perpendicular dimension symmetrically about center.
+function _shiftConstrainBBox(h, b, box) {
+  const ratio = b.w / (b.h || 1);
+  const right = b.x + b.w, bottom = b.y + b.h;
+  const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+  let { nx, ny, nw, nh } = box;
+  if (h.length === 2) {
+    if (Math.abs(nw / nh) > ratio) nh = nw / ratio * Math.sign(nh || 1);
+    else nw = nh * ratio * Math.sign(nw || 1);
+    if (h.includes('w')) nx = right - nw;
+    if (h.includes('n')) ny = bottom - nh;
+  } else if (h === 'e' || h === 'w') {
+    nh = nw / ratio; ny = cy - nh / 2;
+  } else {
+    nw = nh * ratio; nx = cx - nw / 2;
+  }
+  return { nx, ny, nw, nh };
+}
+
 // Double-click detection — native dblclick unreliable because _renderShapes()
 // rebuilds the DOM between the two clicks, changing the target element.
 let _lastDownTime = 0;
@@ -329,13 +351,7 @@ tools.register('select', {
       if (h.includes('n')) { ny = snapped.y; nh = bottom - snapped.y; }
       if (h.includes('s')) { nh = snapped.y - b.y; }
 
-      if (event.shiftKey && h.length === 2) {
-        const ratio = b.w / b.h;
-        if (Math.abs(nw / nh) > ratio) nh = nw / ratio * Math.sign(nh || 1);
-        else nw = nh * ratio * Math.sign(nw || 1);
-        if (h.includes('w')) nx = right - nw;
-        if (h.includes('n')) ny = bottom - nh;
-      }
+      if (event.shiftKey) ({ nx, ny, nw, nh } = _shiftConstrainBBox(h, b, { nx, ny, nw, nh }));
       if (nw < 0) { nx = nx + nw; nw = -nw; }
       if (nh < 0) { ny = ny + nh; nh = -nh; }
 
@@ -379,6 +395,7 @@ tools.register('select', {
       if (h.includes('e')) { nw = snapped.x - b.x; }
       if (h.includes('n')) { ny = snapped.y; nh = bottom - snapped.y; }
       if (h.includes('s')) { nh = snapped.y - b.y; }
+      if (event.shiftKey) ({ nx, ny, nw, nh } = _shiftConstrainBBox(h, b, { nx, ny, nw, nh }));
       if (nw < 0) { nx = nx + nw; nw = -nw; }
       if (nh < 0) { ny = ny + nh; nh = -nh; }
       const nb = { x: nx, y: ny, w: nw, h: nh };
