@@ -150,8 +150,17 @@
     section { scroll-margin-top: 128px; padding-top: 40px; }
     /* first section aligns its header with the rail "Filter by tag" title */
     #sections-view section:first-child { padding-top: 4px; }
+    /* trailing room (set exactly by fitLastSection JS) so the current section's
+       title can scroll up and pin, then stop — no rail-driven dead scroll */
 
-    .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+    /* current section title sticks below the symbol strip; next section pushes it out */
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 70px; z-index: 91;
+      background: linear-gradient(to bottom, var(--bg-gradient-start), var(--bg-gradient-end));
+      background-attachment: fixed;
+      padding: 10px 0 12px; margin-bottom: 8px;
+    }
     .section-header .sec-emoji { font-size: 28px; line-height: 1; }
     .section-header h2 { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; color: var(--text); }
     .section-header .sec-rule { flex: 1; height: 3px; border-radius: 3px; background: var(--cat-color); opacity: 0.25; }
@@ -581,6 +590,29 @@
 
   // One section (with header) per tag. No active chips → all tags; active chips → those tags only.
   const REDUCE_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const STICKY_TOP = 70; // .section-header sticky offset (below the symbol strip)
+  // Give the last section exactly enough trailing room for its title to scroll up
+  // to the sticky pin, then stop — no dead scroll, no guessed constant.
+  function fitLastSection(){
+    const last = document.getElementById('sections-view').lastElementChild;
+    if (!last) return;
+    const header = last.querySelector('.section-header');
+    if (!header) return;
+    const main = document.querySelector('main');
+    const bodyCols = document.querySelector('.body-cols');
+    last.style.minHeight = '0px';
+    // flow positions (offsetTop walk) — unaffected by the header's sticky offset
+    const docTop = el => { let t = 0; for (; el; el = el.offsetParent) t += el.offsetTop; return t; };
+    const bottomPad = parseFloat(getComputedStyle(document.body).paddingBottom) || 0;
+    // doc height at which the title pins exactly at STICKY_TOP, then scroll stops
+    const desiredDocH = docTop(header) - STICKY_TOP + window.innerHeight;
+    // target height for the body-cols row (may be rail-bound if content is tiny)
+    const targetCols = desiredDocH - docTop(bodyCols) - bottomPad;
+    // grow the last section so main reaches targetCols (never below its natural size)
+    const sectionTarget = targetCols - (main.offsetHeight - last.offsetHeight);
+    last.style.minHeight = Math.max(last.offsetHeight, sectionTarget) + 'px';
+  }
+  addEventListener('resize', fitLastSection);
   function renderSections(){
     const view = document.getElementById('sections-view');
     const build = () => {
@@ -598,6 +630,7 @@
         view.appendChild(sec);
       });
       onScroll();
+      fitLastSection();
     };
     if (REDUCE_MOTION) { build(); return; }
     view.style.opacity = '0';
