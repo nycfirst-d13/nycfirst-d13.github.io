@@ -43,7 +43,9 @@ function doPost(e) {
 
     var sheet = SpreadsheetApp.openById(SHEET_ID).getSheetByName(SHEET_NAME);
     // Column order must match the header row: title, description, url, tags, difficulty, active, screenshot
-    sheet.appendRow([title, description, url, tags, difficulty, 'FALSE', screenshot]);
+    // active: boolean false → renders as an unchecked checkbox (column F is checkbox-validated).
+    // String 'FALSE' would land as plain text instead.
+    sheet.appendRow([title, description, url, tags, difficulty, false, screenshot]);
 
     notify(title, description, url, tags, difficulty, screenshot);
     return json({ ok: true });
