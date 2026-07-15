@@ -199,7 +199,7 @@
     .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .pill { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 3px 9px; line-height: 1.4; }
     .pill.tag { color: var(--pill-color); background: var(--pill-light); }
-    .pill.diff { color: var(--muted); background: #f1f5f9; border: 1px solid var(--border); }
+    .card-diff { font-size: 12px; font-weight: 600; color: var(--muted); }
 
     /* hover preview overlay — from the sheet's screenshot column */
     .card-hover-preview {
@@ -554,6 +554,15 @@
   }
 
   // ── CARD ────────────────────────────────────────────────
+  const DIFF_ORDER = ['Beginner', 'Intermediate', 'Advanced'];
+  // Plain "Difficulty: lo – hi" range (single value → just that one).
+  function diffLabel(list){
+    if (!list.length) return '';
+    const sorted = [...list].sort((a, b) => DIFF_ORDER.indexOf(a) - DIFF_ORDER.indexOf(b));
+    const lo = sorted[0], hi = sorted[sorted.length - 1];
+    return 'Difficulty: ' + (lo === hi ? lo : `${lo} – ${hi}`);
+  }
+
   function buildCard(item){
     const primary = tagColor(item.tags[0] || 'Coding');
     const hasUrl = !!item.url;
@@ -562,7 +571,7 @@
     el.style.setProperty('--cat-color', primary);
     if (hasUrl){ el.href = item.url; el.target = '_blank'; el.rel = 'noopener'; }
     const prev = previewSrc(item.screenshot);
-    const diffPills = item.difficulty.map(d => `<span class="pill diff">${esc(d)}</span>`).join('');
+    const diffText = diffLabel(item.difficulty);
     const tagPills = item.tags.map(t => {
       const c = tagColor(t);
       return `<span class="pill tag" style="--pill-color:${c};--pill-light:${rgba(c,0.12)}">${esc(t)}</span>`;
@@ -570,7 +579,7 @@
     el.innerHTML =
       `<div class="card-title">${esc(item.title)}</div>` +
       `<div class="card-desc">${esc(item.description)}</div>` +
-      (diffPills ? `<div class="pill-row">${diffPills}</div>` : '') +
+      (diffText ? `<div class="card-diff">${esc(diffText)}</div>` : '') +
       (tagPills ? `<div class="pill-row">${tagPills}</div>` : '') +
       `<div class="card-hover-preview">${prev ? `<img src="${esc(prev)}" alt="${esc(item.title)} preview" loading="lazy">` : ''}</div>`;
     return el;
