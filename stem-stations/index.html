@@ -199,7 +199,7 @@
     .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
     .pill { font-size: 11px; font-weight: 600; border-radius: 999px; padding: 3px 9px; line-height: 1.4; }
     .pill.tag { color: var(--pill-color); background: var(--pill-light); }
-    .card-diff { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .card-diff { font-size: 12px; font-weight: 400; color: #94a3b8; }
 
     /* hover preview overlay — from the sheet's screenshot column */
     .card-hover-preview {
@@ -560,7 +560,7 @@
     if (!list.length) return '';
     const sorted = [...list].sort((a, b) => DIFF_ORDER.indexOf(a) - DIFF_ORDER.indexOf(b));
     const lo = sorted[0], hi = sorted[sorted.length - 1];
-    return 'Difficulty: ' + (lo === hi ? lo : `${lo} – ${hi}`);
+    return lo === hi ? lo : `${lo} – ${hi}`;
   }
 
   function buildCard(item){
