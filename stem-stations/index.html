@@ -455,7 +455,7 @@
           <div class="chip-select" id="diff-select"></div>
         </fieldset>
 
-        <label>Screenshot or picture <span class="opt">(optional — helps show a preview)</span>
+        <label>Screenshot or picture <span class="opt">(optional but preferred — helps show a preview)</span>
           <input type="file" name="image" id="f-image" accept="image/*">
           <input type="url" id="f-image-url" placeholder="…or paste an image URL">
         </label>
@@ -904,7 +904,9 @@
     const urlNote = document.getElementById('url-note');
     const submitBtn = document.getElementById('submit-btn');
     const isDigital = () => [...chosenTags].some(t => DIGITAL_TAGS.includes(t));
-    const urlOk = () => { const v = url.value.trim(); return v ? /^https?:\/\/.+/i.test(v) : true; };
+    // Accept bare hosts like "google.com" — prepend https:// if no scheme typed.
+    const normUrl = v => (v && !/^https?:\/\//i.test(v)) ? 'https://' + v : v;
+    const urlOk = () => { const v = normUrl(url.value.trim()); return v ? /^https?:\/\/.+\..+/i.test(v) : true; };
     function validate() {
       const digital = isDigital();
       urlNote.style.color = (digital && !url.value.trim()) ? '#EF4444' : '';
@@ -933,7 +935,7 @@
       const fd = new FormData();
       fd.append('title', title.value.trim());
       fd.append('description', desc.value.trim());
-      fd.append('url', url.value.trim());
+      fd.append('url', normUrl(url.value.trim()));
       fd.append('tags', [...chosenTags].join(', '));
       fd.append('difficulty', [...chosenDiff].join(', '));
       const file = document.getElementById('f-image').files[0];
