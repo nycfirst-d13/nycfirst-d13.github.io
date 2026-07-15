@@ -10,7 +10,9 @@ Two view modes (segmented toggle): "Browse by section" (one section per tag, car
 
 ## Community submission form
 
-Floating gradient "+" button (bottom-right) opens a popover form so students/interns/teachers can suggest stations. Submissions POST to a **Google Apps Script Web App** (`submit.gs`, deployed off the same Sheet) which appends a row with `active=FALSE` and emails staff. Wire it up by pasting the deployed `/exec` URL into `SUBMIT_URL` in `index.html`. Custom "add your own" tags are free text — they render on the site immediately; to also appear as a Sheet dropdown-chip option, add them to the Sheet's data-validation list. Screenshots must be a URL in the `screenshot` column (uploads go to Drive via `submit.gs`); in-cell pasted images don't survive CSV export and won't show.
+Floating gradient "+" button (bottom-right) opens a popover form so students/interns/teachers can suggest stations. Submissions POST to a **Google Apps Script Web App** (`submit.gs`, deployed off the same Sheet) which appends a row with `active=FALSE` and emails staff. Wire it up by pasting the deployed `/exec` URL into `SUBMIT_URL` in `index.html`.
+
+`submit.gs` in this repo is the **canonical copy-paste source** — it holds the real CONFIG values (including `DRIVE_FOLDER_ID`). It is NOT auto-deployed: after editing it here, paste the full contents into the Apps Script editor (Sheet → Extensions → Apps Script) and **Deploy → Manage deployments → new version** for changes to go live. Editing the repo file alone changes nothing on Google's side. The web app runs "Execute as" a shared service account, so `MailApp` sends from that account, and that account must have Editor access to the Drive folder. Custom "add your own" tags are free text — they render on the site immediately; to also appear as a Sheet dropdown-chip option, add them to the Sheet's data-validation list. Screenshots must be a URL in the `screenshot` column (uploads go to Drive via `submit.gs`); in-cell pasted images don't survive CSV export and won't show.
 
 ## Git & Commits
 

@@ -16,8 +16,8 @@
 
 // ── CONFIG ────────────────────────────────────────────────
 var SHEET_ID = '1xclY-0sWt70mZ_jQxMDWOr8XtwgaZivqhDlD2_hnBs0';
-var SHEET_NAME = 'Sheet1';                 // tab the site reads
-var DRIVE_FOLDER_ID = 'PASTE_FOLDER_ID';   // Drive folder for uploaded screenshots
+var SHEET_NAME = 'stations';               // tab the site reads
+var DRIVE_FOLDER_ID = '12vJ8z2J2BEIXBabRvT_E2GwWBB7doVex';   // Drive folder for uploaded screenshots
 var STAFF_EMAIL = 'sc-d13-accounts@nycfirst.org';
 var MAX_LEN = 500;                         // per-field length cap
 
