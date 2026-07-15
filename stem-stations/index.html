@@ -120,7 +120,7 @@
       display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
     }
     .chip {
-      border: 3px solid var(--cat-color); background: var(--surface); cursor: pointer;
+      border: 1px solid var(--cat-color); background: var(--surface); cursor: pointer;
       font-family: inherit; font-size: 13px; font-weight: 600; color: var(--cat-color);
       padding: 6px 13px; border-radius: 999px; transition: background 0.15s, color 0.15s;
       display: flex; align-items: center; gap: 6px;
@@ -254,7 +254,7 @@
     }
     .fab:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(30,42,56,0.28); }
     .fab::before {
-      content: ''; position: absolute; inset: 3px; border-radius: 999px;
+      content: ''; position: absolute; inset: 1px; border-radius: 999px;
       background: rgba(255,255,255,0.94); z-index: 0;
     }
     .fab-plus, .fab-label {
