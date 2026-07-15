@@ -146,6 +146,7 @@
       pointer-events: none; opacity: 0; transition: opacity 0.2s ease;
     }
     body.scrolled .scroll-fade { opacity: 1; }
+    #sections-view { transition: opacity 0.22s ease; }
     section { scroll-margin-top: 128px; padding-top: 40px; }
     /* first section aligns its header with the rail "Filter by tag" title */
     #sections-view section:first-child { padding-top: 4px; }
@@ -579,22 +580,28 @@
   const slug = t => 'sec-' + t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
   // One section (with header) per tag. No active chips → all tags; active chips → those tags only.
+  const REDUCE_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
   function renderSections(){
-    const all = orderedTags(ITEMS);
-    const tags = ACTIVE_TAGS.size ? all.filter(t => ACTIVE_TAGS.has(t)) : all;
     const view = document.getElementById('sections-view');
-    view.innerHTML = '';
-    tags.forEach(tag => {
-      const color = tagColor(tag), id = slug(tag), emoji = TAG_EMOJI[tag] || '•';
-      const sec = document.createElement('section');
-      sec.id = id; sec.style.setProperty('--cat-color', color);
-      sec.innerHTML = `<div class="section-header"><span class="sec-emoji">${emoji}</span><h2>${esc(tag)}</h2><span class="sec-rule"></span></div>`;
-      const grid = document.createElement('div'); grid.className = 'grid';
-      ITEMS.filter(i => i.tags.includes(tag)).forEach(i => grid.appendChild(buildCard(i)));
-      sec.appendChild(grid);
-      view.appendChild(sec);
-    });
-    onScroll();
+    const build = () => {
+      const all = orderedTags(ITEMS);
+      const tags = ACTIVE_TAGS.size ? all.filter(t => ACTIVE_TAGS.has(t)) : all;
+      view.innerHTML = '';
+      tags.forEach(tag => {
+        const color = tagColor(tag), id = slug(tag), emoji = TAG_EMOJI[tag] || '•';
+        const sec = document.createElement('section');
+        sec.id = id; sec.style.setProperty('--cat-color', color);
+        sec.innerHTML = `<div class="section-header"><span class="sec-emoji">${emoji}</span><h2>${esc(tag)}</h2><span class="sec-rule"></span></div>`;
+        const grid = document.createElement('div'); grid.className = 'grid';
+        ITEMS.filter(i => i.tags.includes(tag)).forEach(i => grid.appendChild(buildCard(i)));
+        sec.appendChild(grid);
+        view.appendChild(sec);
+      });
+      onScroll();
+    };
+    if (REDUCE_MOTION) { build(); return; }
+    view.style.opacity = '0';
+    setTimeout(() => { build(); requestAnimationFrame(() => view.style.opacity = '1'); }, 220);
   }
 
   function renderChips(items){
