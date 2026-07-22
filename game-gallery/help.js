@@ -64,7 +64,7 @@ function helpHtml() {
   <ul>
     <li>Build a game from scratch at
       <a href="https://arcade.makecode.com" target="_blank" rel="noreferrer">arcade.makecode.com</a>.</li>
-    <li>Ask your instructor how to submit it to the gallery.</li>
+    <li>Made one? <a href="submit.html">Add it to the gallery <span class="ico">→</span></a></li>
   </ul>
   </div>
 `

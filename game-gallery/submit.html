@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Add Your Game — D13 Game Gallery</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Form controls in the arcade theme. Big + legible per CLAUDE.md styling. */
+    .form { max-width: 640px; margin: 0 auto; padding: 24px 20px 64px; }
+    .form h1 { font-family: var(--pixel); font-size: 18px; line-height: 1.5; margin: 8px 0 6px; }
+    .form .sub { color: var(--ink-2); font-size: 22px; margin-bottom: 28px; }
+    .field { margin-bottom: 26px; }
+    .field > label { display: block; font-family: var(--pixel); font-size: 12px;
+      letter-spacing: 1px; margin-bottom: 10px; }
+    .field .hint { color: var(--ink-2); font-size: 20px; margin: -4px 0 10px; }
+    .field input[type=text], .field input[type=file] {
+      width: 100%; box-sizing: border-box; min-height: 48px; padding: 10px 14px;
+      font-family: var(--body); font-size: 24px; color: var(--ink);
+      background: var(--panel); border: 3px solid var(--line-dim); }
+    .field input[type=text]:focus { outline: none; border-color: var(--line); }
+    .req { color: var(--accent); }
+    .grades { display: flex; flex-wrap: wrap; gap: 10px; }
+    .grades .chip { cursor: pointer; }
+    .grades .chip.on { background: var(--accent); color: var(--ink); }
+    .howto { border: 3px solid var(--line-dim); padding: 14px 16px; margin-top: 10px;
+      font-size: 20px; color: var(--ink-2); line-height: 1.5; }
+    .howto b { color: var(--ink); }
+    .submit-btn { font-size: 14px; padding: 16px 22px; }
+    #err { color: var(--accent); font-size: 22px; margin-top: 14px; }
+    #ok { text-align: center; padding: 60px 20px; }
+    #ok .pixel { color: var(--ink); font-size: 16px; margin-bottom: 16px; }
+    #ok p { font-size: 24px; color: var(--ink-2); line-height: 1.5; }
+  </style>
+</head>
+<body class="browse">
+  <header class="top">
+    <a class="brand" href="./">
+      <img src="nycfirst-pixel.png" alt="NYC FIRST District 13" width="40" height="40">
+      <span class="title">D13 Game Gallery</span>
+    </a>
+  </header>
+
+  <main class="form">
+    <form id="form">
+      <h1>Add your game</h1>
+      <p class="sub">A teacher reviews it, then it shows up in the arcade.</p>
+
+      <div class="field">
+        <label for="f-title">Game title <span class="req">*</span></label>
+        <input id="f-title" type="text" maxlength="120" autocomplete="off" required>
+      </div>
+
+      <div class="field">
+        <label for="f-name">Your name <span class="req">*</span></label>
+        <input id="f-name" type="text" maxlength="80" autocomplete="off" required>
+      </div>
+
+      <div class="field">
+        <label>Grade / role <span class="req">*</span></label>
+        <div class="grades" id="grades"></div>
+      </div>
+
+      <div class="field">
+        <label for="f-url">MakeCode share link <span class="req">*</span></label>
+        <p class="hint">In MakeCode, click <b>Share</b> and copy the link it gives you.</p>
+        <input id="f-url" type="text" inputmode="url" autocomplete="off"
+               placeholder="https://arcade.makecode.com/…" required>
+      </div>
+
+      <div class="field">
+        <label for="f-mkcd">Game file (optional)</label>
+        <input id="f-mkcd" type="file">
+        <div class="howto">
+          <b>How to get the file:</b> open your game in MakeCode Arcade → click the
+          <b>⚙ gear</b> (top-right) → <b>Save As</b> (or the <b>⋯</b> menu →
+          <b>Download</b>). Upload that file here so we keep a permanent copy.
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-img">Screenshot (optional)</label>
+        <p class="hint">We'll use a MakeCode picture if you skip this.</p>
+        <input id="f-img" type="file" accept="image/*">
+      </div>
+
+      <button class="btn submit-btn" id="submit" type="submit">Send for review</button>
+      <p id="err" hidden></p>
+    </form>
+
+    <div id="ok" hidden>
+      <p class="pixel">Sent!</p>
+      <p>A teacher will add it to the D13 arcade and publish it. Thanks for sharing your game!</p>
+      <p style="margin-top:22px"><a class="chip" href="./">Back to gallery</a></p>
+    </div>
+  </main>
+
+  <script src="help.js"></script>
+  <script>
+    initHelp()
+
+    // Apps Script Web App /exec URL — paste after deploying submit.gs.
+    const SUBMIT_URL = ''
+
+    const GRADES = ['3', '4', '5', '6', '7', '8', 'Intern', 'Instructor']
+    let chosenGrade = ''
+    const gradesEl = document.getElementById('grades')
+    GRADES.forEach(g => {
+      const b = document.createElement('button')
+      b.type = 'button'; b.className = 'chip'; b.textContent = /^\d+$/.test(g) ? 'Grade ' + g : g
+      b.onclick = () => {
+        chosenGrade = g
+        gradesEl.querySelectorAll('.chip').forEach(c => c.classList.remove('on'))
+        b.classList.add('on')
+        validate()
+      }
+      gradesEl.appendChild(b)
+    })
+
+    const title = document.getElementById('f-title')
+    const name = document.getElementById('f-name')
+    const url = document.getElementById('f-url')
+    const submitBtn = document.getElementById('submit')
+    const err = document.getElementById('err')
+
+    // Accept bare hosts — prepend https:// if no scheme (matches submit.gs).
+    const normUrl = v => (v && !/^https?:\/\//i.test(v)) ? 'https://' + v : v
+    const urlOk = () => /^https?:\/\/.+\..+/i.test(normUrl(url.value.trim()))
+    function validate() {
+      submitBtn.disabled = !(title.value.trim() && name.value.trim() && chosenGrade && urlOk())
+    }
+    ;[title, name, url].forEach(el => el.addEventListener('input', validate))
+    validate()
+
+    function fileToB64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader()
+        r.onload = () => res(String(r.result).split(',')[1])
+        r.onerror = rej; r.readAsDataURL(file)
+      })
+    }
+
+    document.getElementById('form').addEventListener('submit', async e => {
+      e.preventDefault()
+      err.hidden = true
+      if (!SUBMIT_URL) { err.textContent = "Submissions aren't set up yet — ask a staff member."; err.hidden = false; return }
+      submitBtn.disabled = true; submitBtn.textContent = 'Sending…'
+
+      const fd = new FormData()
+      fd.append('game_title', title.value.trim())
+      fd.append('student_name', name.value.trim())
+      fd.append('grade', chosenGrade)
+      fd.append('student_url', normUrl(url.value.trim()))
+      const mkcd = document.getElementById('f-mkcd').files[0]
+      const img = document.getElementById('f-img').files[0]
+      if (mkcd) { fd.append('mkcdData', await fileToB64(mkcd)); fd.append('mkcdName', mkcd.name) }
+      if (img) { fd.append('imageData', await fileToB64(img)); fd.append('imageName', img.name); fd.append('imageType', img.type) }
+
+      try {
+        const r = await fetch(SUBMIT_URL, { method: 'POST', body: fd })
+        const j = await r.json()
+        if (!j.ok) throw new Error(j.error || 'error')
+        done()
+      } catch (e) {
+        // ponytail: cross-origin read of the Apps Script response can be blocked;
+        // retry fire-and-forget (no-cors) and treat as sent. Ceiling: can't confirm
+        // server-side failures — upgrade to a CORS/redirect handler if that matters.
+        try {
+          await fetch(SUBMIT_URL, { method: 'POST', body: fd, mode: 'no-cors' })
+          done()
+        } catch (e2) {
+          err.textContent = "Couldn't send — check your connection and try again."; err.hidden = false
+          submitBtn.disabled = false; submitBtn.textContent = 'Send for review'
+        }
+      }
+    })
+
+    function done() {
+      document.getElementById('form').hidden = true
+      document.getElementById('ok').hidden = false
+    }
+  </script>
+</body>
+</html>

@@ -31,7 +31,8 @@
 
     function cardHtml(g) {
       const shareId = extractShareId(g.d13_url)
-      const thumb = shareId ? thumbUrl(shareId) : 'nycfirst-pixel.png'
+      // Thumbnail precedence: uploaded screenshot → MakeCode auto-thumb → placeholder.
+      const thumb = g.screenshot || (shareId ? thumbUrl(shareId) : 'nycfirst-pixel.png')
       const filled = g.grade === 'Instructor' || g.grade === 'Intern'
       const label = gradeLabel(g.grade)
       return `
@@ -49,7 +50,8 @@
     function render(games) {
       if (!games.length) {
         app.innerHTML = `<div class="state"><p class="pixel">No games yet</p>
-          <p>Nothing published yet — check back soon!</p></div>`
+          <p>Nothing published yet — check back soon!</p>
+          <p><a class="chip" href="submit.html">+ Add your game</a></p></div>`
         return
       }
       app.innerHTML =
@@ -57,6 +59,7 @@
          <footer class="foot">
            <p class="count">${games.length} games published</p>
            <div class="xp"><span style="width:${Math.min(games.length, 100)}%"></span></div>
+           <p class="cta"><a class="chip" href="submit.html">+ Add your game</a></p>
            <p class="made">Made with <a href="https://arcade.makecode.com" target="_blank" rel="noreferrer">MakeCode Arcade</a> at the NYC FIRST D13 STEM Center</p>
          </footer>`
       startKiosk(games)

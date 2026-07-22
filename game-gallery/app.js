@@ -1,10 +1,24 @@
 // D13 Game Gallery — data + rendering. No build step, no framework.
 
-// Data source. Point this at the published "Approved" Google Sheet CSV when
-// real games are ready. Form:
-//   https://docs.google.com/spreadsheets/d/<id>/pub?gid=<n>&single=true&output=csv
-// Until then it reads the committed fixture beside this file.
-const CSV_URL = 'dev-games.csv'
+// Data source. Reads the live Google Sheet via gviz; falls back to the committed
+// dev-games.csv fixture offline / on CORS error / until SHEET_ID is filled in.
+// The Sheet is owned by d13-internal@ (see plans/submission-form.md). One tab;
+// gviz returns the first tab, so no gid needed.
+const SHEET_ID = ''   // paste the game-gallery Sheet id once created
+const GVIZ_CSV = SHEET_ID
+  ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`
+  : ''
+const FALLBACK_CSV = 'dev-games.csv'
+
+async function loadCSV() {
+  if (GVIZ_CSV) {
+    try {
+      const r = await fetch(GVIZ_CSV)
+      if (r.ok) return await r.text()
+    } catch { /* offline / CORS → fall through to fixture */ }
+  }
+  return (await fetch(FALLBACK_CSV)).text()
+}
 
 // ponytail: minimal RFC-4180 CSV parser — game titles contain commas, so a
 // bare split() is wrong. Handles quoted fields and "" escapes. Upgrade to a
@@ -42,7 +56,10 @@ function parseGamesCsv(text) {
       header.forEach((h, i) => { r[h] = (cells[i] ?? '').trim() })
       return r
     })
-    .filter(g => g.id)
+    // Publish gate: shown only when approved (active) AND playable (d13_url)
+    // AND linkable (id). active alone isn't enough — staff may tick it before
+    // finishing the D13 re-host that fills d13_url + id.
+    .filter(g => g.id && g.d13_url && /^true$/i.test(g.active || ''))
 }
 
 const sortByNewest = games =>
@@ -66,9 +83,7 @@ const thumbUrl = shareId => `https://makecode.com/api/${shareId}/thumb`
 const gradeLabel = grade => /^\d+$/.test(grade) ? `Grade ${grade}` : grade
 
 async function fetchGames() {
-  const res = await fetch(CSV_URL)
-  if (!res.ok) throw new Error(`CSV fetch failed: ${res.status}`)
-  return sortByNewest(parseGamesCsv(await res.text()))
+  return sortByNewest(parseGamesCsv(await loadCSV()))
 }
 
 const esc = s => String(s).replace(/[&<>"']/g, c =>
@@ -76,12 +91,16 @@ const esc = s => String(s).replace(/[&<>"']/g, c =>
 
 // ---- self-check: parser handles commas-in-quotes + newest-first sort ----
 function selfCheck() {
+  const D = 'https://arcade.makecode.com/_x'   // any non-empty d13_url
   const csv =
-    'id,game_title,submitted_at\n' +
-    'a,"Run, Jump, Win",2025-01-01T00:00:00Z\n' +
-    'b,Plain,2025-06-01T00:00:00Z\n'
+    'id,game_title,d13_url,active,submitted_at\n' +
+    `a,"Run, Jump, Win",${D},TRUE,2025-01-01T00:00:00Z\n` +
+    `b,Plain,${D},true,2025-06-01T00:00:00Z\n` +   // lowercase true still passes
+    `c,Pending,${D},FALSE,2025-07-01T00:00:00Z\n` + // not active → filtered out
+    `d,NoUrl,,TRUE,2025-07-01T00:00:00Z\n`           // no d13_url → filtered out
   const g = parseGamesCsv(csv)
-  console.assert(g.length === 2, 'row count')
+  console.assert(g.length === 2, 'publish gate keeps only active + playable rows')
+  console.assert(g.every(r => r.id !== 'c' && r.id !== 'd'), 'gate drops pending / no-url')
   console.assert(g[0].game_title === 'Run, Jump, Win', 'quoted comma field')
   console.assert(sortByNewest(g)[0].id === 'b', 'newest first')
   console.assert(findGame(g, 'A').id === 'a', 'case-insensitive lookup')

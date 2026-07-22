@@ -1,7 +1,7 @@
-id,game_title,student_name,grade,student_url,d13_url,submitted_at,session
-turkey-day,Turkey Day,Maya P.,5,https://makecode.com/_3a81pJ6t1dHX,https://arcade.makecode.com/_3a81pJ6t1dHX,2025-11-20T10:00:00Z,Fall 2025
-baby-dinos,Save the Baby Dinos,Liam C.,3,https://makecode.com/_VbY6wsJ643HV,https://arcade.makecode.com/_VbY6wsJ643HV,2025-11-18T10:00:00Z,Fall 2025
-sparks-flying,Sparks Flying,Priya S.,6,https://makecode.com/_KkM6gg0fEevk,https://arcade.makecode.com/_KkM6gg0fEevk,2025-11-15T10:00:00Z,Fall 2025
-monster-truck,Monster Truck Racer,Diego R.,8,https://makecode.com/_1yfTMtFAe5yC,https://arcade.makecode.com/_1yfTMtFAe5yC,2025-11-12T10:00:00Z,Fall 2025
-save-galaxy,Save the Galaxy,Aisha K.,Intern,https://makecode.com/_VuJha6i1FeWT,https://arcade.makecode.com/_VuJha6i1FeWT,2025-11-10T10:00:00Z,Fall 2025
-whack-mole,Whack the Mole,Mr. Okafor,Instructor,https://makecode.com/_PCKW94TVLMpA,https://arcade.makecode.com/_PCKW94TVLMpA,2025-11-08T10:00:00Z,Fall 2025
+id,game_title,student_name,grade,student_url,d13_url,submitted_at,session,active,screenshot,mkcd_url
+turkey-day,Turkey Day,Maya P.,5,https://makecode.com/_3a81pJ6t1dHX,https://arcade.makecode.com/_3a81pJ6t1dHX,2025-11-20T10:00:00Z,Fall 2025,TRUE,,
+baby-dinos,Save the Baby Dinos,Liam C.,3,https://makecode.com/_VbY6wsJ643HV,https://arcade.makecode.com/_VbY6wsJ643HV,2025-11-18T10:00:00Z,Fall 2025,TRUE,,
+sparks-flying,Sparks Flying,Priya S.,6,https://makecode.com/_KkM6gg0fEevk,https://arcade.makecode.com/_KkM6gg0fEevk,2025-11-15T10:00:00Z,Fall 2025,TRUE,,
+monster-truck,Monster Truck Racer,Diego R.,8,https://makecode.com/_1yfTMtFAe5yC,https://arcade.makecode.com/_1yfTMtFAe5yC,2025-11-12T10:00:00Z,Fall 2025,TRUE,,
+save-galaxy,Save the Galaxy,Aisha K.,Intern,https://makecode.com/_VuJha6i1FeWT,https://arcade.makecode.com/_VuJha6i1FeWT,2025-11-10T10:00:00Z,Fall 2025,TRUE,,
+whack-mole,Whack the Mole,Mr. Okafor,Instructor,https://makecode.com/_PCKW94TVLMpA,https://arcade.makecode.com/_PCKW94TVLMpA,2025-11-08T10:00:00Z,Fall 2025,TRUE,,
