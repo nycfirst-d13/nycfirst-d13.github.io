@@ -183,7 +183,16 @@ body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
 .stage:fullscreen { border: 0; }
 
 /* ---- chip (help button, overlay actions) ---- */
-.top-right { margin-left: auto; }
+.top-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+/* Add-your-game: square, outlined (no fill), white "+". Inverts on hover like .btn. */
+.add-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; box-sizing: border-box;
+  font-family: var(--pixel); font-size: 22px; line-height: 1;
+  color: var(--ink); background: transparent; border: 3px solid var(--line);
+  text-decoration: none; cursor: pointer;
+}
+.add-btn:hover { background: var(--ink); color: #000; }
 .chip {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   cursor: pointer; text-decoration: none; line-height: 1;
