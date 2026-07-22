@@ -1,19 +1,23 @@
 // D13 Game Gallery — data + rendering. No build step, no framework.
 
-// Data source. Reads the live Google Sheet via gviz; falls back to the committed
+// Data source. Reads the live Google Sheet; falls back to the committed
 // dev-games.csv fixture offline / on CORS error / until SHEET_ID is filled in.
-// The Sheet is owned by d13-internal@ (see plans/submission-form.md). One tab;
-// gviz returns the first tab, so no gid needed.
+// The Sheet is owned by d13-internal@ (see plans/submission-form.md).
+//
+// Uses the export endpoint, NOT gviz: gviz infers a column's type and blanks
+// out cells that don't match (e.g. text roles "Intern"/"Instructor" in the
+// mostly-numeric grade column disappear). export?format=csv dumps raw cell
+// text with no inference. Default first sheet, so no gid needed.
 const SHEET_ID = '12Hk1XPXvSNmTpBzqEn-hjxQepYFsdij9vYH0GL4nRdk'   // paste the game-gallery Sheet id once created
-const GVIZ_CSV = SHEET_ID
-  ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`
+const SHEET_CSV = SHEET_ID
+  ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`
   : ''
 const FALLBACK_CSV = 'dev-games.csv'
 
 async function loadCSV() {
-  if (GVIZ_CSV) {
+  if (SHEET_CSV) {
     try {
-      const r = await fetch(GVIZ_CSV)
+      const r = await fetch(SHEET_CSV)
       if (r.ok) return await r.text()
     } catch { /* offline / CORS → fall through to fixture */ }
   }

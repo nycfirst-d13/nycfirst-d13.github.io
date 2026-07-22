@@ -15,7 +15,12 @@ GitHub Pages file. Secrets live only in the Apps Script backend.
 ## What changes vs. today
 
 Today `app.js` reads a local `dev-games.csv` fixture (`CSV_URL`), read-only.
-After this: the gallery reads the live sheet (gviz) with the fixture as
+> **Read endpoint gotcha:** use `export?format=csv`, NOT gviz. gviz infers each
+> column's type and blanks cells that don't match — the text roles
+> `Intern`/`Instructor` vanish from the mostly-numeric `grade` column. The
+> export endpoint dumps raw cell text with no inference.
+
+After this: the gallery reads the live sheet with the fixture as
 offline fallback, and a new `submit.html` page writes pending rows to that same
 sheet via Apps Script.
 
