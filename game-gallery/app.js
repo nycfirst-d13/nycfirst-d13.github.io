@@ -54,6 +54,9 @@ function parseGamesCsv(text) {
     .map(cells => {
       const r = {}
       header.forEach((h, i) => { r[h] = (cells[i] ?? '').trim() })
+      // No D13 re-host yet? Play the student's own share URL. d13_url drives
+      // the gate, iframe, and thumbnail, so filling it here covers all three.
+      if (!r.d13_url) r.d13_url = r.student_url || ''
       return r
     })
     // Publish gate: shown only when approved (active) AND playable (d13_url)
@@ -93,16 +96,18 @@ const esc = s => String(s).replace(/[&<>"']/g, c =>
 function selfCheck() {
   const D = 'https://arcade.makecode.com/_x'   // any non-empty d13_url
   const csv =
-    'id,game_title,d13_url,active,submitted_at\n' +
-    `a,"Run, Jump, Win",${D},TRUE,2025-01-01T00:00:00Z\n` +
-    `b,Plain,${D},true,2025-06-01T00:00:00Z\n` +   // lowercase true still passes
-    `c,Pending,${D},FALSE,2025-07-01T00:00:00Z\n` + // not active → filtered out
-    `d,NoUrl,,TRUE,2025-07-01T00:00:00Z\n`           // no d13_url → filtered out
+    'id,game_title,student_url,d13_url,active,submitted_at\n' +
+    `a,"Run, Jump, Win",,${D},TRUE,2025-01-01T00:00:00Z\n` +
+    `b,Plain,,${D},true,2025-06-01T00:00:00Z\n` +   // lowercase true still passes
+    `c,Pending,,${D},FALSE,2025-07-01T00:00:00Z\n` + // not active → filtered out
+    `d,NoUrl,,,TRUE,2025-07-01T00:00:00Z\n` +        // no url at all → filtered out
+    `e,StudentOnly,${D},,TRUE,2025-07-02T00:00:00Z\n` // d13_url empty → falls back to student_url → passes
   const g = parseGamesCsv(csv)
-  console.assert(g.length === 2, 'publish gate keeps only active + playable rows')
+  console.assert(g.length === 3, 'gate keeps active rows with a playable url (d13_url or student_url)')
   console.assert(g.every(r => r.id !== 'c' && r.id !== 'd'), 'gate drops pending / no-url')
+  console.assert(g.some(r => r.id === 'e'), 'empty d13_url falls back to student_url')
   console.assert(g[0].game_title === 'Run, Jump, Win', 'quoted comma field')
-  console.assert(sortByNewest(g)[0].id === 'b', 'newest first')
+  console.assert(sortByNewest(g)[0].id === 'e', 'newest first')
   console.assert(findGame(g, 'A').id === 'a', 'case-insensitive lookup')
 }
 if (new URLSearchParams(location.search).get('selftest') === '1') selfCheck()
