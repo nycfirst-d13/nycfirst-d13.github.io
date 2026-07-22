@@ -5,10 +5,14 @@
  *   1. Open the Google Sheet → Extensions → Apps Script.
  *   2. Paste this file's contents. Edit the CONFIG constants below.
  *   3. Deploy → New deployment → type "Web app":
- *        - Execute as: Me
+ *        - Execute as: Me  (= d13-internal@nycfirst.org, the shared D13
+ *          automation account that must own the Sheet + this script)
  *        - Who has access: Anyone
  *      Copy the /exec URL and paste it into SUBMIT_URL in index.html.
  *   4. First run asks for permissions (Sheet + Drive + Gmail) — approve.
+ *
+ * Owner/executor: d13-internal@nycfirst.org. STAFF_EMAIL below is the
+ * notification RECIPIENT (sc-d13-accounts@), not the executing account.
  *
  * The form POSTs FormData; every submission is appended as active=FALSE and
  * emails STAFF_EMAIL. Staff flip active to TRUE in the Sheet to publish.

@@ -1,8 +1,15 @@
-# STEM Stations — Bot-owned submission backend
+# STEM Stations — submission backend, owned by the D13 automation account
 
-Goal: submissions should be written by a **bot identity**, not tied to a personal
-account. The form (`index.html`) POSTs FormData; the backend appends a row
-(`active=FALSE`), saves any screenshot, and emails staff.
+Goal: submissions should be written by a shared **automation identity**, not
+tied to a personal account. The form (`index.html`) POSTs FormData; the backend
+appends a row (`active=FALSE`), saves any screenshot, and emails staff.
+
+> **Deployed reality:** this went with **Option A**, owned by
+> **`d13-internal@nycfirst.org`** — the shared Workspace account that runs all
+> D13 internal automation. Staff notifications are sent *to*
+> `sc-d13-accounts@nycfirst.org` (`STAFF_EMAIL`), which is the recipient, not
+> the executing account. The `stem-bot@` name below was a placeholder from
+> planning; the real account is `d13-internal@`.
 
 Two ways to get there. **Option A** (bot-owned Apps Script) is recommended — same
 behavior, near-zero new infra. **Option B** (Cloud Function + service account) is a
@@ -19,21 +26,22 @@ public GitHub Pages file. Secrets live only in the backend.
 Reuses the existing `submit.gs` unchanged. Only the *owner* and deployment change.
 
 ### Steps
-1. **Create/choose a bot account** — e.g. `stem-bot@nycfirst.org` (a Workspace user, or
-   a shared mailbox turned into a login). Emails and Drive files will belong to it.
-2. **Transfer ownership** of the Google Sheet to the bot (Share → make bot the Owner),
-   or create the Sheet under the bot from the start. Give yourself Editor.
-3. **Create a Drive folder** under the bot for screenshots; put its id in `DRIVE_FOLDER_ID`.
-4. **Move the Apps Script to the bot:** sign in as the bot, open the Sheet →
-   Extensions → Apps Script, paste `submit.gs`. (Script is bound to the Sheet, so it
-   follows the Sheet's owner.)
-5. **Deploy** (as the bot): New deployment → Web app →
-   - Execute as: **Me** (= the bot)
+1. **Use the automation account** — `d13-internal@nycfirst.org` (the shared
+   Workspace account that runs D13 internal automation). Emails and Drive files
+   belong to it.
+2. **Transfer ownership** of the Google Sheet to `d13-internal@` (Share → make it
+   the Owner), or create the Sheet under it from the start. Give yourself Editor.
+3. **Create a Drive folder** under `d13-internal@` for screenshots; put its id in `DRIVE_FOLDER_ID`.
+4. **Move the Apps Script to the account:** sign in as `d13-internal@`, open the
+   Sheet → Extensions → Apps Script, paste `submit.gs`. (Script is bound to the
+   Sheet, so it follows the Sheet's owner.)
+5. **Deploy** (as `d13-internal@`): New deployment → Web app →
+   - Execute as: **Me** (= `d13-internal@`)
    - Who has access: **Anyone**
 6. **Wire the URL:** copy the `/exec` URL into `SUBMIT_URL` in `index.html`, commit, push.
 7. **Verify:** open the `/exec` URL in an incognito window — must load with **no login
    prompt**. Then submit a test station from the site → confirm `active=FALSE` row,
-   screenshot link, and the staff email (now sent *from* the bot).
+   screenshot link, and the staff email (now sent *from* `d13-internal@`).
 
 ### Pros / cons
 - ➕ No GCP project, no keys, no second deploy target. Code already written.
