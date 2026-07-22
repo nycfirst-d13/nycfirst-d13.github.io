@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="style.css">
   <style>
     /* Form controls in the arcade theme. Big + legible per CLAUDE.md styling. */
+    /* Override the gallery's window-lock (body{height:100vh;overflow:hidden}) —
+       a form is taller than the viewport and must scroll. */
+    body { height: auto; min-height: 100vh; overflow-y: auto; }
     .form { max-width: 640px; margin: 0 auto; padding: 24px 20px 64px; }
     .form h1 { font-family: var(--pixel); font-size: 18px; line-height: 1.5; margin: 8px 0 6px; }
     .form .sub { color: var(--ink-2); font-size: 22px; margin-bottom: 28px; }
@@ -33,7 +36,7 @@
     #ok p { font-size: 24px; color: var(--ink-2); line-height: 1.5; }
   </style>
 </head>
-<body class="browse">
+<body>
   <header class="top">
     <a class="brand" href="./">
       <img src="nycfirst-pixel.png" alt="NYC FIRST District 13" width="40" height="40">
@@ -100,7 +103,7 @@
     initHelp()
 
     // Apps Script Web App /exec URL — paste after deploying submit.gs.
-    const SUBMIT_URL = ''
+    const SUBMIT_URL = 'https://script.google.com/macros/s/AKfycbwqRn6pEiFZ7kP7EhifzXuRxYIL2oQQAkPM6NkTrs1S9KEVbt5ECenigecdXOav1Bzw/exec'
 
     const GRADES = ['3', '4', '5', '6', '7', '8', 'Intern', 'Instructor']
     let chosenGrade = ''

@@ -4,7 +4,7 @@
 // dev-games.csv fixture offline / on CORS error / until SHEET_ID is filled in.
 // The Sheet is owned by d13-internal@ (see plans/submission-form.md). One tab;
 // gviz returns the first tab, so no gid needed.
-const SHEET_ID = ''   // paste the game-gallery Sheet id once created
+const SHEET_ID = '12Hk1XPXvSNmTpBzqEn-hjxQepYFsdij9vYH0GL4nRdk'   // paste the game-gallery Sheet id once created
 const GVIZ_CSV = SHEET_ID
   ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`
   : ''
