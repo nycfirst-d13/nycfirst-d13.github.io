@@ -79,7 +79,11 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
 }
 .browse .grid { flex: 1; min-height: 0; gap: 18px; }
 .browse .card { display: flex; flex-direction: column; overflow: hidden; }
-.browse .card .thumb { flex: 1; min-height: 0; aspect-ratio: auto; }
+/* Thumb locked to the MakeCode frame (4:3): fills the cell height, width
+   follows the ratio, centered — never stretched wide to show a cropped frame. */
+.browse .card .thumb { flex: 1 1 0; min-height: 0;
+  width: auto; max-width: 100%; aspect-ratio: 160 / 120;
+  object-fit: contain; align-self: center; }
 .browse .card .body { flex-shrink: 0; }
 .browse .foot { flex-shrink: 0; margin-top: 12px; padding: 10px 4px 2px; }
 
@@ -102,7 +106,8 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
    (kiosk.js), so only one card is ever lit. */
 .card:hover, .card:focus-visible, .card.sel {
   transform: translate(-2px, -2px);
-  box-shadow: 8px 8px 0 var(--ink);
+  box-shadow: 8px 8px 0 #ffd400;
+  border-color: #ffd400;
   outline: none;
 }
 .card .thumb {
