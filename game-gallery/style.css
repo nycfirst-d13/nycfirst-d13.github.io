@@ -77,11 +77,12 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
   max-width: 1500px; margin: 0 auto; padding: 16px 20px;
   display: flex; flex-direction: column;
 }
-.browse .grid { flex: 1; min-height: 0; gap: 34px; justify-items: center; }
-/* Whole card locked to the MakeCode frame (4:3 thumb + body). fitGrid() sizes
-   the columns; max-width keeps cards from going huge, margin centers them. */
+/* 3 columns; fitGrid() sizes a card so a 3x2 page fills the height. More than
+   6 games → the grid scrolls, snapping row-by-row into the next page. */
+.browse .grid { flex: 1; min-height: 0; gap: 34px;
+  scroll-snap-type: y proximity; scroll-padding-top: 2px; }
 .browse .card { display: flex; flex-direction: column; overflow: hidden;
-  width: 100%; max-width: 560px; }
+  width: 100%; max-width: 560px; scroll-snap-align: start; }
 .browse .card .thumb { width: 100%; aspect-ratio: 160 / 120; object-fit: cover; }
 .browse .card .body { flex-shrink: 0; }
 .browse .foot { flex-shrink: 0; margin-top: 12px; padding: 10px 4px 2px; }

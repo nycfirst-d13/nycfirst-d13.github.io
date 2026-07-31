@@ -71,33 +71,26 @@
     // that makes the largest reasonably-shaped cells; fixed rows fill the
     // height so nothing overflows. Too many games to fit → smallest usable
     // size with an (arcade-styled) scroll.
+    // 3 columns, 6 cards (3x2) per page. Card width is capped so both 3-across
+    // fits the width AND two rows fit the height — the leftover rows scroll as
+    // more pages. Card height = 4:3 thumb + body.
     function fitGrid() {
       const grid = document.querySelector('.grid')
       if (!grid || !grid.children.length) return
-      const n = grid.children.length, gap = 34, maxW = 560
+      const n = grid.children.length, gap = 34, cols = 3, maxW = 560
       const cw = grid.clientWidth, ch = grid.clientHeight
       if (cw <= 0 || ch <= 0) return
-      // Card height = 4:3 thumb + body. Pick the fewest columns (= biggest
-      // cards) whose rows still fit on screen without scrolling.
       const bodyH = (grid.querySelector('.card .body') || {}).offsetHeight || 64
-      let best = null
-      for (let c = 1; c <= n; c++) {
-        const rows = Math.ceil(n / c)
-        const cardW = Math.min((cw - (c - 1) * gap) / c, maxW)
-        if (cardW < 140) continue
-        const totalH = rows * (cardW * 3 / 4 + bodyH) + (rows - 1) * gap
-        if (totalH <= ch) { best = { c }; break }
-      }
-      grid.style.gridTemplateRows = ''
-      if (!best) {                              // too many to fit — scroll
-        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))'
-        grid.style.overflowY = 'auto'
-        grid.style.alignContent = 'start'
-        return
-      }
-      grid.style.overflowY = 'hidden'
-      grid.style.alignContent = 'center'
-      grid.style.gridTemplateColumns = `repeat(${best.c}, 1fr)`
+      const byWidth = (cw - (cols - 1) * gap) / cols
+      const byHeight = ((ch - gap) / 2 - bodyH) / 0.75   // two rows tall
+      const cardW = Math.max(140, Math.min(byWidth, byHeight, maxW))
+      const cardH = cardW * 0.75 + bodyH
+      const paged = n > cols * 2
+      grid.style.gridTemplateColumns = `repeat(${cols}, ${cardW}px)`
+      grid.style.gridAutoRows = `${cardH}px`
+      grid.style.justifyContent = 'center'
+      grid.style.alignContent = paged ? 'start' : 'center'
+      grid.style.overflowY = paged ? 'auto' : 'hidden'
     }
     addEventListener('resize', fitGrid)
 
