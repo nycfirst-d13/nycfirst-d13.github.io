@@ -1,4 +1,4 @@
-// D13 Game Gallery — data + rendering. No build step, no framework.
+// D13 Arcade — data + rendering. No build step, no framework.
 
 // Data source. Reads the live Google Sheet; falls back to the committed
 // dev-games.csv fixture offline / on CORS error / until SHEET_ID is filled in.
@@ -8,7 +8,7 @@
 // out cells that don't match (e.g. text roles "Intern"/"Instructor" in the
 // mostly-numeric grade column disappear). export?format=csv dumps raw cell
 // text with no inference. Default first sheet, so no gid needed.
-const SHEET_ID = '12Hk1XPXvSNmTpBzqEn-hjxQepYFsdij9vYH0GL4nRdk'   // paste the game-gallery Sheet id once created
+const SHEET_ID = '12Hk1XPXvSNmTpBzqEn-hjxQepYFsdij9vYH0GL4nRdk'   // paste the arcade Sheet id once created
 const SHEET_CSV = SHEET_ID
   ? `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`
   : ''

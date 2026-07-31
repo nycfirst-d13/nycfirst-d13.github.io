@@ -16,7 +16,7 @@ Each child directory is a self-contained app or page. Current children:
 |-----------|---------|
 | `laser-maker/` | Browser-based vector design tool for laser cutting |
 | `bed-maker/` | Merges a day's Laser Maker SVGs onto one 36×24 laser bed |
-| `game-gallery/` | 8-bit arcade gallery for student MakeCode games (Next.js static export) |
+| `arcade/` | 8-bit virtual arcade for student MakeCode games (static HTML/CSS/JS) |
 | `stem-stations/` | STEM stations landing page |
 | `bird-bingo/` | Bird bingo game |
 | `hello-waves/` | Hello waves app |
@@ -41,7 +41,7 @@ git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add laser-maker/        
 git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(laser-maker): ..."
 ```
 
-- Conventional prefix scoped to the area: `feat(game-gallery): …`, `docs(stem-stations): …`.
+- Conventional prefix scoped to the area: `feat(arcade): …`, `docs(stem-stations): …`.
 - Run `git status` to verify what's staged before committing.
 - Touched two apps? Make two commits, one per app.
 

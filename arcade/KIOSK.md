@@ -1,6 +1,6 @@
 # Controls & Kiosk
 
-The D13 Game Gallery is playable with a **mouse**, a **keyboard**, a **Makey
+The D13 Arcade is playable with a **mouse**, a **keyboard**, a **Makey
 Makey** wired as arcade controls, or a **USB/Bluetooth game controller** — no
 setup, no special URL. This makes it work equally as a normal web page and as a
 shared arcade station at the STEM center.

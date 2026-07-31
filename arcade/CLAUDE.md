@@ -1,12 +1,12 @@
-# game-gallery/CLAUDE.md
+# arcade/CLAUDE.md
 
-NYC FIRST District 13 game gallery — 8-bit virtual arcade for student MakeCode Arcade games.
+NYC FIRST District 13 arcade — 8-bit virtual arcade for student MakeCode Arcade games.
 
 **Design spec:** `../docs/superpowers/specs/2026-06-24-game-gallery-design.md` (reference only; the Next.js stack it describes was replaced — see below).
 
 ## Stack
 
-Plain static HTML/CSS/JS. **No build step, no framework, no node_modules.** Files are served as-is by GitHub Pages at `/game-gallery/`. Edit and commit directly.
+Plain static HTML/CSS/JS. **No build step, no framework, no node_modules.** Files are served as-is by GitHub Pages at `/arcade/`. Edit and commit directly.
 
 | File | Role |
 |------|------|
@@ -14,7 +14,7 @@ Plain static HTML/CSS/JS. **No build step, no framework, no node_modules.** File
 | `games.html` | Detail page — reads `?id=`, iframes the game, shows provenance |
 | `app.js` | Shared data layer — CSV fetch/parse, sort-newest, `findGame`, thumbnail URLs |
 | `style.css` | 8-bit arcade theme, minimal black & white (Press Start 2P + VT323, Google Fonts) |
-| `kiosk.js` | Always-on gallery navigation + full-screen play (mouse/keyboard/Makey Makey/gamepad). See `KIOSK.md` |
+| `kiosk.js` | Always-on arcade navigation + full-screen play (mouse/keyboard/Makey Makey/gamepad). See `KIOSK.md` |
 | `help.js` | Help button + popover (controls, navigation, view-code, learn), injected into the header on both pages |
 | `dev-games.csv` | Committed fixture of real public MakeCode games (made-up student names) |
 
@@ -54,8 +54,8 @@ New approved rows go live on refresh — no rebuild, no redeploy.
 
 ## Routes
 
-- `/game-gallery/` → `index.html` — game grid
-- `/game-gallery/games.html?id=<slug>` — single game; reads `?id=`, iframes `d13_url`
+- `/arcade/` → `index.html` — game grid
+- `/arcade/games.html?id=<slug>` — single game; reads `?id=`, iframes `d13_url`
 
 ## Testing
 
@@ -63,11 +63,11 @@ New approved rows go live on refresh — no rebuild, no redeploy.
 
 ## Git & Commits
 
-Repo root is the parent directory — `game-gallery/` is a plain subdir, not a separate repo. Always commit from the parent. Scope each commit to one app + one logical change; stage `game-gallery/` paths only, never bare `git add .`:
+Repo root is the parent directory — `arcade/` is a plain subdir, not a separate repo. Always commit from the parent. Scope each commit to one app + one logical change; stage `arcade/` paths only, never bare `git add .`:
 
 ```bash
-git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add game-gallery/<path>
-git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(game-gallery): ..."
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io add arcade/<path>
+git -C /Users/avigoldman/Desktop/nycfirst-d13.github.io commit -m "feat(arcade): ..."
 ```
 
 Conventional prefix scoped to the area. Run `git status` to verify staging before committing. Don't ask permission to commit from the parent.

@@ -1,9 +1,9 @@
 /**
- * Game Gallery — submission endpoint (Google Apps Script Web App).
+ * Arcade — submission endpoint (Google Apps Script Web App).
  * Adapted from stem-stations/submit.gs. One tab, an `active` checkbox gate.
  *
  * SETUP (one time, signed in as d13-internal@nycfirst.org):
- *   1. Create the game-gallery Sheet under d13-internal@ with this header row:
+ *   1. Create the arcade Sheet under d13-internal@ with this header row:
  *        id | game_title | student_name | grade | student_url | d13_url |
  *        submitted_at | session | active | screenshot | mkcd_url
  *      Set column I (active) data-validation to a checkbox.
@@ -24,7 +24,7 @@
  */
 
 // ── CONFIG ────────────────────────────────────────────────
-var SHEET_ID = 'PASTE_GAME_GALLERY_SHEET_ID';
+var SHEET_ID = 'PASTE_ARCADE_SHEET_ID';
 var SHEET_NAME = 'games';                    // the tab the gallery reads
 var SCREENSHOT_FOLDER_ID = 'PASTE_DRIVE_FOLDER_ID';   // uploaded screenshots
 var MKCD_FOLDER_ID = 'PASTE_DRIVE_FOLDER_ID';         // archived .mkcd project files

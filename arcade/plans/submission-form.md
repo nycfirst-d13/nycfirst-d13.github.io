@@ -1,4 +1,4 @@
-# Game Gallery — "Add your own game" submission backend + form
+# Arcade — "Add your own game" submission backend + form
 
 Goal: let students submit their MakeCode Arcade games from the site (no Google
 Form), staff review/publish from a single Google Sheet, and the gallery read
@@ -53,7 +53,7 @@ column order (order matters — `doPost` appends positionally):
 `active` is truthy **AND** `d13_url` is non-empty **AND** `id` is non-empty.
 All three gate together because `active` alone can't guarantee the row is
 playable/linkable (staff might tick it before finishing the re-host). This is
-the one place game-gallery differs from stem-stations, which gates on `active`
+the one place arcade differs from stem-stations, which gates on `active`
 alone.
 
 `active` exports from gviz as the text `TRUE`/`FALSE` — parse case-insensitively
@@ -95,7 +95,7 @@ automation account** stem-stations uses — `d13-internal@nycfirst.org` (a share
 Workspace account that runs all D13 internal automation; not a personal
 account, not a GCP service account). The Sheet + Apps Script + Drive folders
 live under that account so emails/files aren't tied to any individual. Simplest
-path: create the game-gallery Sheet under `d13-internal@nycfirst.org` and bind
+path: create the arcade Sheet under `d13-internal@nycfirst.org` and bind
 the script to it. Deploy: New deployment → Web app → Execute as **Me** (=
 `d13-internal@`), Who has access **Anyone**. Verify the `/exec` URL loads with
 no login prompt in incognito.
@@ -135,9 +135,9 @@ CONFIG constants: new `SHEET_ID`, `SHEET_NAME`, two Drive folder ids
 
 ### `submit.html` (new, standalone page)
 
-Own page at `/game-gallery/submit.html`, linked from the gallery header/footer
+Own page at `/arcade/submit.html`, linked from the gallery header/footer
 ("+ Add your game") and from the help popover. Reuses `style.css` (8-bit theme,
-big legible controls per game-gallery CLAUDE.md styling rules) and the
+big legible controls per arcade CLAUDE.md styling rules) and the
 `help.js` header injection.
 
 Fields (all big tap targets, VT323 ≥18px labels):
@@ -217,4 +217,4 @@ Leave the XP bar as published-count until this is worth a dedicated plan.
 5. End-to-end: submit a test game → `active=FALSE` row + Drive files + staff
    email → staff fill `d13_url`/`id`, tick `active` → appears in gallery.
 
-Each step commits separately, scoped to `game-gallery/`, per repo CLAUDE.md.
+Each step commits separately, scoped to `arcade/`, per repo CLAUDE.md.
