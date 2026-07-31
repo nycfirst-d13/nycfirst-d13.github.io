@@ -77,13 +77,12 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
   max-width: 1500px; margin: 0 auto; padding: 16px 20px;
   display: flex; flex-direction: column;
 }
-.browse .grid { flex: 1; min-height: 0; gap: 18px; }
-.browse .card { display: flex; flex-direction: column; overflow: hidden; }
-/* Thumb locked to the MakeCode frame (4:3): fills the cell height, width
-   follows the ratio, centered — never stretched wide to show a cropped frame. */
-.browse .card .thumb { flex: 1 1 0; min-height: 0;
-  width: auto; max-width: 100%; aspect-ratio: 160 / 120;
-  object-fit: contain; align-self: center; }
+.browse .grid { flex: 1; min-height: 0; gap: 34px; justify-items: center; }
+/* Whole card locked to the MakeCode frame (4:3 thumb + body). fitGrid() sizes
+   the columns; max-width keeps cards from going huge, margin centers them. */
+.browse .card { display: flex; flex-direction: column; overflow: hidden;
+  width: 100%; max-width: 560px; }
+.browse .card .thumb { width: 100%; aspect-ratio: 160 / 120; object-fit: cover; }
 .browse .card .body { flex-shrink: 0; }
 .browse .foot { flex-shrink: 0; margin-top: 12px; padding: 10px 4px 2px; }
 

@@ -74,29 +74,30 @@
     function fitGrid() {
       const grid = document.querySelector('.grid')
       if (!grid || !grid.children.length) return
-      const n = grid.children.length, gap = 18
+      const n = grid.children.length, gap = 34, maxW = 560
       const cw = grid.clientWidth, ch = grid.clientHeight
       if (cw <= 0 || ch <= 0) return
+      // Card height = 4:3 thumb + body. Pick the fewest columns (= biggest
+      // cards) whose rows still fit on screen without scrolling.
+      const bodyH = (grid.querySelector('.card .body') || {}).offsetHeight || 64
       let best = null
       for (let c = 1; c <= n; c++) {
         const rows = Math.ceil(n / c)
-        const cellW = (cw - (c - 1) * gap) / c
-        const cellH = (ch - (rows - 1) * gap) / rows
-        if (cellW < 140 || cellH < 140) continue
-        const aspect = cellW / cellH
-        if (aspect < 0.5 || aspect > 2.2) continue
-        const area = cellW * cellH
-        if (!best || area > best.area) best = { c, rows, area }
+        const cardW = Math.min((cw - (c - 1) * gap) / c, maxW)
+        if (cardW < 140) continue
+        const totalH = rows * (cardW * 3 / 4 + bodyH) + (rows - 1) * gap
+        if (totalH <= ch) { best = { c }; break }
       }
-      if (!best) {
-        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(180px, 1fr))'
-        grid.style.gridTemplateRows = ''
+      grid.style.gridTemplateRows = ''
+      if (!best) {                              // too many to fit — scroll
+        grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(200px, 1fr))'
         grid.style.overflowY = 'auto'
+        grid.style.alignContent = 'start'
         return
       }
       grid.style.overflowY = 'hidden'
+      grid.style.alignContent = 'center'
       grid.style.gridTemplateColumns = `repeat(${best.c}, 1fr)`
-      grid.style.gridTemplateRows = `repeat(${best.rows}, 1fr)`
     }
     addEventListener('resize', fitGrid)
 
