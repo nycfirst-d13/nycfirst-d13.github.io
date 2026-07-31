@@ -101,10 +101,9 @@ main { max-width: 1040px; margin: 0 auto; padding: 24px 20px 64px; }
   box-shadow: 6px 6px 0 var(--line-dim);
   transition: transform .08s steps(2), box-shadow .08s steps(2);
 }
-/* Hover, keyboard focus, and controller selection all share ONE highlight:
-   the original white hard-shadow lift. Hovering also updates the selection
-   (kiosk.js), so only one card is ever lit. */
-.card:hover, .card:focus-visible, .card.sel {
+/* Yellow highlight is the arrow-key / controller cursor ONLY (.sel). Mouse
+   hover deliberately shows no indicator — clicking still plays. */
+.card.sel {
   transform: translate(-2px, -2px);
   box-shadow: 8px 8px 0 #ffd400;
   border-color: #ffd400;

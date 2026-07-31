@@ -86,10 +86,9 @@ function startKiosk(games) {
   highlight()
 
   cards.forEach((card, i) => {
-    // Hovering moves the selection, so mouse and keyboard/controller share one
-    // highlight — never two lit at once. Arrow keys continue from the hovered card.
-    card.addEventListener('mouseenter', () => { sel = i; highlight() })
-    // Clicking plays the game in the overlay instead of navigating away.
+    // Clicking plays the game in the overlay instead of navigating away. Hover
+    // intentionally does NOT move the selection — the yellow cursor is for
+    // arrow-key/controller nav only; the mouse shows no highlight.
     card.addEventListener('click', e => { e.preventDefault(); sel = i; highlight(); open(games[i]) })
   })
 
