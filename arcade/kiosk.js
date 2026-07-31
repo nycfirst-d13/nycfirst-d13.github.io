@@ -78,10 +78,17 @@ function startKiosk(games) {
   const cards = [...document.querySelectorAll('.card')]
   if (!cards.length) return
 
+  const grid = cards[0].closest('.grid')
   let sel = 0
   const highlight = () => {
     cards.forEach((c, i) => c.classList.toggle('sel', i === sel))
-    cards[sel].scrollIntoView({ block: 'nearest' })
+    // Scroll the grid so the selected card is FULLY visible (block:'nearest'
+    // leaves a partly-clipped card clipped). Nudge just past whichever edge it
+    // overhangs, plus a little padding.
+    const pad = 14
+    const g = grid.getBoundingClientRect(), e = cards[sel].getBoundingClientRect()
+    if (e.top < g.top + pad) grid.scrollTop -= g.top + pad - e.top
+    else if (e.bottom > g.bottom - pad) grid.scrollTop += e.bottom - (g.bottom - pad)
   }
   highlight()
 
