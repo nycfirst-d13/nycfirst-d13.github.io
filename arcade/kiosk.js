@@ -129,8 +129,7 @@ function startKiosk(games) {
         <button class="chip" data-help>Help</button>
       </header>
       <div class="kiosk-stage">
-        <iframe src="${url}" title="${game.game_title}" allowfullscreen
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+        <iframe src="${url}" title="${game.game_title}" allowfullscreen></iframe>
       </div>
       <div class="popover game-help" hidden>
         <button class="pop-close" aria-label="Close">✕</button>
@@ -152,14 +151,15 @@ function startKiosk(games) {
     document.body.appendChild(overlay)
     overlay.querySelector('[data-back]').addEventListener('click', close)
     const help = overlay.querySelector('.game-help')
+    const refocus = () => focusSim(overlay.querySelector('iframe'))
     overlay.querySelector('[data-help]').addEventListener('click', () => { help.hidden = false })
-    help.querySelector('.pop-close').addEventListener('click', () => { help.hidden = true })
-    help.addEventListener('click', e => { if (e.target === help) help.hidden = true })
+    help.querySelector('.pop-close').addEventListener('click', () => { help.hidden = true; refocus() })
+    help.addEventListener('click', e => { if (e.target === help) { help.hidden = true; refocus() } })
     // Best-effort real fullscreen (works when launched by a keyboard gesture;
     // a gamepad press isn't a user gesture, so this may no-op — the overlay
     // covers the screen either way).
     overlay.requestFullscreen?.().catch(() => {})
-    overlay.querySelector('iframe').focus() // route play input to the game
+    focusSim(overlay.querySelector('iframe')) // route play input to the game, no click needed
     resetIdle()
   }
 

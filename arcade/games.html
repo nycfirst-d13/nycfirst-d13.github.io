@@ -39,9 +39,9 @@
         `<button class="btn" onclick="document.getElementById('stage').requestFullscreen()"><span class="ico">⛶</span> Fullscreen</button>`
       app.innerHTML =
         `<div class="stage" id="stage">
-           <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen
-             sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+           <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen></iframe>
          </div>`
+      focusSim(app.querySelector('iframe'))
     }
 
     function showState(msg) {

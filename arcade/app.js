@@ -89,6 +89,21 @@ const thumbUrl = shareId => `https://makecode.com/api/${shareId}/thumb`
 // "5" -> "Grade 5"; "Intern"/"Instructor" pass through unchanged.
 const gradeLabel = grade => /^\d+$/.test(grade) ? `Grade ${grade}` : grade
 
+// MakeCode nests the running game in a *second* iframe (the simulator) inside
+// the share page, so focusing our iframe only gives keys to the share page —
+// the player has to click the game first. On an arcade cabinet the control
+// panel covers the trackpad, so there is no click to give. Indexed access to a
+// cross-origin window's child frames — and focus() on it — is allowed, so
+// reach in and focus the simulator directly. The sim frame appears a beat
+// after load, hence the retry. The game iframes carry NO `sandbox` attribute
+// for the same reason — a sandboxed frame can't be focused programmatically,
+// which is exactly what breaks click-free play.
+function focusSim(iframe, tries = 40) {
+  const sim = iframe.contentWindow?.frames[0]
+  if (sim) { iframe.focus(); sim.focus(); return }
+  if (tries > 0) setTimeout(() => focusSim(iframe, tries - 1), 300)
+}
+
 async function fetchGames() {
   return sortByNewest(parseGamesCsv(await loadCSV()))
 }
