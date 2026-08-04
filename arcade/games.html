@@ -44,6 +44,21 @@
       keepSimFocused(app.querySelector('iframe'))
     }
 
+    // Two ways back to the gallery without a mouse — the arcade cabinet's
+    // control panel covers the trackpad, so a keyboard-only exit is the only one
+    // a player has.
+    //   - Esc is handled by the browser above the focused frame, so it leaves
+    //     fullscreen even while the game has the keys. Leaving fullscreen here
+    //     means "done playing".
+    //   - Esc as a plain keydown, for when the game hasn't taken focus yet (or
+    //     we were never in fullscreen to begin with).
+    let wasFullscreen = false
+    addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement) { wasFullscreen = true; return }
+      if (wasFullscreen) location.href = './'
+    })
+    addEventListener('keydown', e => { if (e.key === 'Escape') location.href = './' })
+
     function showState(msg) {
       actions.innerHTML = `<a class="btn" href="./"><span class="ico">←</span> Gallery</a>`
       app.innerHTML = `<div class="state"><p class="pixel">${esc(msg)}</p></div>`

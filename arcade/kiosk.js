@@ -155,10 +155,16 @@ function startKiosk(games) {
     overlay.querySelector('[data-help]').addEventListener('click', () => { help.hidden = false })
     help.querySelector('.pop-close').addEventListener('click', () => { help.hidden = true })
     help.addEventListener('click', e => { if (e.target === help) help.hidden = true })
-    // Best-effort real fullscreen (works when launched by a keyboard gesture;
-    // a gamepad press isn't a user gesture, so this may no-op — the overlay
-    // covers the screen either way).
+    // Real fullscreen (works when launched by a keyboard/mouse gesture; a
+    // gamepad press isn't a user gesture, so this may no-op — the overlay covers
+    // the screen either way). It matters beyond looks: the Esc exit works by
+    // *leaving* fullscreen, so with no fullscreen there is no Esc exit. Say so
+    // loudly rather than silently losing the only keyboard way out.
     overlay.requestFullscreen?.().catch(() => {})
+    setTimeout(() => {
+      if (overlay && !document.fullscreenElement)
+        console.warn('kiosk: fullscreen refused — Esc/chord exit will not work; exit via gamepad Start/Select or the Gallery button')
+    }, 500)
     // Route play input to the game — no click needed. Paused while our own help
     // panel is open so it isn't fighting the player for focus.
     stopFocus = keepSimFocused(overlay.querySelector('iframe'), () => !help.hidden)
