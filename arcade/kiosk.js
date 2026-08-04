@@ -101,6 +101,7 @@ function startKiosk(games) {
 
   let overlay = null
   let idleTimer = null
+  let stopFocus = null
   const resetIdle = () => {
     if (!KIOSK_IDLE_MS) return
     clearTimeout(idleTimer)
@@ -151,21 +152,24 @@ function startKiosk(games) {
     document.body.appendChild(overlay)
     overlay.querySelector('[data-back]').addEventListener('click', close)
     const help = overlay.querySelector('.game-help')
-    const refocus = () => focusSim(overlay.querySelector('iframe'))
     overlay.querySelector('[data-help]').addEventListener('click', () => { help.hidden = false })
-    help.querySelector('.pop-close').addEventListener('click', () => { help.hidden = true; refocus() })
-    help.addEventListener('click', e => { if (e.target === help) { help.hidden = true; refocus() } })
+    help.querySelector('.pop-close').addEventListener('click', () => { help.hidden = true })
+    help.addEventListener('click', e => { if (e.target === help) help.hidden = true })
     // Best-effort real fullscreen (works when launched by a keyboard gesture;
     // a gamepad press isn't a user gesture, so this may no-op — the overlay
     // covers the screen either way).
     overlay.requestFullscreen?.().catch(() => {})
-    focusSim(overlay.querySelector('iframe')) // route play input to the game, no click needed
+    // Route play input to the game — no click needed. Paused while our own help
+    // panel is open so it isn't fighting the player for focus.
+    stopFocus = keepSimFocused(overlay.querySelector('iframe'), () => !help.hidden)
     resetIdle()
   }
 
   function close() {
     if (!overlay) return
     if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {})
+    stopFocus?.()   // stop clawing focus back once the game is gone
+    stopFocus = null
     overlay.remove()
     overlay = null
     clearTimeout(idleTimer)

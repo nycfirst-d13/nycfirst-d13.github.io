@@ -94,14 +94,24 @@ const gradeLabel = grade => /^\d+$/.test(grade) ? `Grade ${grade}` : grade
 // the player has to click the game first. On an arcade cabinet the control
 // panel covers the trackpad, so there is no click to give. Indexed access to a
 // cross-origin window's child frames — and focus() on it — is allowed, so
-// reach in and focus the simulator directly. The sim frame appears a beat
-// after load, hence the retry. The game iframes carry NO `sandbox` attribute
-// for the same reason — a sandboxed frame can't be focused programmatically,
-// which is exactly what breaks click-free play.
-function focusSim(iframe, tries = 40) {
-  const sim = iframe.contentWindow?.frames[0]
-  if (sim) { iframe.focus(); sim.focus(); return }
-  if (tries > 0) setTimeout(() => focusSim(iframe, tries - 1), 300)
+// reach in and focus the simulator directly. The game iframes carry NO
+// `sandbox` attribute for the same reason — a sandboxed frame can't be focused
+// programmatically, which is exactly what breaks click-free play.
+//
+// Focusing once isn't enough: the sim frame shows up ~1s in, but the share page
+// keeps loading and takes focus back afterwards. So re-assert it on an interval
+// for as long as the game is on screen. focus() on the already-focused frame is
+// a no-op, so this is invisible during play. `paused` lets the caller hold off
+// while a popover of ours wants the keys. Returns a stop function.
+function keepSimFocused(iframe, paused) {
+  const tick = () => {
+    if (paused?.()) return
+    const sim = iframe.contentWindow?.frames[0]
+    if (sim) { iframe.focus(); sim.focus() }
+  }
+  tick()
+  const id = setInterval(tick, 1000)
+  return () => clearInterval(id)
 }
 
 async function fetchGames() {
