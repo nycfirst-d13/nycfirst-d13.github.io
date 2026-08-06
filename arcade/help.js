@@ -28,6 +28,7 @@ function controlsVis() {
       <span class="ctrls-lbl">Play / Action</span>
     </div>
     <div class="ctrls-row">
+      <span class="key wide" style="--i:5">EXIT</span>
       <span class="key wide" style="--i:5">Esc</span>
       <span class="key wide" style="--i:5">Start</span>
       <span class="ctrls-lbl">Back to gallery</span>
@@ -50,7 +51,7 @@ function helpHtml() {
   <h2 class="pop-h">Playing a game</h2>
   <ul>
     <li>The game fills the screen under the header.</br>Use the controls the game shows on-screen.</li>
-    <li>Done or stuck? Press <b>Esc</b>, <b>Start</b>, or click <span class="ref"><span class="ico">←</span> Gallery</span> to return.</li>
+    <li>Done or stuck? Press the <b>EXIT</b> button on the arcade panel (or <b>Esc</b> / <b>Start</b>), or click <span class="ref"><span class="ico">←</span> Gallery</span> to return.</li>
   </ul>
 
   <h2 class="pop-h">See &amp; learn from the code</h2>

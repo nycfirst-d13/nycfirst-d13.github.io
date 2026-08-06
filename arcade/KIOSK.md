@@ -43,9 +43,19 @@ document level (exit full-screen), so it reaches the page even while the game
 holds keyboard focus. It's also MakeCode's own Reset key, so it's the natural
 "back". This is why every recommended setup routes "back" through Esc.
 
+Esc works by *leaving* full-screen, so it only gets you out if the game entered
+full-screen in the first place. The kiosk overlay requests it on launch (and logs
+`kiosk: fullscreen refused` to the console if the browser says no); `games.html`
+also returns to the gallery on plain Esc, for the moment before the game takes
+focus.
+
 What this means per input device:
 
 - **Keyboard:** **Esc** returns to the gallery from any game. Done.
+- **D13 arcade cabinet (Arduino control panel):** the panel has a dedicated
+  **EXIT** button on its own pin, wired to send **Esc**, next to the gameplay
+  buttons. It is not a chord and not an overloaded gameplay button — see the
+  sketch's `exitBtn`. Nothing else on the panel sends Esc.
 - **Makey Makey (native MakeCode controller style):** Its pads emulate a
   keyboard, so during play they're blocked by iframe focus — *except* Esc. Wire
   the four arrows + Space (front connectors) for browsing/launching, then **remap
