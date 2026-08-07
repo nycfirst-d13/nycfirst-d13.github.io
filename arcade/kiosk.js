@@ -130,7 +130,7 @@ function startKiosk(games) {
         <button class="chip" data-help>Help</button>
       </header>
       <div class="kiosk-stage">
-        <iframe src="${url}" title="${game.game_title}" allowfullscreen></iframe>
+        <iframe src="${url}" title="${game.game_title}" allow="autoplay; fullscreen" allowfullscreen></iframe>
       </div>
       <div class="popover game-help" hidden>
         <button class="pop-close" aria-label="Close">✕</button>

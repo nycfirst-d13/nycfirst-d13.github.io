@@ -39,7 +39,7 @@
         `<button class="btn" onclick="document.getElementById('stage').requestFullscreen()"><span class="ico">⛶</span> Fullscreen</button>`
       app.innerHTML =
         `<div class="stage" id="stage">
-           <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allowfullscreen></iframe>
+           <iframe src="${esc(g.d13_url)}" title="${esc(g.game_title)}" allow="autoplay; fullscreen" allowfullscreen></iframe>
          </div>`
       keepSimFocused(app.querySelector('iframe'))
     }
