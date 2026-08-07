@@ -176,6 +176,26 @@ body.play .top { flex-wrap: wrap; }
 .play-meta .g-by { color: var(--ink-2); font-size: 17px; }
 .play-actions { display: flex; gap: 14px; flex-shrink: 0; }
 
+/* Sound hint: one line, centered on the window rather than on whatever space
+   the header's flex row happens to leave. Taken out of flow so the title and
+   buttons keep their own sizes; it sits on top of the bar with the bar's own
+   background behind it. Loud enough to read from across the room, gone once the
+   player presses anything. */
+.kiosk-overlay .top { position: relative; }
+/* Keep the title beside the Gallery button instead of stretching it across the
+   middle, so it can't end up underneath the centered hint. */
+.kiosk-overlay .play-meta { flex: 0 1 auto; }
+.kiosk-overlay .top .chip[data-help] { margin-left: auto; }
+.sound-hint {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+  padding: 4px 14px; background: var(--panel);
+  font-family: var(--pixel); font-size: 11px; line-height: 1.6;
+  letter-spacing: 1px; color: var(--accent);
+}
+.sound-hint .ico { font-size: 22px; }
+.sound-hint b { color: var(--ink); }
+
 body.play main { flex: 1; min-height: 0; display: flex; padding: 14px;
   max-width: none; margin: 0; }
 .stage {

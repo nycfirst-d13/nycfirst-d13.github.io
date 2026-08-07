@@ -127,6 +127,7 @@ function startKiosk(games) {
           <span class="g-title">${game.game_title}</span>
           <span class="g-by">${game.student_name} · ${gradeLabel(game.grade)}</span>
         </div>
+        <span class="sound-hint"><span class="ico">🔇</span> Press <b>A</b> to turn on sound</span>
         <button class="chip" data-help>Help</button>
       </header>
       <div class="kiosk-stage">
@@ -168,6 +169,25 @@ function startKiosk(games) {
     // Route play input to the game — no click needed. Paused while our own help
     // panel is open so it isn't fighting the player for focus.
     stopFocus = keepSimFocused(overlay.querySelector('iframe'), () => !help.hidden)
+
+    // Games start silent. A browser only lets a frame make noise once that frame
+    // has had a real key or click of its own, and we cannot hand it one: a
+    // scripted event is untrusted, and a cross-origin frame is unreachable
+    // anyway. So the player has to press something — say which button, once.
+    //
+    // ponytail: dismiss on a timer. We never see the keypress that actually
+    // unmutes it (keys go straight to the focused game frame, and the sim gives
+    // us no "audio resumed" signal), so a timer is the only honest cue. Ceiling:
+    // the hint can linger a few seconds past the first sound, or vanish before a
+    // dawdling player presses anything. Gone for good once dropped — a second
+    // gesture changes nothing, so re-showing it would only nag.
+    const hint = overlay.querySelector('.sound-hint')
+    const dropHint = () => hint.remove()
+    setTimeout(() => { if (overlay?.contains(hint)) dropHint() }, 8000)
+    // A click we can see means they're already pressing things — drop it early.
+    // (Keys can't help here: once the game has focus they never reach us.)
+    overlay.addEventListener('click', dropHint, { once: true })
+
     resetIdle()
   }
 
@@ -188,7 +208,13 @@ function startKiosk(games) {
 
   kioskInput(action => {
     resetIdle()
-    if (overlay) { if (action === 'back') close(); return }
+    if (overlay) {
+      // Gamepad presses are polled, so they reach us even mid-game — proof the
+      // player is pressing buttons, which is all the sound hint was waiting for.
+      overlay.querySelector('.sound-hint')?.remove()
+      if (action === 'back') close()
+      return
+    }
     if (action === 'back') return
     if (action === 'select') { open(games[sel]); return }
     const cols = gridColumns(cards)
