@@ -77,6 +77,8 @@
     function fitGrid() {
       const grid = document.querySelector('.grid')
       if (!grid || !grid.children.length) return
+      // Phones: CSS does one-card-per-screen scroll-snap. Don't fight it.
+      if (matchMedia('(max-width: 700px)').matches) { grid.style.cssText = ''; return }
       const n = grid.children.length, gap = 34
       const cw = grid.clientWidth, ch = grid.clientHeight
       if (cw <= 0 || ch <= 0) return

@@ -122,7 +122,7 @@ function startKiosk(games) {
     // element's subtree renders, so a body-level popover wouldn't show.
     overlay.innerHTML = `
       <header class="top">
-        <button class="chip" data-back><span class="ico">←</span> Gallery</button>
+        <button class="chip" data-back><span class="ico">←</span> <span class="lbl">Gallery</span></button>
         <div class="play-meta">
           <span class="g-title">${game.game_title}</span>
           <span class="g-by">${game.student_name} · ${gradeLabel(game.grade)}</span>
